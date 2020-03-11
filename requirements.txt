@@ -1,0 +1,2 @@
+nemo-toolkit==0.10.0b5
+pytest==4.4.1
