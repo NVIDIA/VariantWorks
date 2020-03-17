@@ -3,9 +3,18 @@
 import pysam
 import torch
 
-def encode_snp_pileup(variant_pos, bamf_file, window_size = 50, max_reads = 50, channels={"reads"}):
-    # Create an N-D pileup of reads covering a variant locus
+class SnpPileupGenerator:
+    def __init__(self, window_size = 50, max_reads = 50, channels={"reads"}):
+        self.window_size = window_size
+        self.max_reads = max_reads
+        self.channels = channels
 
-    # TODO: Return proper pileup from SAM file
-    pileup = torch.randint(1, 6, [max_reads, 2 * window_size + 1, len(channels)], dtype=torch.uint8)
-    return pileup
+    @property
+    def size(self):
+        return (len(self.channels), self.max_reads, 2 * self.window_size + 1)
+
+    def __call__(self, bam, chrom, variant_pos):
+        # Create an N-D pileup of reads covering a variant locus
+        # TODO: Return proper pileup from SAM file
+        pileup = torch.randint(1, 6, self.size, dtype=torch.float32)
+        return pileup

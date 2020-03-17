@@ -10,5 +10,5 @@ pip install -e .
 ## Test
 ```
 cd test
-pytest .
+pytest -s .
 ```
