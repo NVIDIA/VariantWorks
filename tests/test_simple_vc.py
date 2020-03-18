@@ -6,7 +6,7 @@ from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 
 from claragenomics.variantworks.dataset import SnpPileupDataType
-from claragenomics.variantworks.pileup_encoder import SnpPileupGenerator
+from claragenomics.variantworks.pileup_generator import SnpPileupGenerator
 from claragenomics.variantworks.networks import AlexNet
 
 def test_simple_vc():

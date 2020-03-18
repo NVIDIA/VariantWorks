@@ -1,9 +1,9 @@
 import pytest
 import torch
 
-from claragenomics.variantworks.pileup_encoder import SnpPileupGenerator
+from claragenomics.variantworks.pileup_generator import SnpPileupGenerator
 
-def test_snp_pileup_encoder():
+def test_snp_pileup_generator():
     pileup_generator = SnpPileupGenerator(window_size = 10, max_reads = 100, channels = {"reads", "qscore"})
     assert(pileup_generator.size == (2, 100, 21))
 
