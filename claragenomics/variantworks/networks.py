@@ -22,16 +22,18 @@ class AlexNet(TrainableNM):
         """Returns definitions of module output ports.
         """
         return {
-            'log_probs': NeuralType(('B', 'D'), LogitsType()),
+            'log_probs_vt': NeuralType(('B', 'D'), LogitsType()), # Variant type
+            'log_probs_va': NeuralType(('B', 'D'), LogitsType()), # Variant allele
         }
 
-    def __init__(self, num_channels, num_classes):
+    def __init__(self, num_input_channels, num_vt, num_alleles):
         super().__init__()
-        self.num_classes = num_classes
-        self.num_channels = num_channels
+        self.num_vt = num_vt
+        self.num_input_channels = num_input_channels
+        self.num_alleles = num_alleles
 
         self.features = nn.Sequential(
-            nn.Conv2d(self.num_channels, 64, kernel_size=11, stride=4, padding=2),
+            nn.Conv2d(self.num_input_channels, 64, kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
             nn.Conv2d(64, 192, kernel_size=5, padding=2),
@@ -46,15 +48,17 @@ class AlexNet(TrainableNM):
             nn.MaxPool2d(kernel_size=3, stride=2),
         )
         self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
-        self.classifier = nn.Sequential(
+        self.common_classifier = nn.Sequential(
             nn.Dropout(),
             nn.Linear(256 * 6 * 6, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
             nn.ReLU(inplace=True),
-            nn.Linear(4096, num_classes),
+            #nn.Linear(4096, self.num_vt),
         )
+        self.vt_classifier = nn.Linear(4096, self.num_vt)
+        self.va_classifier = nn.Linear(4096, self.num_alleles)
 
         self._device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
         self.to(self._device)
@@ -63,5 +67,7 @@ class AlexNet(TrainableNM):
         pileup = self.features(pileup)
         pileup = self.avgpool(pileup)
         pileup = torch.flatten(pileup, 1)
-        pileup = self.classifier(pileup)
-        return pileup
+        pileup = self.common_classifier(pileup)
+        vt = self.vt_classifier(pileup)
+        va = self.va_classifier(pileup)
+        return vt, va

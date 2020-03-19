@@ -1,11 +1,21 @@
+import os
 import pytest
 import torch
 
 from claragenomics.variantworks.pileup_generator import SnpPileupGenerator
 
-def test_snp_pileup_generator():
-    pileup_generator = SnpPileupGenerator(window_size = 10, max_reads = 100, channels = {"reads", "qscore"})
-    assert(pileup_generator.size == (2, 100, 21))
+from test_utils import get_data_folder
 
-    pileup = pileup_generator(None, None, None)
-    assert(pileup.size() == torch.Size([2, 100, 21]))
+def test_snp_pileup_generator():
+    max_reads = 100
+    window_size = 5
+    width = 2 * window_size + 1
+    height = max_reads
+    channels = {"reads"}
+
+    pileup_generator = SnpPileupGenerator(window_size = window_size, max_reads = max_reads, channels = channels)
+    assert(pileup_generator.size == (len(channels), height, width))
+
+    bam = os.path.join(get_data_folder(), "small_bam.bam")
+    pileup = pileup_generator(bam, "1", 240000)
+    assert(pileup.size() == torch.Size([len(channels), height, width]))
