@@ -26,7 +26,8 @@ class SnpPileupDataType(DataLayerNM):
         """
         return {
             "pileup": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
-            "label": NeuralType(tuple('B'), LabelsType()),
+            "vt_label": NeuralType(tuple('B'), LabelsType()),
+            "va_label": NeuralType(tuple('B'), LabelsType()),
         }
 
     def __init__(self, bam, labels, pileup_generator, batch_size=32, shuffle=True, num_workers=4):
@@ -42,15 +43,16 @@ class SnpPileupDataType(DataLayerNM):
 
             def __len__(self):
                 # TODO: Get length from loaded dataset
-                return 1000
+                return 2
 
             def __getitem__(self, idx):
                 # TODO: Get chrom, pos, ref, alt, var_type labels from dataset
-                chrom = 1
-                pos = 10
+                chrom = "1"
+                pos = 240000
                 var_type = 2
+                var_allele = 1
                 pileup = self.pileup_generator(self.bam, chrom, pos)
-                return pileup, var_type
+                return pileup, var_type, var_allele
 
         self.dataloader = DataLoader(DatasetWrapper(bam, labels, pileup_generator),
                                      batch_size = batch_size, shuffle = shuffle,
