@@ -24,8 +24,8 @@ def test_simple_vc():
     train_dataset = SnpPileupDataType(bam, labels, pileup_generator, batch_size = 32, shuffle = True)
 
     # Setup loss
-    vt_ce_loss = CrossEntropyLossNM(logits_dim=2)
-    va_ce_loss = CrossEntropyLossNM(logits_dim=2)
+    vt_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    va_ce_loss = CrossEntropyLossNM(logits_ndim=2)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=1, num_vt=3, num_alleles=5)
