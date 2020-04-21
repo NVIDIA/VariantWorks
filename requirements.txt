@@ -1,4 +1,4 @@
-nemo-toolkit==0.10.0b5
+nemo-toolkit==0.10.1
 pytest==4.4.1
 pysam==0.15.4
 PyVCF==0.6.8
