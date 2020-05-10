@@ -10,9 +10,9 @@ from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.neural_types import VariantPositionType, VariantAlleleType, VariantType
 
-class SnpPileupDataType(DataLayerNM):
+class VariantDataLoader(DataLayerNM):
     """
-    Data layer that outputs (pileup, variant type) data and label pairs.
+    Data layer that outputs (variant type, variant allele, variant position) tuples.
 
     Args:
         bam : Path to BAM file
