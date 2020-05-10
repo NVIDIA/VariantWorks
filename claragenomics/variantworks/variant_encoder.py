@@ -36,6 +36,7 @@ class BaseEncoder(NonTrainableNM):
 
     def forward(self, variant_pos):
         """Generates a batch of variant encodings.
+        This function is required to be implemented in NonTrainableNM inherited classes.
 
         Args:
             variant_pos : Batch of variant positions.
