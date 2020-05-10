@@ -12,7 +12,7 @@ from nemo.core.neural_factory import DeviceType
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.neural_types import VariantPositionType
 
-class SampleEncoder(NonTrainableNM):
+class BaseEncoder(NonTrainableNM):
     @property
     @add_port_docs()
     def input_ports(self):
@@ -59,7 +59,10 @@ class SampleEncoder(NonTrainableNM):
         """Return an encoding of a variant position.
         """
 
-class SnpPileupEncoder(SampleEncoder):
+class SnpPileupEncoder(BaseEncoder):
+    """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
+    generates a pileup tensor around the variant position.
+    """
     def __init__(self, window_size = 50, max_reads = 50, channels={"reads"}):
         super().__init__()
         self.window_size = window_size
@@ -99,7 +102,6 @@ class SnpPileupEncoder(SampleEncoder):
                 if row >= self.max_reads:
                     break
                 # Check of reference base is missing (either deleted or skipped).
-                # TODO: Only there for SNP pileup
                 assert(not pileupread.is_del and not pileupread.is_refskip)
 
                 # Position of variant locus in read
