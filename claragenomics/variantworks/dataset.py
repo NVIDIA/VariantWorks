@@ -8,11 +8,10 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.neural_types import VariantPositionType, VariantAlleleType, VariantType
 
-class VariantDataLoader(DataLayerNM):
+class SnpPileupDataType(DataLayerNM):
     """
-    Data layer that outputs (variant type, variant allele, variant position) tuples.
+    Data layer that outputs (pileup, variant type) data and label pairs.
 
     Args:
         bam : Path to BAM file
@@ -29,17 +28,18 @@ class VariantDataLoader(DataLayerNM):
         """Returns definitions of module output ports
         """
         return {
-            "vt_label": NeuralType(tuple('B'), VariantType()),
-            "va_label": NeuralType(tuple('B'), VariantAlleleType()),
-            "variant_pos": NeuralType(tuple('B'), VariantPositionType()),
+            "pileup": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
+            "vt_label": NeuralType(tuple('B'), LabelsType()),
+            "va_label": NeuralType(tuple('B'), LabelsType()),
         }
 
-    def __init__(self, bam, labels, batch_size=32, shuffle=True, num_workers=4):
+    def __init__(self, bam, labels, pileup_generator, batch_size=32, shuffle=True, num_workers=4):
         super().__init__()
 
         class DatasetWrapper(Dataset):
-            def __init__(self, bam, labels):
+            def __init__(self, bam, labels, pileup_generator):
                 self.bam = bam
+                self.pileup_generator = pileup_generator
 
                 self.labels = self.parse_vcf_labels(labels)
                 #TODO: Load labels and training data
@@ -49,9 +49,11 @@ class VariantDataLoader(DataLayerNM):
                 return len(self.labels)
 
             def __getitem__(self, idx):
+                # TODO: Get chrom, pos, ref, alt, var_type labels from dataset
                 chrom, pos, ref, var_type, var_allele, var_all_seq = self.labels[idx]
+                pileup = self.pileup_generator(self.bam, chrom, pos)
                 #print(chrom, pos, ref, var_type, var_allele, var_all_seq)
-                return var_type, var_allele, (self.bam, chrom, pos)
+                return pileup, var_type, var_allele
 
             def parse_vcf_labels(self, vcf_file):
                 labels = []
@@ -72,7 +74,7 @@ class VariantDataLoader(DataLayerNM):
                     labels.append((chrom, pos, ref, var_type, var_allele, record.ALT[0].sequence))
                 return labels
 
-        self.dataloader = DataLoader(DatasetWrapper(bam, labels),
+        self.dataloader = DataLoader(DatasetWrapper(bam, labels, pileup_generator),
                                      batch_size = batch_size, shuffle = shuffle,
                                      num_workers = num_workers)
 
