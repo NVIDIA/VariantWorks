@@ -7,6 +7,7 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
 
 from claragenomics.variantworks.dataset import VariantDataLoader
+from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.variant_encoder import SnpPileupEncoder
 from claragenomics.variantworks.networks import AlexNet
 
@@ -21,7 +22,8 @@ def test_simple_vc():
 
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
-    train_dataset = VariantDataLoader(bam, labels, batch_size = 32, shuffle = True)
+    vcf_loader = VCFLabelLoader([labels], [], allow_snps=True, allow_multiallele=False)
+    train_dataset = VariantDataLoader(bam, vcf_loader, batch_size = 32, shuffle = True)
     pileup_encoder = SnpPileupEncoder(window_size = 100, max_reads = 100, channels={"reads"})
 
     # Setup loss
