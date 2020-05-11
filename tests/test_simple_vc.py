@@ -26,31 +26,29 @@ def test_simple_vc():
     train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, batch_size = 32, shuffle = True)
 
     # Setup loss
-    vt_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-    va_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_channels), num_vt=3, num_alleles=5)
+    alexnet = AlexNet(num_input_channels=len(encoding_channels), num_vz=3)
 
     # Create train DAG
-    vt_labels, va_labels, encoding = train_dataset()
-    vt, va = alexnet(encoding=encoding)
-    vt_loss = vt_ce_loss(logits=vt, labels=vt_labels)
-    va_loss = va_ce_loss(logits=va, labels=va_labels)
+    vz_labels, encoding = train_dataset()
+    vz = alexnet(encoding=encoding)
+    vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
 
     # SimpleLossLoggerCallback will print loss values to console.
     def my_print_fn(x):
-        va_output = x[2]
-        va_labels = x[3]
-        acc = compute_accuracy((x[1], va_output, va_labels))
-        logging.info(f'Train VT Loss: {str(x[0].item())}, Train VA Loss: {str(x[1].item())}, Accuracy : {str(acc)}')
+        #va_output = x[2]
+        #va_labels = x[3]
+        acc = compute_accuracy(x)
+        logging.info(f'Train VT Loss: {str(x[0].item())}, Accuracy : {str(acc)}')
 
     callback = nemo.core.SimpleLossLoggerCallback(
-            tensors=[vt_loss, va_loss, va, va_labels],
+            tensors=[vz_loss, vz, vz_labels],
             print_func=my_print_fn,
             step_freq=1,
             )
 
     # Invoke the "train" action.
-    nf.train([vt_loss, va_loss], callbacks=[callback], optimization_params={"num_epochs": 10, "lr": 0.001}, optimizer="adam")
+    nf.train([vz_loss], callbacks=[callback], optimization_params={"num_epochs": 10, "lr": 0.001}, optimizer="adam")
