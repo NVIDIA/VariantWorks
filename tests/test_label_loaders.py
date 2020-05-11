@@ -41,3 +41,12 @@ def test_vcf_load_fp():
 
     for v in vcf_loader:
         assert(v.zygosity == VariantZygosity.NO_VARIANT)
+
+def test_vcf_fetch_variant():
+    """Ge variants from multiple VCF files.
+    """
+    labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
+    vcf_loader = VCFLabelLoader([labels], [], ["temp.ba"], [], allow_snps=True, allow_multiallele=False)
+    vcf_loader_2x = VCFLabelLoader([labels, labels], [], ["temp.ba", "temp.ba"], [], allow_snps=True, allow_multiallele=False)
+
+    assert(2 * len(vcf_loader) == len(vcf_loader_2x))
