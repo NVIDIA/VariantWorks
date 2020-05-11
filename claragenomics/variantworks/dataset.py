@@ -48,7 +48,9 @@ class VariantDataLoader(DataLayerNM):
                 return len(self.label_loader)
 
             def __getitem__(self, idx):
-                chrom, pos, ref, var_zyg, var_allele = self.label_loader[idx]
+                variant = self.label_loader[idx]
+                var_zyg = variant.zygosity
+                var_allele = variant.allele
                 #print(chrom, pos, ref, var_zyg, var_allele)
                 if var_zyg == VariantZygosity.NO_VARIANT:
                     var_zyg = 0
@@ -57,7 +59,7 @@ class VariantDataLoader(DataLayerNM):
                 elif var_zyg == VariantZygosity.HETEROZYGOUS:
                     var_zyg = 2
 
-                encoding = self.variant_encoder.encode(self.bam, chrom, pos)
+                encoding = self.variant_encoder.encode(self.bam, variant)
                 return var_zyg, base_enum_encoder[var_allele], encoding
 
         self.dataloader = DataLoader(DatasetWrapper(bam, variant_encoder, label_loader),

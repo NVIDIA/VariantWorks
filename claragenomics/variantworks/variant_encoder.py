@@ -4,6 +4,7 @@ import pysam
 import torch
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
+from claragenomics.variantworks.types import Variant
 
 class PileupEncoder():
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
@@ -34,6 +35,10 @@ class PileupEncoder():
     def depth(self):
         return len(self.channels)
 
+    @property
+    def size(self):
+        return (self.depth, self.height, self.width)
+
     def _fill_channel(self, channel, pileupread, left_offset, right_offset, row, pileup_pos_range):
         """Generate encoding for requested channel in pileup.
         """
@@ -62,11 +67,12 @@ class PileupEncoder():
                 tensor[row, pileup_pos] = map_qual
 
 
-    def encode(self, bam_file, chrom, variant_pos):
+    def encode(self, bam_file, variant):
         """Returns a torch Tensor pileup queried from a BAM file.
 
         Args:
             bam_file : Path to bam file
+            variant : Variant struct holding information about variant locus
             chrom : String for chromosome in BAM file
             variant_pos : Locus of variant in BAM
         """
@@ -75,6 +81,10 @@ class PileupEncoder():
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
+
+        # Locus information
+        chrom = variant.chrom
+        variant_pos = variant.pos
 
         # Get pileups from BAM
         pileups = bam.pileup(chrom,
