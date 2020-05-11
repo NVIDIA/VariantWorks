@@ -64,16 +64,56 @@ class SnpPileupEncoder(BaseEncoder):
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
     generates a pileup tensor around the variant position.
     """
-    def __init__(self, window_size = 50, max_reads = 50, channels={"reads"}):
+    def __init__(self, window_size = 50, max_reads = 50, channels=["reads"]):
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
         self.channels = channels
         self.bams = dict()
+        self.channel_tensors = []
+        self.channel_dict = {}
+        for channel in channels:
+            tensor = torch.zeros((self.height, self.width), dtype=torch.float32)
+            self.channel_tensors.append(tensor)
+            self.channel_dict[channel] = tensor
 
     @property
-    def size(self):
-        return (len(self.channels), self.max_reads, 2 * self.window_size + 1)
+    def width(self):
+        return 2 * self.window_size + 1
+
+    @property
+    def height(self):
+        return self.max_reads
+
+    @property
+    def depth(self):
+        return len(self.channels)
+
+    def _fill_channel(self, channel, pileupread, left_offset, right_offset, row, pileup_pos_range):
+        tensor = self.channel_dict[channel]
+
+        query_pos = pileupread.query_position
+
+        # Currently only support adding reads
+        if channel == "reads":
+            # Fetch the subsequence based on the offsets
+            seq = pileupread.alignment.query_sequence[query_pos - left_offset: query_pos + right_offset]
+            for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
+                # Encode base characters to enum
+                tensor[row, pileup_pos] = base_enum_encoder[seq[seq_pos]]
+        elif channel == "base_qual":
+            # Fetch the subsequence based on the offsets
+            seq_qual = pileupread.alignment.query_qualities[query_pos - left_offset: query_pos + right_offset]
+            for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
+                # Encode base characters to enum
+                tensor[row, pileup_pos] = seq_qual[seq_pos]
+        elif channel == "map_qual":
+             # Getch mapping quality of alignment
+            map_qual = pileupread.alignment.mapping_quality
+            for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
+                # Encode base characters to enum
+                tensor[row, pileup_pos] = map_qual
+
 
     def encode(self, bam_file, chrom, variant_pos):
         """Returns a torch Tensor pileup queried from a BAM file.
@@ -88,8 +128,6 @@ class SnpPileupEncoder(BaseEncoder):
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
-
-        encoding = torch.zeros(self.size, dtype=torch.float32)
 
         # Get pileups from BAM
         pileups = bam.pileup(chrom,
@@ -120,13 +158,10 @@ class SnpPileupEncoder(BaseEncoder):
                 left_offset = min(self.window_size, pileupread.query_position)
                 right_offset = min(self.window_size + 1, len(pileupread.alignment.query_sequence) - pileupread.query_position)
 
-                # Fetch the subsequence based on the offsets
-                sub_seq = pileupread.alignment.query_sequence[query_pos - left_offset: query_pos + right_offset]
+                pileup_pos_range = (self.window_size - left_offset, self.window_size + right_offset)
+                for channel in self.channels:
+                    self._fill_channel(channel, pileupread, left_offset, right_offset, row, pileup_pos_range)
 
-                # Currently only support adding reads
-                if "reads" in self.channels:
-                    for seq_pos, pileup_pos in enumerate(range(self.window_size - left_offset, self.window_size + right_offset)):
-                        # Encode base characters to enum
-                        encoding[0, row, pileup_pos] = base_enum_encoder[sub_seq[seq_pos]]
-
+        encoding = torch.stack(self.channel_tensors)
+        [tensor.zero_() for tensor in self.channel_tensors]
         return encoding
