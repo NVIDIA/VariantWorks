@@ -31,12 +31,7 @@ class VariantDataLoader(DataLayerNM):
         return {
             "vz_label": NeuralType(tuple('B'), VariantZygosityType()),
             "va_label": NeuralType(tuple('B'), VariantAlleleType()),
-            "encoding": NeuralType(axes=(
-                                   AxisType(kind=AxisKind.Batch, size=None, is_list=False),
-                                   AxisType(kind=AxisKind.Channel, size=self.variant_encoder.depth, is_list=False),
-                                   AxisType(kind=AxisKind.Height, size=self.variant_encoder.height, is_list=False),
-                                   AxisType(kind=AxisKind.Width, size=self.variant_encoder.width, is_list=False),
-                                   ), elements_type=VariantEncodingType()),
+            "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
     def __init__(self, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):

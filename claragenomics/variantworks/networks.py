@@ -15,12 +15,7 @@ class AlexNet(TrainableNM):
         """Returns definitions of module input ports.
         """
         return {
-            "encoding": NeuralType(axes=(
-                                   AxisType(kind=AxisKind.Batch, size=None, is_list=False),
-                                   AxisType(kind=AxisKind.Channel, size=self.num_input_channels, is_list=False),
-                                   AxisType(kind=AxisKind.Height, size=None, is_list=False),
-                                   AxisType(kind=AxisKind.Width, size=None, is_list=False),
-                                   ), elements_type=VariantEncodingType()),
+            "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
     @property
