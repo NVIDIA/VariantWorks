@@ -34,7 +34,7 @@ def test_simple_vc():
 
     # Create train DAG
     vt_labels, va_labels, encoding = train_dataset()
-    vt, va = alexnet(pileup=encoding)
+    vt, va = alexnet(encoding=encoding)
     vt_loss = vt_ce_loss(logits=vt, labels=vt_labels)
     va_loss = va_ce_loss(logits=va, labels=va_labels)
 

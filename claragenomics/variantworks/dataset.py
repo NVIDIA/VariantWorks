@@ -5,7 +5,7 @@ import vcf
 
 from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType
+from nemo.core.neural_types import *
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.neural_types import VariantEncodingType, VariantAlleleType, VariantZygosityType
@@ -31,7 +31,12 @@ class VariantDataLoader(DataLayerNM):
         return {
             "vz_label": NeuralType(tuple('B'), VariantZygosityType()),
             "va_label": NeuralType(tuple('B'), VariantAlleleType()),
-            "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
+            "encoding": NeuralType(axes=(
+                                   AxisType(kind=AxisKind.Batch, size=None, is_list=False),
+                                   AxisType(kind=AxisKind.Channel, size=self.variant_encoder.depth, is_list=False),
+                                   AxisType(kind=AxisKind.Height, size=self.variant_encoder.height, is_list=False),
+                                   AxisType(kind=AxisKind.Width, size=self.variant_encoder.width, is_list=False),
+                                   ), elements_type=VariantEncodingType()),
         }
 
     def __init__(self, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):
@@ -63,6 +68,7 @@ class VariantDataLoader(DataLayerNM):
         self.dataloader = DataLoader(DatasetWrapper(variant_encoder, label_loader),
                                      batch_size = batch_size, shuffle = shuffle,
                                      num_workers = num_workers)
+        self.variant_encoder = variant_encoder
 
     def __len__(self):
         return len(self.dataloader)

@@ -5,7 +5,7 @@ import pysam
 import torch
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.types import Variant
+from claragenomics.variantworks.types import Variant, VariantType
 
 class BaseEncoder():
     """An abstract class defining the interface to a variant encoder implementation.
@@ -121,6 +121,8 @@ class PileupEncoder():
         chrom = variant.chrom
         variant_pos = variant.pos
         bam_file = variant.bam
+
+        assert(variant.type == VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
 
         # Create BAM object if one hasn't been opened before.
         if (bam_file not in self.bams):
