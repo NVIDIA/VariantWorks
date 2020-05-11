@@ -16,7 +16,6 @@ class VariantDataLoader(DataLayerNM):
     Data layer that outputs (variant type, variant allele, variant position) tuples.
 
     Args:
-        bam : Path to BAM file
         variant_encoder : Encoder for variant input
         label_loader : Label loader object
         batch_size : batch size for dataset [32]
@@ -35,12 +34,11 @@ class VariantDataLoader(DataLayerNM):
             "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
-    def __init__(self, bam, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):
+    def __init__(self, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):
         super().__init__()
 
         class DatasetWrapper(Dataset):
-            def __init__(self, bam, variant_encoder, label_loader):
-                self.bam = bam
+            def __init__(self, variant_encoder, label_loader):
                 self.label_loader = label_loader
                 self.variant_encoder = variant_encoder
 
@@ -59,10 +57,10 @@ class VariantDataLoader(DataLayerNM):
                 elif var_zyg == VariantZygosity.HETEROZYGOUS:
                     var_zyg = 2
 
-                encoding = self.variant_encoder.encode(self.bam, variant)
+                encoding = self.variant_encoder.encode(variant)
                 return var_zyg, base_enum_encoder[var_allele], encoding
 
-        self.dataloader = DataLoader(DatasetWrapper(bam, variant_encoder, label_loader),
+        self.dataloader = DataLoader(DatasetWrapper(variant_encoder, label_loader),
                                      batch_size = batch_size, shuffle = shuffle,
                                      num_workers = num_workers)
 

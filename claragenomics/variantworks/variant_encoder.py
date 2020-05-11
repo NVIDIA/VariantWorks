@@ -1,10 +1,53 @@
 # Classes and functions to encode pileups
 
+import abc
 import pysam
 import torch
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.types import Variant
+
+class BaseEncoder():
+    """An abstract class defining the interface to a variant encoder implementation.
+    """
+    def __init__():
+        pass
+
+    @property
+    @abc.abstractmethod
+    def width(self):
+        """Return width of encoding.
+        """
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def height(self):
+        """Return height of encoding.
+        """
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def depth(self):
+        """Return depth of encoding.
+        """
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def size(self):
+        """Return size of encoding.
+        """
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def encode(variant):
+        """Computes the encoding of a variant location.
+        """
+        raise NotImplementedError
+
 
 class PileupEncoder():
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
@@ -67,24 +110,23 @@ class PileupEncoder():
                 tensor[row, pileup_pos] = map_qual
 
 
-    def encode(self, bam_file, variant):
+    def encode(self, variant):
         """Returns a torch Tensor pileup queried from a BAM file.
 
         Args:
             bam_file : Path to bam file
             variant : Variant struct holding information about variant locus
-            chrom : String for chromosome in BAM file
-            variant_pos : Locus of variant in BAM
         """
+        # Locus information
+        chrom = variant.chrom
+        variant_pos = variant.pos
+        bam_file = variant.bam
+
         # Create BAM object if one hasn't been opened before.
         if (bam_file not in self.bams):
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
-
-        # Locus information
-        chrom = variant.chrom
-        variant_pos = variant.pos
 
         # Get pileups from BAM
         pileups = bam.pileup(chrom,

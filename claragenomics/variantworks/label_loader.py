@@ -39,13 +39,16 @@ class BaseLabelLoader():
 class VCFLabelLoader(BaseLabelLoader):
     """VCF based label loader for true and false positive example files.
     """
-    def __init__(self, tp_vcfs, fp_vcfs, **kwargs):
+    def __init__(self, tp_vcfs, fp_vcfs, tp_bams, fp_bams, **kwargs):
         super().__init__(**kwargs)
 
-        for tp_vcf in tp_vcfs:
-            self._parse_vcf(tp_vcf, self._labels)
-        for fp_vcf in fp_vcfs:
-            self._parse_vcf(fp_vcf, self._labels, is_fp=True)
+        assert(len(tp_vcfs) == len(tp_bams))
+        assert(len(fp_vcfs) == len(fp_bams))
+
+        for (tp_vcf, tp_bam) in zip(tp_vcfs, tp_bams):
+            self._parse_vcf(tp_vcf, tp_bam, self._labels)
+        for (fp_vcf, fp_bam) in zip(fp_vcfs, fp_bams):
+            self._parse_vcf(fp_vcf, fp_bam, self._labels, is_fp=True)
 
     def _get_variant_zygosity(self, record, is_fp=False):
         """Determine variant type from pyvcf record.
@@ -70,7 +73,7 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         assert(False), "Unexpected variant type - {}".format(record)
 
-    def _parse_vcf(self, vcf_file, labels, is_fp=False):
+    def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
         """
         assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed" # Check for compressed file
@@ -90,4 +93,4 @@ class VCFLabelLoader(BaseLabelLoader):
             # Split multi alleles into multiple entries
             for alt in record.ALT:
                 var_allele = alt.sequence
-                labels.append(Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file))
+                labels.append(Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam))
