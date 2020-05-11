@@ -10,29 +10,8 @@ from claragenomics.variantworks.types import Variant, VariantType
 class BaseEncoder():
     """An abstract class defining the interface to a variant encoder implementation.
     """
-    def __init__():
+    def __init__(self):
         pass
-
-    @property
-    @abc.abstractmethod
-    def width(self):
-        """Return width of encoding.
-        """
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def height(self):
-        """Return height of encoding.
-        """
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def depth(self):
-        """Return depth of encoding.
-        """
-        raise NotImplementedError
 
     @property
     @abc.abstractmethod
@@ -49,7 +28,7 @@ class BaseEncoder():
         raise NotImplementedError
 
 
-class PileupEncoder():
+class PileupEncoder(BaseEncoder):
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
     generates a pileup tensor around the variant position.
     """
