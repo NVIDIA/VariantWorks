@@ -3,8 +3,10 @@ import torch.nn as nn
 
 from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType, LogitsType
+from nemo.core.neural_types import *
 from nemo.core.neural_factory import DeviceType
+
+from claragenomics.variantworks.neural_types import VariantEncodingType
 
 class AlexNet(TrainableNM):
     @property
@@ -13,7 +15,12 @@ class AlexNet(TrainableNM):
         """Returns definitions of module input ports.
         """
         return {
-            "pileup": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
+            "encoding": NeuralType(axes=(
+                                   AxisType(kind=AxisKind.Batch, size=None, is_list=False),
+                                   AxisType(kind=AxisKind.Channel, size=self.num_input_channels, is_list=False),
+                                   AxisType(kind=AxisKind.Height, size=None, is_list=False),
+                                   AxisType(kind=AxisKind.Width, size=None, is_list=False),
+                                   ), elements_type=VariantEncodingType()),
         }
 
     @property
@@ -63,11 +70,11 @@ class AlexNet(TrainableNM):
         self._device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
         self.to(self._device)
 
-    def forward(self, pileup):
-        pileup = self.features(pileup)
-        pileup = self.avgpool(pileup)
-        pileup = torch.flatten(pileup, 1)
-        pileup = self.common_classifier(pileup)
-        vt = self.vt_classifier(pileup)
-        va = self.va_classifier(pileup)
+    def forward(self, encoding):
+        encoding = self.features(encoding)
+        encoding = self.avgpool(encoding)
+        encoding = torch.flatten(encoding, 1)
+        encoding = self.common_classifier(encoding)
+        vt = self.vt_classifier(encoding)
+        va = self.va_classifier(encoding)
         return vt, va

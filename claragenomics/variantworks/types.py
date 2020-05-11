@@ -8,5 +8,10 @@ class VariantZygosity(Enum):
     HOMOZYGOUS = 1
     HETEROZYGOUS = 2
 
-Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'allele'])
+class VariantType(Enum):
+    SNP = 0
+    INSERTION = 1
+    DELETION = 2
+
+Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'type', 'allele', 'vcf', 'bam'])
 
