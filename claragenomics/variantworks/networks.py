@@ -24,15 +24,13 @@ class AlexNet(TrainableNM):
         """Returns definitions of module output ports.
         """
         return {
-            'log_probs_vt': NeuralType(('B', 'D'), LogitsType()), # Variant type
-            'log_probs_va': NeuralType(('B', 'D'), LogitsType()), # Variant allele
+            'log_probs_vz': NeuralType(('B', 'D'), LogitsType()), # Variant type
         }
 
-    def __init__(self, num_input_channels, num_vt, num_alleles):
+    def __init__(self, num_input_channels, num_vz):
         super().__init__()
-        self.num_vt = num_vt
+        self.num_vz = num_vz
         self.num_input_channels = num_input_channels
-        self.num_alleles = num_alleles
 
         self.features = nn.Sequential(
             nn.Conv2d(self.num_input_channels, 64, kernel_size=11, stride=4, padding=2),
@@ -57,10 +55,8 @@ class AlexNet(TrainableNM):
             nn.Dropout(),
             nn.Linear(4096, 4096),
             nn.ReLU(inplace=True),
-            #nn.Linear(4096, self.num_vt),
         )
-        self.vt_classifier = nn.Linear(4096, self.num_vt)
-        self.va_classifier = nn.Linear(4096, self.num_alleles)
+        self.vz_classifier = nn.Linear(4096, self.num_vz)
 
         self._device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
         self.to(self._device)
@@ -70,6 +66,5 @@ class AlexNet(TrainableNM):
         encoding = self.avgpool(encoding)
         encoding = torch.flatten(encoding, 1)
         encoding = self.common_classifier(encoding)
-        vt = self.vt_classifier(encoding)
-        va = self.va_classifier(encoding)
-        return vt, va
+        vz = self.vz_classifier(encoding)
+        return vz

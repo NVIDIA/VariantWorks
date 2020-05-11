@@ -30,7 +30,6 @@ class VariantDataLoader(DataLayerNM):
         """
         return {
             "vz_label": NeuralType(tuple('B'), VariantZygosityType()),
-            "va_label": NeuralType(tuple('B'), VariantAlleleType()),
             "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
@@ -48,7 +47,6 @@ class VariantDataLoader(DataLayerNM):
             def __getitem__(self, idx):
                 variant = self.label_loader[idx]
                 var_zyg = variant.zygosity
-                var_allele = variant.allele
                 #print(chrom, pos, ref, var_zyg, var_allele)
                 if var_zyg == VariantZygosity.NO_VARIANT:
                     var_zyg = 0
@@ -58,7 +56,7 @@ class VariantDataLoader(DataLayerNM):
                     var_zyg = 2
 
                 encoding = self.variant_encoder.encode(variant)
-                return var_zyg, base_enum_encoder[var_allele], encoding
+                return var_zyg, encoding
 
         self.dataloader = DataLoader(DatasetWrapper(variant_encoder, label_loader),
                                      batch_size = batch_size, shuffle = shuffle,
