@@ -8,7 +8,7 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.neural_types import VariantPositionType, VariantAlleleType, VariantType
+from claragenomics.variantworks.neural_types import VariantEncodingType, VariantAlleleType, VariantZygosityType
 from claragenomics.variantworks.types import VariantZygosity
 
 class VariantDataLoader(DataLayerNM):
@@ -17,6 +17,7 @@ class VariantDataLoader(DataLayerNM):
 
     Args:
         bam : Path to BAM file
+        variant_encoder : Encoder for variant input
         label_loader : Label loader object
         batch_size : batch size for dataset [32]
         shuffle : shuffle dataset [True]
@@ -29,35 +30,37 @@ class VariantDataLoader(DataLayerNM):
         """Returns definitions of module output ports
         """
         return {
-            "vt_label": NeuralType(tuple('B'), VariantType()),
+            "vz_label": NeuralType(tuple('B'), VariantZygosityType()),
             "va_label": NeuralType(tuple('B'), VariantAlleleType()),
-            "variant_pos": NeuralType(tuple('B'), VariantPositionType()),
+            "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
-    def __init__(self, bam, label_loader, batch_size=32, shuffle=True, num_workers=4):
+    def __init__(self, bam, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):
         super().__init__()
 
         class DatasetWrapper(Dataset):
-            def __init__(self, bam, label_loader):
+            def __init__(self, bam, variant_encoder, label_loader):
                 self.bam = bam
-
                 self.label_loader = label_loader
+                self.variant_encoder = variant_encoder
 
             def __len__(self):
                 return len(self.label_loader)
 
             def __getitem__(self, idx):
-                chrom, pos, ref, var_type, var_allele = self.label_loader[idx]
-                #print(chrom, pos, ref, var_type, var_allele)
-                if var_type == VariantZygosity.NO_VARIANT:
-                    var_type = 0
-                elif var_type == VariantZygosity.HOMOZYGOUS:
-                    var_type = 1
-                elif var_type == VariantZygosity.HETEROZYGOUS:
-                    var_type = 2
-                return int(var_type), base_enum_encoder[var_allele], (self.bam, chrom, pos)
+                chrom, pos, ref, var_zyg, var_allele = self.label_loader[idx]
+                #print(chrom, pos, ref, var_zyg, var_allele)
+                if var_zyg == VariantZygosity.NO_VARIANT:
+                    var_zyg = 0
+                elif var_zyg == VariantZygosity.HOMOZYGOUS:
+                    var_zyg = 1
+                elif var_zyg == VariantZygosity.HETEROZYGOUS:
+                    var_zyg = 2
 
-        self.dataloader = DataLoader(DatasetWrapper(bam, label_loader),
+                encoding = self.variant_encoder.encode(self.bam, chrom, pos)
+                return var_zyg, base_enum_encoder[var_allele], encoding
+
+        self.dataloader = DataLoader(DatasetWrapper(bam, variant_encoder, label_loader),
                                      batch_size = batch_size, shuffle = shuffle,
                                      num_workers = num_workers)
 

@@ -3,8 +3,10 @@ import torch.nn as nn
 
 from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import ChannelType, LabelsType, LossType, NeuralType, LogitsType
+from nemo.core.neural_types import NeuralType, LogitsType
 from nemo.core.neural_factory import DeviceType
+
+from claragenomics.variantworks.neural_types import VariantEncodingType
 
 class AlexNet(TrainableNM):
     @property
@@ -13,7 +15,7 @@ class AlexNet(TrainableNM):
         """Returns definitions of module input ports.
         """
         return {
-            "pileup": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
+            "pileup": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
     @property

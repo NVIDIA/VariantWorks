@@ -1,66 +1,11 @@
 # Classes and functions to encode pileups
 
-import abc
 import pysam
 import torch
 
-from nemo.backends.pytorch.nm import NonTrainableNM
-from nemo.core.neural_types import NeuralType, ChannelType
-from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_factory import DeviceType
-
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.neural_types import VariantPositionType
 
-class BaseEncoder(NonTrainableNM):
-    @property
-    @add_port_docs()
-    def input_ports(self):
-        """Returns definitions of module input ports
-        """
-        return {
-            "variant_pos": NeuralType(tuple('B'), VariantPositionType()),
-        }
-
-    @property
-    @add_port_docs()
-    def output_ports(self):
-        """Returns definitions of module output ports
-        """
-        return {
-            "pileup": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
-        }
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, variant_pos):
-        """Generates a batch of variant encodings.
-        This function is required to be implemented in NonTrainableNM inherited classes.
-
-        Args:
-            variant_pos : Batch of variant positions.
-
-        Returns:
-            torch.tensor of stacked variant encodings.
-        """
-        examples = zip(*variant_pos)
-        #print("===================")
-        #for e in examples:
-        #    print(e)
-        #print("===================")
-        tensors = [self.encode(example[0], example[1], example[2]) for example in examples]
-        pileup = torch.stack(tensors)
-        device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
-        pileup = pileup.to(device)
-        return pileup
-
-    @abc.abstractmethod
-    def encode(self, bam_file, chrom, variant_pos):
-        """Return an encoding of a variant position.
-        """
-
-class SnpPileupEncoder(BaseEncoder):
+class PileupEncoder():
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
     generates a pileup tensor around the variant position.
     """
@@ -90,6 +35,8 @@ class SnpPileupEncoder(BaseEncoder):
         return len(self.channels)
 
     def _fill_channel(self, channel, pileupread, left_offset, right_offset, row, pileup_pos_range):
+        """Generate encoding for requested channel in pileup.
+        """
         tensor = self.channel_dict[channel]
 
         query_pos = pileupread.query_position

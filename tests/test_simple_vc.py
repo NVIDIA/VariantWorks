@@ -8,7 +8,7 @@ from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
 
 from claragenomics.variantworks.dataset import VariantDataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
-from claragenomics.variantworks.variant_encoder import SnpPileupEncoder
+from claragenomics.variantworks.variant_encoder import PileupEncoder
 from claragenomics.variantworks.networks import AlexNet
 
 from test_utils import get_data_folder
@@ -19,11 +19,11 @@ def test_simple_vc():
 
     # Generate dataset
     bam = os.path.join(get_data_folder(), "small_bam.bam")
+    encoding_channels = ["reads", "base_qual", "map_qual"]
+    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, channels = encoding_channels)
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_loader = VCFLabelLoader([labels], [], allow_snps=True, allow_multiallele=False)
-    train_dataset = VariantDataLoader(bam, vcf_loader, batch_size = 32, shuffle = True)
-    encoding_channels = ["reads", "base_qual", "map_qual"]
-    pileup_encoder = SnpPileupEncoder(window_size = 100, max_reads = 100, channels = encoding_channels)
+    train_dataset = VariantDataLoader(bam, pileup_encoder, vcf_loader, batch_size = 32, shuffle = True)
 
     # Setup loss
     vt_ce_loss = CrossEntropyLossNM(logits_ndim=2)
@@ -33,9 +33,8 @@ def test_simple_vc():
     alexnet = AlexNet(num_input_channels=len(encoding_channels), num_vt=3, num_alleles=5)
 
     # Create train DAG
-    vt_labels, va_labels, variant_positions = train_dataset()
-    pileups = pileup_encoder(variant_pos = variant_positions)
-    vt, va = alexnet(pileup=pileups)
+    vt_labels, va_labels, encoding = train_dataset()
+    vt, va = alexnet(pileup=encoding)
     vt_loss = vt_ce_loss(logits=vt, labels=vt_labels)
     va_loss = va_ce_loss(logits=va, labels=va_labels)
 
