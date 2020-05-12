@@ -18,8 +18,8 @@ def test_simple_vc():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU)
 
     # Generate dataset
-    encoding_channels = ["reads", "base_qual", "map_qual"]
-    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, channels = encoding_channels)
+    encoding_layers = ["reads", "base_qual", "map_qual"]
+    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_loader = VCFLabelLoader([labels], [], [bam], [], allow_snps=True, allow_multiallele=False)
@@ -30,7 +30,7 @@ def test_simple_vc():
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_channels), num_vz=3)
+    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
 
     # Create train DAG
     vz_labels, encoding = train_dataset()
