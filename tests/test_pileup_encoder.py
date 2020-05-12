@@ -21,3 +21,14 @@ def test_snp_encoder():
     variant = Variant(chrom="1", pos=240000, ref='T', allele='A', zygosity=VariantZygosity.HOMOZYGOUS, vcf='null.vcf', type=VariantType.SNP, bam=bam)
     encoding = encoder(variant)
     assert(encoding.size() == torch.Size([len(layers), height, width]))
+
+def test_pileup_unknown_layer():
+    try:
+        max_reads = 100
+        window_size = 5
+        width = 2 * window_size + 1
+        height = max_reads
+        layers = [PileupEncoder.Layer.BLAH]
+        encoder = PileupEncoder(window_size = window_size, max_reads = max_reads, layers = layers)
+    except:
+        assert(True) # Should reach here because an unknown layer is being passed in
