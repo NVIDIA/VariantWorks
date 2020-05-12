@@ -13,5 +13,7 @@ class VariantType(Enum):
     INSERTION = 1
     DELETION = 2
 
+
 Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'type', 'allele', 'vcf', 'bam'])
 
+VcfBamPathes = namedtuple('VcfBamPathes', ['vcf', 'bam', 'is_fp'])

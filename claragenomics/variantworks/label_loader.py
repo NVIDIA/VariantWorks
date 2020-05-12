@@ -39,16 +39,12 @@ class BaseLabelLoader():
 class VCFLabelLoader(BaseLabelLoader):
     """VCF based label loader for true and false positive example files.
     """
-    def __init__(self, tp_vcfs, fp_vcfs, tp_bams, fp_bams, **kwargs):
+    def __init__(self, vcf_bam_list, **kwargs):
         super().__init__(**kwargs)
 
-        assert(len(tp_vcfs) == len(tp_bams))
-        assert(len(fp_vcfs) == len(fp_bams))
-
-        for (tp_vcf, tp_bam) in zip(tp_vcfs, tp_bams):
-            self._parse_vcf(tp_vcf, tp_bam, self._labels)
-        for (fp_vcf, fp_bam) in zip(fp_vcfs, fp_bams):
-            self._parse_vcf(fp_vcf, fp_bam, self._labels, is_fp=True)
+        for elem in vcf_bam_list:
+            assert (elem.vcf is not None and elem.bam is not None and type(elem.is_fp) is bool)
+            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
 
     def _get_variant_zygosity(self, record, is_fp=False):
         """Determine variant type from pyvcf record.
