@@ -3,10 +3,12 @@
 from collections import namedtuple
 from enum import Enum
 
+
 class VariantZygosity(Enum):
     NO_VARIANT = 0
     HOMOZYGOUS = 1
     HETEROZYGOUS = 2
+
 
 class VariantType(Enum):
     SNP = 0
@@ -16,4 +18,4 @@ class VariantType(Enum):
 
 Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'type', 'allele', 'vcf', 'bam'])
 
-VcfBamPathes = namedtuple('VcfBamPathes', ['vcf', 'bam', 'is_fp'])
+VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])

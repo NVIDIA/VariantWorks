@@ -13,8 +13,12 @@ def test_vcf_loader_snps():
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_bam_tuple = VcfBamPaths(vcf=labels, bam="temp.bam", is_fp=False)
     vcf_loader = VCFLabelLoader([vcf_bam_tuple], allow_snps=True, allow_multiallele=False)
-
     assert(len(vcf_loader) == 13)
+
+    # Testing is_fp field default value
+    vcf_bam_tuple = VcfBamPaths(vcf=labels, bam="temp.bam")
+    vcf_loader = VCFLabelLoader([vcf_bam_tuple], allow_snps=True, allow_multiallele=False)
+    assert (len(vcf_loader) == 13)
 
 
 def test_vcf_loader_np_snps():
