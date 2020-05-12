@@ -5,10 +5,11 @@ import pysam
 import torch
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.types import Variant, VariantType
+from claragenomics.variantworks.types import Variant, VariantType, VariantZygosity
 
 class BaseEncoder():
-    """An abstract class defining the interface to a variant encoder implementation.
+    """An abstract class defining the interface to an encoder implementation. Encoder could
+    be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
     def __init__(self):
         pass
@@ -20,9 +21,8 @@ class BaseEncoder():
         """
         raise NotImplementedError
 
-    @property
     @abc.abstractmethod
-    def encode(variant):
+    def __call__(self, variant):
         """Computes the encoding of a variant location.
         """
         raise NotImplementedError
@@ -59,7 +59,7 @@ class PileupEncoder(BaseEncoder):
 
     @property
     def size(self):
-        return (self.depth, self.height, self.width)
+        return ((self.depth, self.height, self.width))
 
     def _fill_channel(self, channel, pileupread, left_offset, right_offset, row, pileup_pos_range):
         """Generate encoding for requested channel in pileup.
@@ -89,7 +89,7 @@ class PileupEncoder(BaseEncoder):
                 tensor[row, pileup_pos] = map_qual
 
 
-    def encode(self, variant):
+    def __call__(self, variant):
         """Returns a torch Tensor pileup queried from a BAM file.
 
         Args:
@@ -145,3 +145,26 @@ class PileupEncoder(BaseEncoder):
         encoding = torch.stack(self.channel_tensors)
         [tensor.zero_() for tensor in self.channel_tensors]
         return encoding
+
+class ZygosityLabelEncoder(BaseEncoder):
+    """A label encoder that returns an output label encoding for zygosity
+    only. Converts zygosity type to a class number.
+    """
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def size(self):
+        return ((1))
+
+    def __call__(self, variant):
+        assert(isinstance(variant, Variant))
+        var_zyg = variant.zygosity
+        if var_zyg == VariantZygosity.NO_VARIANT:
+            var_zyg = 0
+        elif var_zyg == VariantZygosity.HOMOZYGOUS:
+            var_zyg = 1
+        elif var_zyg == VariantZygosity.HETEROZYGOUS:
+            var_zyg = 2
+
+        return torch.tensor(var_zyg)
