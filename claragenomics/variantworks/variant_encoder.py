@@ -155,7 +155,7 @@ class ZygosityLabelEncoder(BaseEncoder):
         pass
 
     def size(self):
-        return ((1,1))
+        return ((1))
 
     def __call__(self, variant):
         assert(isinstance(variant, Variant))
@@ -167,4 +167,4 @@ class ZygosityLabelEncoder(BaseEncoder):
         elif var_zyg == VariantZygosity.HETEROZYGOUS:
             var_zyg = 2
 
-        return var_zyg
+        return torch.tensor(var_zyg)
