@@ -18,7 +18,7 @@ def test_simple_vc():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU)
 
     # Generate dataset
-    encoding_layers = ["reads", "base_qual", "map_qual"]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
     pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")

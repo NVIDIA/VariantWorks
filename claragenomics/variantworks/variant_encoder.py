@@ -1,6 +1,7 @@
 # Classes and functions to encode pileups
 
 import abc
+from enum import Enum
 import pysam
 import torch
 
@@ -32,7 +33,14 @@ class PileupEncoder(BaseEncoder):
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
     generates a pileup tensor around the variant position.
     """
-    def __init__(self, window_size = 50, max_reads = 50, layers=["reads"]):
+    class Layer(Enum):
+        """Layers that can be added to the pileup encoding.
+        """
+        READ = 0
+        BASE_QUALITY = 1
+        MAPPING_QUALITY = 2
+
+    def __init__(self, window_size = 50, max_reads = 50, layers=[Layer.READ]):
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -69,19 +77,19 @@ class PileupEncoder(BaseEncoder):
         query_pos = pileupread.query_position
 
         # Currently only support adding reads
-        if layer == "reads":
+        if layer == self.Layer.READ:
             # Fetch the subsequence based on the offsets
             seq = pileupread.alignment.query_sequence[query_pos - left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = base_enum_encoder[seq[seq_pos]]
-        elif layer == "base_qual":
+        elif layer == self.Layer.BASE_QUALITY:
             # Fetch the subsequence based on the offsets
             seq_qual = pileupread.alignment.query_qualities[query_pos - left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = seq_qual[seq_pos]
-        elif layer == "map_qual":
+        elif layer == self.Layer.MAPPING_QUALITY:
              # Getch mapping quality of alignment
             map_qual = pileupread.alignment.mapping_quality
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):

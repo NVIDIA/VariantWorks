@@ -12,7 +12,7 @@ def test_snp_encoder():
     window_size = 5
     width = 2 * window_size + 1
     height = max_reads
-    layers = ["reads"]
+    layers = [PileupEncoder.Layer.READ]
 
     encoder = PileupEncoder(window_size = window_size, max_reads = max_reads, layers = layers)
     assert(encoder.size == (len(layers), height, width))
