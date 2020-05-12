@@ -8,7 +8,7 @@ from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
 
 from claragenomics.variantworks.dataset import VariantDataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
-from claragenomics.variantworks.variant_encoder import PileupEncoder
+from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
 from claragenomics.variantworks.networks import AlexNet
 
 from test_utils import get_data_folder
@@ -23,7 +23,8 @@ def test_simple_vc():
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_loader = VCFLabelLoader([labels], [], [bam], [], allow_snps=True, allow_multiallele=False)
-    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, batch_size = 32, shuffle = True)
+    zyg_encoder = ZygosityLabelEncoder()
+    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size = 32, shuffle = True)
 
     # Setup loss
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
@@ -39,8 +40,6 @@ def test_simple_vc():
 
     # SimpleLossLoggerCallback will print loss values to console.
     def my_print_fn(x):
-        #va_output = x[2]
-        #va_labels = x[3]
         acc = compute_accuracy(x)
         logging.info(f'Train VT Loss: {str(x[0].item())}, Accuracy : {str(acc)}')
 

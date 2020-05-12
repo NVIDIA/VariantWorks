@@ -19,5 +19,5 @@ def test_snp_encoder():
 
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     variant = Variant(chrom="1", pos=240000, ref='T', allele='A', zygosity=VariantZygosity.HOMOZYGOUS, vcf='null.vcf', type=VariantType.SNP, bam=bam)
-    encoding = encoder.encode(variant)
+    encoding = encoder(variant)
     assert(encoding.size() == torch.Size([len(channels), height, width]))

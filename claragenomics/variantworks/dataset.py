@@ -18,6 +18,7 @@ class VariantDataLoader(DataLayerNM):
     Args:
         variant_encoder : Encoder for variant input
         label_loader : Label loader object
+        label_encoder : An encoder for labels
         batch_size : batch size for dataset [32]
         shuffle : shuffle dataset [True]
         num_workers : numbers of parallel data loader threads [4]
@@ -33,12 +34,13 @@ class VariantDataLoader(DataLayerNM):
             "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 
-    def __init__(self, variant_encoder, label_loader, batch_size=32, shuffle=True, num_workers=4):
+    def __init__(self, variant_encoder, label_loader, label_encoder, batch_size=32, shuffle=True, num_workers=4):
         super().__init__()
 
         class DatasetWrapper(Dataset):
-            def __init__(self, variant_encoder, label_loader):
+            def __init__(self, variant_encoder, label_loader, label_encoder):
                 self.label_loader = label_loader
+                self.label_encoder = label_encoder
                 self.variant_encoder = variant_encoder
 
             def __len__(self):
@@ -46,19 +48,13 @@ class VariantDataLoader(DataLayerNM):
 
             def __getitem__(self, idx):
                 variant = self.label_loader[idx]
-                var_zyg = variant.zygosity
-                #print(chrom, pos, ref, var_zyg, var_allele)
-                if var_zyg == VariantZygosity.NO_VARIANT:
-                    var_zyg = 0
-                elif var_zyg == VariantZygosity.HOMOZYGOUS:
-                    var_zyg = 1
-                elif var_zyg == VariantZygosity.HETEROZYGOUS:
-                    var_zyg = 2
+                #print(variant)
 
-                encoding = self.variant_encoder.encode(variant)
-                return var_zyg, encoding
+                encoding = self.variant_encoder(variant)
+                target = self.label_encoder(variant)
+                return target, encoding
 
-        self.dataloader = DataLoader(DatasetWrapper(variant_encoder, label_loader),
+        self.dataloader = DataLoader(DatasetWrapper(variant_encoder, label_loader, label_encoder),
                                      batch_size = batch_size, shuffle = shuffle,
                                      num_workers = num_workers)
         self.variant_encoder = variant_encoder
