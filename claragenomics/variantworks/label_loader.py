@@ -1,8 +1,9 @@
-#Abstract and implementation clases for label loaders.
-
+# Abstract and implementation clases for label loaders.
+from collections import namedtuple
 import vcf
 
 from claragenomics.variantworks.types import VariantZygosity, VariantType, Variant
+
 
 class LabelLoaderIterator():
     def __init__(self, label_loader):
@@ -16,6 +17,7 @@ class LabelLoaderIterator():
             self._index += 1
             return result
         raise StopIteration
+
 
 class BaseLabelLoader():
     def __init__(self, allow_snps=True, allow_multiallele=True, allow_multisample=False):
@@ -36,9 +38,13 @@ class BaseLabelLoader():
     def __iter__(self):
         return LabelLoaderIterator(self)
 
+
 class VCFLabelLoader(BaseLabelLoader):
     """VCF based label loader for true and false positive example files.
     """
+
+    VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
+
     def __init__(self, vcf_bam_list, **kwargs):
         super().__init__(**kwargs)
 

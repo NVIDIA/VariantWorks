@@ -9,7 +9,6 @@ from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
 from claragenomics.variantworks.dataset import VariantDataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
-from claragenomics.variantworks.types import VcfBamPaths
 from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
 
 
@@ -25,7 +24,7 @@ def test_simple_vc():
     pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
-    vcf_bam_tuple = VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
+    vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFLabelLoader([vcf_bam_tuple], allow_snps=True, allow_multiallele=False)
     zyg_encoder = ZygosityLabelEncoder()
     train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size = 32, shuffle = True)

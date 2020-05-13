@@ -17,5 +17,3 @@ class VariantType(Enum):
 
 
 Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'type', 'allele', 'vcf', 'bam'])
-
-VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
