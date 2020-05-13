@@ -5,6 +5,7 @@ DL based variant calling toolkit
 
 ```
 pip install -e .
+ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
 ```
 
 ## Test
