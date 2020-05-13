@@ -40,8 +40,8 @@ def test_vcf_fetch_variant():
 
     try:
         entry = vcf_loader[0]
-    except:
-        assert(False)
+    except IndexError:
+        raise
 
 
 def test_vcf_load_fp():
@@ -55,8 +55,8 @@ def test_vcf_load_fp():
         assert(v.zygosity == VariantZygosity.NO_VARIANT)
 
 
-def test_vcf_fetch_variant():
-    """Ge variants from multiple VCF files.
+def test_vcf_load_variant_multiple_files():
+    """Get variants from multiple VCF files.
     """
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     first_vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam="temp.bam", is_fp=False)

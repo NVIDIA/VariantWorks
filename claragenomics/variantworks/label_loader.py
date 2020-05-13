@@ -61,7 +61,7 @@ class VCFLabelLoader(BaseLabelLoader):
             return VariantZygosity.HETEROZYGOUS
         elif record.num_hom_alt > 0:
             return VariantZygosity.HOMOZYGOUS
-        assert(False), "Unexpected variant zygosity - {}".format(record)
+        raise ValueError("Unexpected variant zygosity - {}".format(record))
 
     def _get_variant_type(self, record):
         """Determine variant type.
@@ -73,7 +73,7 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.DELETION
             else:
                 return VariantType.INSERTION
-        assert(False), "Unexpected variant type - {}".format(record)
+        raise ValueError("Unexpected variant type - {}".format(record))
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
