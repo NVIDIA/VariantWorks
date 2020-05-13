@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Pre-push hooks for temporary unit testing.
+
+set -e
+
+script=$(readlink -f $0)
+script_dir=$(dirname $script)
+tests_dir=$(readlink -f "$script_dir/../tests")
+
+echo ""
+echo "Running pre-push hook from $script"
+echo ""
+
+cd $tests_dir
+echo ""
+echo "Running pre-push tests from $PWD..."
+echo ""
+python -m pytest -s .
