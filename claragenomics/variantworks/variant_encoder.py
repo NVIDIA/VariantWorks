@@ -160,6 +160,17 @@ class ZygosityLabelEncoder(BaseEncoder):
     """
     def __init__(self):
         super().__init__()
+        self._dict = {
+                VariantZygosity.NO_VARIANT: 0,
+                VariantZygosity.HOMOZYGOUS: 1,
+                VariantZygosity.HETEROZYGOUS: 2,
+                }
+
+        self._inverse = {
+                0: VariantZygosity.NO_VARIANT,
+                1: VariantZygosity.HOMOZYGOUS,
+                2: VariantZygosity.HETEROZYGOUS,
+                }
         pass
 
     def size(self):
@@ -168,11 +179,10 @@ class ZygosityLabelEncoder(BaseEncoder):
     def __call__(self, variant):
         assert(isinstance(variant, Variant))
         var_zyg = variant.zygosity
-        if var_zyg == VariantZygosity.NO_VARIANT:
-            var_zyg = 0
-        elif var_zyg == VariantZygosity.HOMOZYGOUS:
-            var_zyg = 1
-        elif var_zyg == VariantZygosity.HETEROZYGOUS:
-            var_zyg = 2
+        assert(var_zyg in self._dict)
 
-        return torch.tensor(var_zyg)
+        return torch.tensor(self._dict[var_zyg])
+
+    def decode_class(self, class_id):
+        assert(class_id.item() in self._inverse)
+        return self._inverse[class_id.item()]
