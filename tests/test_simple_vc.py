@@ -83,6 +83,7 @@ def test_simple_vc_trainer():
     copy_tree(tempdir, model_dir)
     shutil.rmtree(tempdir)
 
+@pytest.mark.depends(on=['test_simple_vc_trainer'])
 def test_simple_vc_infer():
     # Load checkpointed model and run inference
     test_data_dir = get_data_folder()
