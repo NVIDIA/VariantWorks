@@ -19,6 +19,7 @@ from test_utils import get_data_folder
 
 from distutils.dir_util import copy_tree
 
+
 def test_simple_vc_trainer():
     # Train a sample model with test data
 
@@ -30,13 +31,13 @@ def test_simple_vc_trainer():
 
     # Generate dataset
     encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
-    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
+    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFLabelLoader([vcf_bam_tuple], allow_snps=True, allow_multiallele=False)
+    vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
-    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size = 32, shuffle = False)
+    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
 
     # Setup loss
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
@@ -76,12 +77,16 @@ def test_simple_vc_trainer():
             )
 
     # Invoke the "train" action.
-    nf.train([vz_loss], callbacks=[loggercallback, checkpointcallback], optimization_params={"num_epochs": 4, "lr": 0.001}, optimizer="adam")
+    nf.train([vz_loss],
+             callbacks=[loggercallback, checkpointcallback],
+             optimization_params={"num_epochs": 4, "lr": 0.001},
+             optimizer="adam")
 
     # Remove checkpoint directory
     model_dir = os.path.join(get_data_folder(), ".test_model")
     copy_tree(tempdir, model_dir)
     shutil.rmtree(tempdir)
+
 
 @pytest.mark.depends(on=['test_simple_vc_trainer'])
 def test_simple_vc_infer():
@@ -98,9 +103,9 @@ def test_simple_vc_infer():
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFLabelLoader([vcf_bam_tuple], allow_snps=True, allow_multiallele=False)
+    vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
-    test_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size = 32, shuffle = False)
+    test_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
