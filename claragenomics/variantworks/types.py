@@ -1,6 +1,6 @@
-#Shared enums and types acrosss VariantWorks
+# Shared enums and types acrosss VariantWorks
 
-from collections import namedtuple
+from dataclasses import dataclass
 from enum import Enum
 
 
@@ -16,4 +16,13 @@ class VariantType(Enum):
     DELETION = 2
 
 
-Variant = namedtuple('Variant', ['chrom', 'pos', 'ref', 'zygosity', 'type', 'allele', 'vcf', 'bam'])
+@dataclass
+class Variant:
+    chrom: str
+    pos: str
+    ref: str
+    zygosity: VariantZygosity
+    type: VariantType
+    allele: str
+    vcf: str
+    bam: str
