@@ -1,32 +1,32 @@
 # Abstract and implementation clases for label loaders.
+from abc import ABC, abstractmethod
 from collections import namedtuple
 import vcf
+import warnings
 
 from claragenomics.variantworks.types import VariantZygosity, VariantType, Variant
 
 
-class LabelLoaderIterator():
+class LabelLoaderIterator:
     def __init__(self, label_loader):
         assert(isinstance(label_loader, BaseLabelLoader))
         self._label_loader = label_loader
         self._index = 0
 
     def __next__(self):
-        if (self._index < len(self._label_loader)):
+        if self._index < len(self._label_loader):
             result = self._label_loader[self._index]
             self._index += 1
             return result
         raise StopIteration
 
 
-class BaseLabelLoader():
-    def __init__(self, allow_snps=True, allow_multiallele=True, allow_multisample=False):
+class BaseLabelLoader(ABC):
+    @abstractmethod
+    def __init__(self):
         """Base class label loader that sotres variant filters and implements indexing
         and length methods.
         """
-        self._allow_snps = allow_snps
-        self._allow_multiallele = allow_multiallele
-        self._allow_multisample = allow_multisample
         self._labels = []
 
     def __getitem__(self, idx):
@@ -45,14 +45,14 @@ class VCFLabelLoader(BaseLabelLoader):
 
     VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
 
-    def __init__(self, vcf_bam_list, **kwargs):
-        super().__init__(**kwargs)
-
+    def __init__(self, vcf_bam_list):
+        super().__init__()
         for elem in vcf_bam_list:
             assert (elem.vcf is not None and elem.bam is not None and type(elem.is_fp) is bool)
             self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
 
-    def _get_variant_zygosity(self, record, is_fp=False):
+    @staticmethod
+    def _get_variant_zygosity(record, is_fp=False):
         """Determine variant type from pyvcf record.
         """
         if is_fp:
@@ -63,7 +63,8 @@ class VCFLabelLoader(BaseLabelLoader):
             return VariantZygosity.HOMOZYGOUS
         raise ValueError("Unexpected variant zygosity - {}".format(record))
 
-    def _get_variant_type(self, record):
+    @staticmethod
+    def _get_variant_type(record):
         """Determine variant type.
         """
         if record.is_snp:
@@ -75,24 +76,32 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
+    @classmethod
+    def _create_variant_tuple_from_record(cls, record, vcf_file, bam, is_fp):
+        chrom = record.CHROM
+        pos = record.POS
+        ref = record.REF
+        var_zyg = cls._get_variant_zygosity(record, is_fp)
+        var_type = cls._get_variant_type(record)
+        # Split multi alleles into multiple entries
+        for alt in record.ALT:
+            var_allele = alt.sequence
+            yield Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam)
+
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
         """
-        assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed" # Check for compressed file
+        assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(open(vcf_file, "rb"))
         for record in vcf_reader:
-            if (not(self._allow_snps and record.is_snp)):
+            if not record.is_snp:
+                warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
-            if (not self._allow_multisample and record.num_called > 1):
+            if record.num_called > 1:
+                warnings.warn("%s is filtered - multisample records are not supported" % record)
                 continue
-            if (not self._allow_multiallele and len(record.ALT) > 1):
+            if len(record.ALT) > 1:
+                warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
                 continue
-            chrom = record.CHROM
-            pos = record.POS
-            ref = record.REF
-            var_zyg = self._get_variant_zygosity(record, is_fp)
-            var_type = self._get_variant_type(record)
-            # Split multi alleles into multiple entries
-            for alt in record.ALT:
-                var_allele = alt.sequence
-                labels.append(Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam))
+            for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp):
+                labels.append(variant)
