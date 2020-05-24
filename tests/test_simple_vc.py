@@ -30,7 +30,7 @@ def test_simple_vc_trainer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
     pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
@@ -98,7 +98,7 @@ def test_simple_vc_infer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
     pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
