@@ -2,12 +2,19 @@ import os
 import pytest
 import torch
 
+from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
 from claragenomics.variantworks.variant_encoder import PileupEncoder
 
 from test_utils import get_data_folder
 
-def test_snp_encoder():
+@pytest.fixture
+def snp_variant():
+    bam = os.path.join(get_data_folder(), "small_bam.bam")
+    variant = Variant(chrom="1", pos=240000, ref='T', allele='A', zygosity=VariantZygosity.HOMOZYGOUS, vcf='null.vcf', type=VariantType.SNP, bam=bam)
+    return variant
+
+def test_snp_encoder_basic(snp_variant):
     max_reads = 100
     window_size = 5
     width = 2 * window_size + 1
@@ -17,10 +24,32 @@ def test_snp_encoder():
     encoder = PileupEncoder(window_size = window_size, max_reads = max_reads, layers = layers)
     assert(encoder.size == (len(layers), height, width))
 
-    bam = os.path.join(get_data_folder(), "small_bam.bam")
-    variant = Variant(chrom="1", pos=240000, ref='T', allele='A', zygosity=VariantZygosity.HOMOZYGOUS, vcf='null.vcf', type=VariantType.SNP, bam=bam)
+    variant = snp_variant
+
     encoding = encoder(variant)
     assert(encoding.size() == torch.Size([len(layers), height, width]))
+
+def test_snp_ref_encoding(snp_variant):
+    max_reads = 1
+    window_size = 5
+    layers = [PileupEncoder.Layer.REFERENCE]
+
+    encoder = PileupEncoder(window_size = window_size, max_reads = max_reads, layers = layers)
+
+    variant = snp_variant
+    encoding = encoder(variant)
+    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.ref])
+
+def test_snp_allele_encoding(snp_variant):
+    max_reads = 1
+    window_size = 5
+    layers = [PileupEncoder.Layer.ALLELE]
+
+    encoder = PileupEncoder(window_size = window_size, max_reads = max_reads, layers = layers)
+
+    variant = snp_variant
+    encoding = encoder(variant)
+    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
 
 def test_pileup_unknown_layer():
     try:
