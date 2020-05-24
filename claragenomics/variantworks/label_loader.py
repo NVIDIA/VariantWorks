@@ -61,7 +61,7 @@ class VCFLabelLoader(BaseLabelLoader):
             return VariantZygosity.HETEROZYGOUS
         elif record.num_hom_alt > 0:
             return VariantZygosity.HOMOZYGOUS
-        raise ValueError("Unexpected variant zygosity - {}".format(record))
+        raise ValueError("Unexpected variant zygosity - {}, num_het - {}, num_hom_alt - {}".format(record, record.num_het, record.num_hom_alt))
 
     @staticmethod
     def _get_variant_type(record):
@@ -95,13 +95,13 @@ class VCFLabelLoader(BaseLabelLoader):
         vcf_reader = vcf.Reader(open(vcf_file, "rb"))
         for record in vcf_reader:
             if not record.is_snp:
-                warnings.warn("%s is filtered - not an SNP record" % record)
+                #warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
             if record.num_called > 1:
-                warnings.warn("%s is filtered - multisample records are not supported" % record)
+                #warnings.warn("%s is filtered - multisample records are not supported" % record)
                 continue
             if len(record.ALT) > 1:
-                warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
+                #warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
                 continue
             for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp):
                 labels.append(variant)
