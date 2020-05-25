@@ -2,16 +2,18 @@ import os
 import pytest
 import shutil
 import tempfile
+import torch
 
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
-import torch
+
 
 from claragenomics.variantworks.dataset import VariantDataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
+from claragenomics.variantworks.result_writer import VCFResultWriter
 from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
 
 
@@ -99,7 +101,7 @@ def test_simple_vc_infer():
 
     # Generate dataset
     encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
-    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
+    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
@@ -116,10 +118,15 @@ def test_simple_vc_infer():
 
     # Invoke the "train" action.
     results = nf.infer([vz], checkpoint_dir=model_dir, verbose=True)
+
+    # Decode inference results to labels
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            for pred in predicted_classes:
-                print(zyg_encoder.decode_class(pred))
+            infered_zygosity = [zyg_encoder.decode_class(pred) for pred in predicted_classes]
+
+    result_writer = VCFResultWriter(vcf_loader, infered_zygosity)
+
+    result_writer.write_output()
 
     shutil.rmtree(model_dir)
