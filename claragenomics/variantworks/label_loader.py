@@ -76,23 +76,22 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
-    @classmethod
-    def _create_variant_tuple_from_record(cls, record, vcf_file, bam, is_fp):
+    def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
         chrom = record.CHROM
         pos = record.POS
         ref = record.REF
-        var_zyg = cls._get_variant_zygosity(record, is_fp)
-        var_type = cls._get_variant_type(record)
+        var_zyg = self._get_variant_zygosity(record, is_fp)
+        var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
         for alt in record.ALT:
             var_allele = alt.sequence
-            yield Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam)
+            yield Variant(len(self), chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam)
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
         """
         assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
-        vcf_reader = vcf.Reader(open(vcf_file, "rb"))
+        vcf_reader = vcf.Reader(filename=vcf_file)
         for record in vcf_reader:
             if not record.is_snp:
                 warnings.warn("%s is filtered - not an SNP record" % record)

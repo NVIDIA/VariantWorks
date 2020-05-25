@@ -18,6 +18,7 @@ class VariantType(Enum):
 
 @dataclass
 class Variant:
+    idx: int
     chrom: str
     pos: str
     ref: str
