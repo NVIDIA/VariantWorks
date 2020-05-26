@@ -40,7 +40,7 @@ class AlexNet(TrainableNM):
         """Returns definitions of module output ports.
         """
         return {
-            'log_probs_vz': NeuralType(('B', 'D'), LogitsType()), # Variant type
+            'output_logit': NeuralType(('B', 'D'), LogitsType()), # Variant type
         }
 
     def __init__(self, num_input_channels, num_vz):
