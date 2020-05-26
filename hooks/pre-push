@@ -23,11 +23,18 @@ set -e
 
 script=$(readlink -f $0)
 script_dir=$(dirname $script)
-tests_dir=$(readlink -f "$script_dir/../tests")
+sdk_root_dir=$(readlink -f "$script_dir/..")
+tests_dir="$sdk_root_dir/tests"
 
 echo ""
 echo "Running pre-push hook from $script"
 echo ""
+
+cd $sdk_root_dir
+echo ""
+echo "Running copyright check from $PWD..."
+echo ""
+python $sdk_root_dir/ci/checks/check_copyright.py
 
 cd $tests_dir
 echo ""
