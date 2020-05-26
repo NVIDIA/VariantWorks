@@ -1,3 +1,19 @@
+#
+# Copyright 2020 NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 # Classes and functions to encode pileups
 
 import abc
@@ -39,6 +55,8 @@ class PileupEncoder(BaseEncoder):
         READ = 0
         BASE_QUALITY = 1
         MAPPING_QUALITY = 2
+        REFERENCE = 3
+        ALLELE = 4
 
     def __init__(self, window_size = 50, max_reads = 50, layers=[Layer.READ]):
         super().__init__()
@@ -69,9 +87,10 @@ class PileupEncoder(BaseEncoder):
     def size(self):
         return ((self.depth, self.height, self.width))
 
-    def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range):
+    def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant):
         """Generate encoding for requested layer in pileup.
         """
+        #print(len(pileupread.alignment.get_reference_sequence()))
         tensor = self.layer_dict[layer]
 
         query_pos = pileupread.query_position
@@ -95,6 +114,12 @@ class PileupEncoder(BaseEncoder):
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = map_qual
+        elif layer == self.Layer.REFERENCE:
+            # Only encode the reference at the variant position, rest all 0
+            tensor[row, self.window_size] = base_enum_encoder[variant.ref]
+        elif layer == self.Layer.ALLELE:
+            # Only encode the allele at the variant position, rest all 0
+            tensor[row, self.window_size] = base_enum_encoder[variant.allele]
 
 
     def __call__(self, variant):
@@ -148,7 +173,7 @@ class PileupEncoder(BaseEncoder):
 
                 pileup_pos_range = (self.window_size - left_offset, self.window_size + right_offset)
                 for layer in self.layers:
-                    self._fill_layer(layer, pileupread, left_offset, right_offset, row, pileup_pos_range)
+                    self._fill_layer(layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant)
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]

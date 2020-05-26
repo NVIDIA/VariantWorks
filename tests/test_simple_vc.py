@@ -1,3 +1,19 @@
+#
+# Copyright 2020 NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import os
 import pytest
 import shutil
@@ -32,7 +48,8 @@ def test_simple_vc_trainer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
     pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
@@ -100,7 +117,8 @@ def test_simple_vc_infer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
     pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
