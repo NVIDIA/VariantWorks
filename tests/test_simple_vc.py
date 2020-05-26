@@ -53,22 +53,20 @@ def test_simple_vc_trainer():
     vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
 
-    # Setup loss
-    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-    vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
-
     # Neural Network
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
 
     # Create train DAG
-    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=True)
-    vz_labels, encoding = train_dataset()
+    dataset_train = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=True)
+    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    eval_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
-    vz_labels_eval, encoding_eval = eval_dataset()
+    dataset_eval = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
+    vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
     vz_loss_eval = vz_ce_loss_eval(logits=vz_eval, labels=vz_labels_eval)
 
