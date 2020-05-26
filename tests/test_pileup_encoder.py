@@ -20,9 +20,9 @@ def test_snp_encoder():
 
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     variant = Variant(
-        idx=0, chrom="1", pos=240000, ref='T', allele='A',
-        zygosity=VariantZygosity.HOMOZYGOUS, vcf='null.vcf',
-        type=VariantType.SNP, bam=bam)
+        idx=0, chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
+        quality=60, filter=None, info='DP=35;AF=0.0185714', format='GT:GQ',
+        zygosity=VariantZygosity.HOMOZYGOUS, type=VariantType.SNP, vcf='null.vcf', bam=bam)
     encoding = encoder(variant)
     assert(encoding.size() == torch.Size([len(layers), height, width]))
 

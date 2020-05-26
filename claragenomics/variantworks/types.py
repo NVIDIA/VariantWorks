@@ -20,10 +20,15 @@ class VariantType(Enum):
 class Variant:
     idx: int
     chrom: str
-    pos: str
+    pos: int
+    id: str
     ref: str
+    allele: str
+    quality: int
+    filter: str
+    info: str
+    format: str
     zygosity: VariantZygosity
     type: VariantType
-    allele: str
     vcf: str
     bam: str

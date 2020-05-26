@@ -77,15 +77,14 @@ class VCFLabelLoader(BaseLabelLoader):
         raise ValueError("Unexpected variant type - {}".format(record))
 
     def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
-        chrom = record.CHROM
-        pos = record.POS
-        ref = record.REF
         var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
         for alt in record.ALT:
             var_allele = alt.sequence
-            yield Variant(len(self), chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam)
+            yield Variant(idx=len(self), chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
+                          allele=var_allele, quality=record.QUAL, filter=record.FILTER, info=record.INFO,
+                          format=record.FORMAT, zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
