@@ -48,36 +48,52 @@ class VCFResultWriter(ResultWriter):
         self.infered_zygosities = infered_zygosities
         self.output_location = Path(output_location) if output_location else Path(mkdtemp())
 
-    def _get_file_writer(self, variant):
-        vcf_file_path = Path(variant.vcf)
-        if vcf_file_path not in self.vcf_path_to_reader_writer:
-            vcf_reader = vcf.Reader(filename=str(vcf_file_path))
-            vcf_reader.formats["IR"] = _Format("IR", 1, "String", "Infered Results")
-            vcf_writer = vcf.Writer(open(self.output_location / (vcf_file_path.name + '.vcf'), 'w'), vcf_reader)
-            self.vcf_path_to_reader_writer[vcf_file_path] = (vcf_reader, vcf_writer)
-        return self.vcf_path_to_reader_writer[vcf_file_path]
-
     def _get_encoded_zygosity_to_genotype(self, idx):
         return VCFResultWriter.zygosity_to_vcf_genotype[self.infered_zygosities[idx]]
 
+    def _get_formatted_vcf_record_for_variant(self, idx, variant):
+        output_line = \
+            [variant.chrom, variant.pos, variant.id, variant.ref, variant.allele,
+             variant.quality, variant.filter,
+             ";".join([str(k) + '=' + (
+                 str(v) if type(v) is not list else "".join(map(lambda x: str(x), v))
+             ) for k, v in variant.info.items()]),
+             variant.format + ':IR']
+        output_line = [str(entry) if entry is not None else '.' for entry in output_line]
+        # We don't support multisample - only set  the value for the first sample since
+        output_line += \
+            [sample + ":" + (self._get_encoded_zygosity_to_genotype(idx) if sample_idx == 0 else '.')
+             for sample_idx, sample in enumerate(variant.samples)]
+        return output_line
+
+    @staticmethod
+    def _get_modified_reader_headers(vcf_file_path, append_to_format_headers):
+        vcf_reader = vcf.Reader(filename=str(vcf_file_path))
+        last_format_header_line_index = \
+            max([line_number for line_number, hline in enumerate(vcf_reader._header_lines) if "FORMAT=" in hline])
+        new_headers = \
+            vcf_reader._header_lines[0:last_format_header_line_index + 1] + \
+            append_to_format_headers + \
+            vcf_reader._header_lines[last_format_header_line_index + 1:]
+        new_headers.append('#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
+        return '\n'.join(new_headers) + '\n'
+
+    def _get_variant_file_writer(self, variant):
+        vcf_file_path = Path(variant.vcf)
+        if vcf_file_path not in self.vcf_path_to_reader_writer:
+            vcf_writer = open(self.output_location / (vcf_file_path.name + '.vcf'), 'w')
+            vcf_writer.write(self._get_modified_reader_headers(
+                vcf_file_path, ['##FORMAT=<ID=IR,Number=1,Type=String,Description="Infered Results">']
+            ))
+            self.vcf_path_to_reader_writer[vcf_file_path] = vcf_writer
+        return self.vcf_path_to_reader_writer[vcf_file_path]
+
     def write_output(self):
         # Iterate over all variances
-        for variant in self.variant_label_loader:
-            file_reader, file_writer = self._get_file_writer(variant)
-            for record in file_reader.fetch(variant.chrom, int(variant.pos)-1, variant.pos):
-                if variant.ref != record.REF or variant.allele not in record.ALT:
-                    raise RuntimeError("")
-                record.ALT = [_Substitution(variant.allele)]
-                record.FORMAT += ':IR'
-                new_samples = list()
-                for s in record.samples:
-                    new_sample_data = \
-                        [str(elem) if elem is not None else "." for elem in s.data] +\
-                        [self._get_encoded_zygosity_to_genotype(variant.idx)]
-                    sample_format = make_calldata_tuple(record.FORMAT.split(":"))
-                    new_samples.append(_Call(record, s.sample, sample_format(*new_sample_data)))
-                record.samples = new_samples
-                file_writer.write_record(record)
+        for idx, variant in enumerate(self.variant_label_loader):
+            file_writer = self._get_variant_file_writer(variant)
+            file_writer.write(
+                '\t'.join(self._get_formatted_vcf_record_for_variant(idx, variant)) + '\n')
         # Close all file writers
-        for _, fbuffers in self.vcf_path_to_reader_writer.items():
-            fbuffers[1].close()
+        for _, fwriter in self.vcf_path_to_reader_writer.items():
+            fwriter.close()
