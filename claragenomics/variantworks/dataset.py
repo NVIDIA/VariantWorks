@@ -46,7 +46,7 @@ class VariantDataLoader(DataLayerNM):
         """Returns definitions of module output ports
         """
         return {
-            "vz_label": NeuralType(tuple('B'), VariantZygosityType()),
+            "label": NeuralType(tuple('B'), VariantZygosityType()),
             "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
         }
 

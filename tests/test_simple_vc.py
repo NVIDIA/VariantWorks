@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+from distutils.dir_util import copy_tree
 import os
 import pytest
 import shutil
@@ -22,7 +23,7 @@ import tempfile
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
-from nemo.backends.pytorch.torchvision.helpers import compute_accuracy
+from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
 import torch
 
 from claragenomics.variantworks.dataset import VariantDataLoader
@@ -32,8 +33,6 @@ from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLa
 
 
 from test_utils import get_data_folder
-
-from distutils.dir_util import copy_tree
 
 
 def test_simple_vc_trainer():
@@ -53,33 +52,39 @@ def test_simple_vc_trainer():
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
-    train_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
-
-    # Setup loss
-    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
 
     # Create train DAG
-    vz_labels, encoding = train_dataset()
+    dataset_train = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=True)
+    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
-    # SimpleLossLoggerCallback will print loss values to console.
-    def my_print_fn(x):
-        acc = compute_accuracy(x)
-        logging.info(f'Train VT Loss: {str(x[0].item())}, Accuracy : {str(acc)}')
+    # Create evaluation DAG using same dataset as training
+    dataset_eval = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
+    vz_labels_eval, encoding_eval = dataset_eval()
+    vz_eval = alexnet(encoding=encoding_eval)
+    vz_loss_eval = vz_ce_loss_eval(logits=vz_eval, labels=vz_labels_eval)
 
     # Logger callback
-    loggercallback = nemo.core.SimpleLossLoggerCallback(
+    logger_callback = nemo.core.SimpleLossLoggerCallback(
             tensors=[vz_loss, vz, vz_labels],
-            print_func=my_print_fn,
             step_freq=1,
             )
 
+    evaluator_callback = nemo.core.EvaluatorCallback(
+            eval_tensors=[vz_loss_eval, vz_eval, vz_labels_eval],
+            user_iter_callback=eval_iter_callback,
+            user_epochs_done_callback=eval_epochs_done_callback,
+            eval_step=1,
+            )
+
     # Checkpointing models through NeMo callback
-    checkpointcallback = nemo.core.CheckpointCallback(
+    checkpoint_callback = nemo.core.CheckpointCallback(
             folder=nf.checkpoint_dir,
             load_from_folder=None,
             # Checkpointing frequency in steps
@@ -94,9 +99,9 @@ def test_simple_vc_trainer():
 
     # Invoke the "train" action.
     nf.train([vz_loss],
-             callbacks=[loggercallback, checkpointcallback],
-             optimization_params={"num_epochs": 4, "lr": 0.001},
-             optimizer="adam")
+            callbacks=[logger_callback, checkpoint_callback, evaluator_callback],
+            optimization_params={"num_epochs": 4, "lr": 0.001},
+            optimizer="adam")
 
     # Remove checkpoint directory
     model_dir = os.path.join(get_data_folder(), ".test_model")
