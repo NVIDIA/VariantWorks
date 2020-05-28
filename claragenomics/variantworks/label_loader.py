@@ -92,6 +92,18 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
+    @staticmethod
+    def _get_record_info(info_dict):
+        ret_list = list()
+        for k, v in info_dict.items():
+            if type(v) is list:
+                ret_list.append("{}={}".format(k, ','.join(map(lambda x: str(x), v))))
+            elif type(v) is bool:
+                ret_list.append(str(k))
+            else:
+                ret_list.append("{}={}".format(k, str(v)))
+        return ";".join(ret_list)
+
     def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
         var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
@@ -99,8 +111,8 @@ class VCFLabelLoader(BaseLabelLoader):
         for alt in record.ALT:
             var_allele = alt.sequence
             yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
-                          allele=var_allele, quality=record.QUAL, filter=record.FILTER, info=record.INFO,
-                          format=record.FORMAT,
+                          allele=var_allele, quality=record.QUAL, filter=record.FILTER,
+                          info=self._get_record_info(record.INFO), format=record.FORMAT,
                           samples=[':'.join(
                               map(lambda x: str(x) if x is not None else '.', sample.data)
                           ) for sample in record.samples],

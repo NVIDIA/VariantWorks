@@ -55,22 +55,18 @@ class VCFResultWriter(ResultWriter):
         output_line = \
             [variant.chrom, variant.pos, variant.id, variant.ref, variant.allele,
              variant.quality, variant.filter,
-             ";".join([str(k) + '=' + (
-                 str(v) if type(v) is not list else "".join(map(lambda x: str(x), v))
-             ) for k, v in variant.info.items()]),
-             variant.format + ':IR']
+             variant.info + ';IZ=' + self._get_encoded_zygosity_to_genotype(idx),
+             variant.format]
         output_line = [str(entry) if entry is not None else '.' for entry in output_line]
         # We don't support multisample - only set  the value for the first sample since
-        output_line += \
-            [sample + ":" + (self._get_encoded_zygosity_to_genotype(idx) if sample_idx == 0 else '.')
-             for sample_idx, sample in enumerate(variant.samples)]
+        output_line += variant.samples
         return output_line
 
     @staticmethod
     def _get_modified_reader_headers(vcf_file_path, append_to_format_headers):
         vcf_reader = vcf.Reader(filename=str(vcf_file_path))
         last_format_header_line_index = \
-            max([line_number for line_number, hline in enumerate(vcf_reader._header_lines) if "FORMAT=" in hline])
+            max([line_number for line_number, hline in enumerate(vcf_reader._header_lines) if "INFO=" in hline])
         new_headers = \
             vcf_reader._header_lines[0:last_format_header_line_index + 1] + \
             append_to_format_headers + \
@@ -83,7 +79,7 @@ class VCFResultWriter(ResultWriter):
         if vcf_file_path not in self.vcf_path_to_reader_writer:
             vcf_writer = open(self.output_location / (vcf_file_path.name + '.vcf'), 'w')
             vcf_writer.write(self._get_modified_reader_headers(
-                vcf_file_path, ['##FORMAT=<ID=IR,Number=1,Type=String,Description="Infered Results">']
+                vcf_file_path, ['##INFO=<ID=IZ,Number=1,Type=String,Description="Inferred Zygosity Results">']
             ))
             self.vcf_path_to_reader_writer[vcf_file_path] = vcf_writer
         return self.vcf_path_to_reader_writer[vcf_file_path]

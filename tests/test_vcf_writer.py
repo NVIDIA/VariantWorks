@@ -61,7 +61,8 @@ def test_vcf_outputting(monkeypatch):
     for f in ['path1.gz.vcf', 'path2.gz.vcf']:
         vcf_reader = vcf.Reader(filename=os.path.join(result_writer.output_location, f))
         for record in vcf_reader:
-            assert(record.samples[0]['GT'] == result_writer.zygosity_to_vcf_genotype[infered_results[i]])
+            assert(record.INFO['IZ'] == result_writer.zygosity_to_vcf_genotype[infered_results[i]])
             i += 1
+    assert (i == 6)
     # Clean up files
     shutil.rmtree(MockPyVCFReader.tmp_folder_location)
