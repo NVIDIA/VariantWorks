@@ -123,12 +123,14 @@ class VCFLabelLoader(BaseLabelLoader):
         """
         assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
+        if len(vcf_reader.samples) != 1:
+            raise RuntimeError("Input vcf file " + vcf_file + " must only contain a single sample")
         for record in vcf_reader:
             if not record.is_snp:
                 warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
-            if record.num_called > 1:
-                warnings.warn("%s is filtered - multisample records are not supported" % record)
+            if record.num_called < len(vcf_reader.samples):
+                warnings.warn("%s is filtered - no samples in this record are called" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
