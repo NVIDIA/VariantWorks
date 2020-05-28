@@ -29,21 +29,17 @@ from data.vcf_file_mock import mock_vcf_file_reader_input
 
 class MockPyVCFReader:
     original_pyvcf_reader_init_function = vcf.Reader.__init__
-    tmp_folder_location = None
 
     @staticmethod
     def new_vcf_reader_init(self, *args, **kargs):
-        if 'filename' not in kargs:
-            raise RuntimeError('Please use `filename` to initiate vcf.Reader')  # Reader was not initiated using `fsock`
-        tmp_vcf_file_path, _ = \
-            mock_vcf_file_reader_input(kargs['filename'], MockPyVCFReader.tmp_folder_location)
-        MockPyVCFReader.original_pyvcf_reader_init_function(self, open(tmp_vcf_file_path, 'rb'))
+        if 'filename' not in kargs:  # Reader must be initiated using `filename`
+            raise RuntimeError('Please use `filename` to initiate vcf.Reader')
+        MockPyVCFReader.original_pyvcf_reader_init_function(self, mock_vcf_file_reader_input(kargs['filename']))
 
 
 def test_vcf_outputting(monkeypatch):
     """Write inference output into vcf files
     """
-    MockPyVCFReader.tmp_folder_location = mkdtemp(prefix=get_data_folder() + "/")
     first_vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
     second_vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
     with monkeypatch.context() as mp:
@@ -65,4 +61,4 @@ def test_vcf_outputting(monkeypatch):
             i += 1
     assert (i == 6)
     # Clean up files
-    shutil.rmtree(MockPyVCFReader.tmp_folder_location)
+    shutil.rmtree(result_writer.output_location)

@@ -26,8 +26,6 @@ class MockPyVCFReader:
 
     @staticmethod
     def new_vcf_reader_init(self, *args, **kargs):
-        if 'filename' not in kargs:
-            raise RuntimeError('Please use `filename` to initiate vcf.Reader')
         MockPyVCFReader.original_pyvcf_reader_init_function(self, mock_file_input())
 
     @staticmethod

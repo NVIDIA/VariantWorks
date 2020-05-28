@@ -1,13 +1,8 @@
 import io
-import random
-import string
-import bgzip
-import subprocess
 
 
-def mock_file_input(*args, **kwargs):
-    return io.StringIO("""
-##fileformat=VCFv4.2
+def mock_file_input():
+    return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
@@ -34,9 +29,9 @@ def mock_file_input(*args, **kwargs):
 """)
 
 
-def mock_vcf_file_reader_input(dummy_file_path, tmp_folder_path):
+def mock_vcf_file_reader_input(dummy_file_path):
     if str(dummy_file_path) == '/dummy/path1.gz':
-        file_content = b"""##fileformat=VCFv4.2
+        return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
@@ -48,9 +43,9 @@ def mock_vcf_file_reader_input(dummy_file_path, tmp_folder_path):
 1	139861	.	T	A	50	.	DP=15;AF=0.0666667	GT:GQ	0/1:50  .:.
 1	139976	.	G	A	50	.	DP=35;AF=0.0185714	GT:GQ	1/1:50  .:.
 1	240147	.	C	T	50	.	DP=13;AF=0.692308	GT:GQ	0/1:50  .:.
-"""
+""")
     elif str(dummy_file_path) == '/dummy/path2.gz':
-        file_content = b"""##fileformat=VCFv4.2
+        return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
@@ -62,14 +57,4 @@ def mock_vcf_file_reader_input(dummy_file_path, tmp_folder_path):
 1	140009	.	C	A	50	.	DP=35;AF=0.0185714	GT:GQ	0/1:50  .:.
 1	140016	.	T	C	50	.	DP=34;AF=0.0194118	GT:GQ	1/1:50  .:.
 1	240021	.	T	C	50	.	DP=34;AF=0.0294118	GT:GQ	1/1:50  .:.
-"""
-    else:
-        raise RuntimeError("Wrong filepath for reader")
-    input_file_name = \
-        tmp_folder_path + "/test_file_" + ''.join(random.choices(string.ascii_lowercase, k=4)) + '.vcf.gz'
-    with open(input_file_name, "wb") as raw:
-        with bgzip.BGZipWriter(raw) as fh:
-            fh.write(file_content)
-    tabix_cmd_response = subprocess.run(['tabix', '-p', 'vcf', raw.name])
-    tabix_cmd_response.check_returncode()
-    return raw.name, raw.name + ".tbi"
+""")
