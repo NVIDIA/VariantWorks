@@ -20,7 +20,7 @@ import torch
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
-from claragenomics.variantworks.variant_encoder import PileupEncoder
+from claragenomics.variantworks.sample_encoder import PileupEncoder
 
 from test_utils import get_data_folder
 

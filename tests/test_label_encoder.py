@@ -19,7 +19,7 @@ import pytest
 import torch
 
 from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
-from claragenomics.variantworks.variant_encoder import ZygosityLabelEncoder
+from claragenomics.variantworks.sample_encoder import ZygosityLabelEncoder
 
 from test_utils import get_data_folder
 

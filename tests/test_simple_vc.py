@@ -29,7 +29,7 @@ import torch
 from claragenomics.variantworks.dataset import DataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
-from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
+from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 
 
 from test_utils import get_data_folder
