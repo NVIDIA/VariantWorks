@@ -43,9 +43,9 @@ class AlexNet(TrainableNM):
             'output_logit': NeuralType(('B', 'D'), LogitsType()), # Variant type
         }
 
-    def __init__(self, num_input_channels, num_vz):
+    def __init__(self, num_input_channels, num_output_logits):
         super().__init__()
-        self.num_vz = num_vz
+        self.num_output_logits = num_output_logits
         self.num_input_channels = num_input_channels
 
         self.features = nn.Sequential(
@@ -72,7 +72,7 @@ class AlexNet(TrainableNM):
             nn.Linear(4096, 4096),
             nn.ReLU(inplace=True),
         )
-        self.vz_classifier = nn.Linear(4096, self.num_vz)
+        self.classifier = nn.Linear(4096, self.num_output_logits)
 
         self._device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
         self.to(self._device)
@@ -82,5 +82,5 @@ class AlexNet(TrainableNM):
         encoding = self.avgpool(encoding)
         encoding = torch.flatten(encoding, 1)
         encoding = self.common_classifier(encoding)
-        vz = self.vz_classifier(encoding)
+        vz = self.classifier(encoding)
         return vz

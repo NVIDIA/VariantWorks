@@ -26,7 +26,7 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
 import torch
 
-from claragenomics.variantworks.dataset import VariantDataLoader
+from claragenomics.variantworks.dataset import DataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
 from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
@@ -54,17 +54,17 @@ def test_simple_vc_trainer():
     zyg_encoder = ZygosityLabelEncoder()
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
+    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
 
     # Create train DAG
-    dataset_train = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=True)
+    dataset_train = DataLoader(DataLoader.Type.TRAIN, vcf_loader, batch_size=32, shuffle=True, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    dataset_eval = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    dataset_eval = DataLoader(DataLoader.Type.EVAL, vcf_loader, batch_size=32, shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
     vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
@@ -126,13 +126,13 @@ def test_simple_vc_infer():
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
-    test_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    test_dataset = DataLoader(DataLoader.Type.TEST, vcf_loader, batch_size=32, shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
+    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
 
     # Create train DAG
-    _, encoding = test_dataset()
+    encoding = test_dataset()
     vz = alexnet(encoding=encoding)
 
     # Invoke the "train" action.

@@ -40,7 +40,7 @@ class BaseEncoder():
 
     @abc.abstractmethod
     def __call__(self, variant):
-        """Computes the encoding of a variant location.
+        """Computes the encoding of a sample.
         """
         raise NotImplementedError
 
