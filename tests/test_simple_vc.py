@@ -144,9 +144,9 @@ def test_simple_vc_infer():
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            infered_zygosity = [zyg_encoder.decode_class(pred) for pred in predicted_classes]
+            inferred_zygosity = [zyg_encoder.decode_class(pred) for pred in predicted_classes]
 
-    result_writer = VCFResultWriter(vcf_loader, infered_zygosity)
+    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
 
     result_writer.write_output()
 

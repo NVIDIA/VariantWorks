@@ -15,14 +15,12 @@
 #
 
 import os
-from tempfile import mkdtemp
 import shutil
 import vcf
 
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.types import VariantZygosity
 from claragenomics.variantworks.result_writer import VCFResultWriter
-from test_utils import get_data_folder
 
 from data.vcf_file_mock import mock_vcf_file_reader_input
 
@@ -45,19 +43,19 @@ def test_vcf_outputting(monkeypatch):
     with monkeypatch.context() as mp:
         mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
         vcf_loader = VCFLabelLoader([first_vcf_bam_tuple, second_vcf_bam_tuple])
-    infered_results = [VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS,
-                       VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HOMOZYGOUS]
-    assert (len(infered_results) == len(vcf_loader))
+    inferred_results = [VariantZygosity.HOMOZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS,
+                        VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS]
+    assert (len(inferred_results) == len(vcf_loader))
     with monkeypatch.context() as mp:
         mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        result_writer = VCFResultWriter(vcf_loader, infered_results)
+        result_writer = VCFResultWriter(vcf_loader, inferred_results)
         result_writer.write_output()
-    # Test valid vcf files
+    # Validate output files format and make sure the outputted genotype for each record matches to the network output
     i = 0
     for f in ['path1.gz.vcf', 'path2.gz.vcf']:
         vcf_reader = vcf.Reader(filename=os.path.join(result_writer.output_location, f))
         for record in vcf_reader:
-            assert(record.INFO['IZ'] == result_writer.zygosity_to_vcf_genotype[infered_results[i]])
+            assert(record.samples[0]['GT'] == result_writer.zygosity_to_vcf_genotype[inferred_results[i]])
             i += 1
     assert (i == 6)
     # Clean up files

@@ -15,11 +15,11 @@
 #
 
 from abc import ABC, abstractmethod
+import os
 from pathlib import Path
+import re
 from tempfile import mkdtemp
 import vcf
-from vcf.parser import _Format, _Substitution, _Call
-from vcf.model import make_calldata_tuple
 
 from claragenomics.variantworks.types import VariantZygosity
 
@@ -42,45 +42,62 @@ class VCFResultWriter(ResultWriter):
         VariantZygosity.HOMOZYGOUS:     "1/1",
     }
 
-    def __init__(self, variant_label_loader, infered_zygosities, output_location=None):
+    def __init__(self, variant_label_loader, inferred_zygosities, output_location=None):
         self.vcf_path_to_reader_writer = dict()
         self.variant_label_loader = variant_label_loader
-        self.infered_zygosities = infered_zygosities
+        self.inferred_zygosities = inferred_zygosities
         self.output_location = Path(output_location) if output_location else Path(mkdtemp())
 
     def _get_encoded_zygosity_to_genotype(self, idx):
-        return VCFResultWriter.zygosity_to_vcf_genotype[self.infered_zygosities[idx]]
+        return VCFResultWriter.zygosity_to_vcf_genotype[self.inferred_zygosities[idx]]
 
-    def _get_formatted_vcf_record_for_variant(self, idx, variant):
+    @staticmethod
+    def _serialize_record_info(info_dict):
+        ret_list = list()
+        for k, v in info_dict.items():
+            if type(v) is list:
+                ret_list.append("{}={}".format(k, ','.join(map(lambda x: str(x), v))))
+            elif type(v) is bool:
+                ret_list.append(str(k))
+            else:
+                ret_list.append("{}={}".format(k, str(v)))
+        return ";".join(ret_list)
+
+    def _get_serialized_vcf_record_for_variant(self, idx, variant):
         output_line = \
-            [variant.chrom, variant.pos, variant.id, variant.ref, variant.allele,
-             variant.quality, variant.filter,
-             variant.info + ';IZ=' + self._get_encoded_zygosity_to_genotype(idx),
-             variant.format]
+            [variant.chrom, variant.pos, variant.id, variant.ref,
+             variant.allele, variant.quality, variant.filter,
+             self._serialize_record_info(variant.info), ':'.join(variant.format)]
         output_line = [str(entry) if entry is not None else '.' for entry in output_line]
-        # We don't support multisample - only set  the value for the first sample since
+        # We don't support multisample - only set the inferred GT value for the first sample
+        variant.samples[0][variant.format.index('GT')] = self._get_encoded_zygosity_to_genotype(idx)
+        variant.samples = [':'.join([str(field_value) if field_value is not None else '.'
+                                     for field_value in sample])
+                           for sample in variant.samples]
         output_line += variant.samples
         return output_line
 
     @staticmethod
     def _get_modified_reader_headers(vcf_file_path, append_to_format_headers):
         vcf_reader = vcf.Reader(filename=str(vcf_file_path))
-        last_format_header_line_index = \
-            max([line_number for line_number, hline in enumerate(vcf_reader._header_lines) if "INFO=" in hline])
-        new_headers = \
-            vcf_reader._header_lines[0:last_format_header_line_index + 1] + \
-            append_to_format_headers + \
-            vcf_reader._header_lines[last_format_header_line_index + 1:]
-        new_headers.append('#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
-        return '\n'.join(new_headers) + '\n'
+        modified_headers_metadata = vcf_reader._header_lines
+        for meta_data_line in append_to_format_headers:
+            metadata_type_to_search = re.search('##(.*=<)', meta_data_line).group(1)
+            last_format_header_line_index = \
+                max([line_number for line_number, hline in enumerate(modified_headers_metadata)
+                     if metadata_type_to_search in hline])
+            modified_headers_metadata = \
+                modified_headers_metadata[0:last_format_header_line_index + 1] + \
+                [meta_data_line] + \
+                modified_headers_metadata[last_format_header_line_index + 1:]
+        modified_headers_metadata.append('#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
+        return '\n'.join(modified_headers_metadata) + '\n'
 
     def _get_variant_file_writer(self, variant):
-        vcf_file_path = Path(variant.vcf)
+        vcf_file_path = os.path.abspath(variant.vcf)
         if vcf_file_path not in self.vcf_path_to_reader_writer:
-            vcf_writer = open(self.output_location / (vcf_file_path.name + '.vcf'), 'w')
-            vcf_writer.write(self._get_modified_reader_headers(
-                vcf_file_path, ['##INFO=<ID=IZ,Number=1,Type=String,Description="Inferred Zygosity Results">']
-            ))
+            vcf_writer = open(os.path.join(self.output_location, os.path.basename(vcf_file_path + '.vcf')), 'w')
+            vcf_writer.write(self._get_modified_reader_headers(vcf_file_path, []))
             self.vcf_path_to_reader_writer[vcf_file_path] = vcf_writer
         return self.vcf_path_to_reader_writer[vcf_file_path]
 
@@ -89,7 +106,7 @@ class VCFResultWriter(ResultWriter):
         for idx, variant in enumerate(self.variant_label_loader):
             file_writer = self._get_variant_file_writer(variant)
             file_writer.write(
-                '\t'.join(self._get_formatted_vcf_record_for_variant(idx, variant)) + '\n')
+                '\t'.join(self._get_serialized_vcf_record_for_variant(idx, variant)) + '\n')
         # Close all file writers
         for _, fwriter in self.vcf_path_to_reader_writer.items():
             fwriter.close()

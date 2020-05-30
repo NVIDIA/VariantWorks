@@ -15,7 +15,6 @@
 #
 
 import os
-import pytest
 import torch
 
 from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
@@ -29,21 +28,21 @@ def test_zygosity_encoder():
     assert(encoder.size() == 1)
 
     bam = os.path.join(get_data_folder(), "small_bam.bam")
-    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
-                      quality=60, filter=None, info='DP=35;AF=0.0185714', format='GT:GQ', samples=['1/1:50'],
+    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A', quality=60, filter=None,
+                      info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'], samples=[['1/1', '50']],
                       zygosity=VariantZygosity.HOMOZYGOUS, type=VariantType.SNP, vcf='null.vcf', bam=bam)
     encoding = encoder(variant)
     assert(encoding.size() == torch.Size([]))  # Since it should return a scalar
     assert(encoding == 1)
 
-    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
-                      quality=60, filter=None, info='DP=35;AF=0.0185714', format='GT:GQ', samples=['0/0:50'],
+    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A', quality=60, filter=None,
+                      info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'], samples=[['0/0', '50']],
                       zygosity=VariantZygosity.NO_VARIANT, type=VariantType.SNP, vcf='null.vcf', bam=bam)
     encoding = encoder(variant)
     assert(encoding == 0)
 
-    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
-                      quality=60, filter=None, info='DP=35;AF=0.0185714', format='GT:GQ', samples=['0/1:50'],
+    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A', quality=60, filter=None,
+                      info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'], samples=[['0/1', '50']],
                       zygosity=VariantZygosity.HETEROZYGOUS, type=VariantType.SNP, vcf='null.vcf', bam=bam)
     encoding = encoder(variant)
     assert(encoding == 2)

@@ -92,18 +92,6 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
-    @staticmethod
-    def _get_record_info(info_dict):
-        ret_list = list()
-        for k, v in info_dict.items():
-            if type(v) is list:
-                ret_list.append("{}={}".format(k, ','.join(map(lambda x: str(x), v))))
-            elif type(v) is bool:
-                ret_list.append(str(k))
-            else:
-                ret_list.append("{}={}".format(k, str(v)))
-        return ";".join(ret_list)
-
     def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
         var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
@@ -112,10 +100,8 @@ class VCFLabelLoader(BaseLabelLoader):
             var_allele = alt.sequence
             yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
                           allele=var_allele, quality=record.QUAL, filter=record.FILTER,
-                          info=self._get_record_info(record.INFO), format=record.FORMAT,
-                          samples=[':'.join(
-                              map(lambda x: str(x) if x is not None else '.', sample.data)
-                          ) for sample in record.samples],
+                          info=record.INFO, format=record.FORMAT.split(':'),
+                          samples=[[field_value for field_value in sample.data] for sample in record.samples],
                           zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
@@ -124,13 +110,14 @@ class VCFLabelLoader(BaseLabelLoader):
         assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
         if len(vcf_reader.samples) != 1:
-            raise RuntimeError("Input vcf file " + vcf_file + " must only contain a single sample")
+            raise RuntimeError(
+                "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
         for record in vcf_reader:
+            if record.num_called < len(vcf_reader.samples):
+                raise RuntimeError(
+                    "Can not parse record %s in %s,  all samples must be called" % (record, vcf_file))
             if not record.is_snp:
                 warnings.warn("%s is filtered - not an SNP record" % record)
-                continue
-            if record.num_called < len(vcf_reader.samples):
-                warnings.warn("%s is filtered - no samples in this record are called" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn("%s is filtered - multiallele recrods are not supported" % record)

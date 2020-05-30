@@ -19,7 +19,7 @@ import vcf
 
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.types import VariantZygosity
-from data.vcf_file_mock import mock_file_input, mock_bad_file_input
+from data.vcf_file_mock import mock_file_input, mock_invalid_file_input
 
 
 class MockPyVCFReader:
@@ -31,7 +31,7 @@ class MockPyVCFReader:
 
     @staticmethod
     def new_bad_vcf_reader_init(self, *args, **kargs):
-        MockPyVCFReader.original_pyvcf_reader_init_function(self, mock_bad_file_input())
+        MockPyVCFReader.original_pyvcf_reader_init_function(self, mock_invalid_file_input())
 
     @staticmethod
     def get_vcf(mp, vcf_bam_list):
@@ -42,7 +42,7 @@ class MockPyVCFReader:
         return vcf_loader
 
     @staticmethod
-    def get_bad_vcf(mp, vcf_bam_list):
+    def get_invalid_vcf(mp, vcf_bam_list):
         with mp.context() as m:
             # Mock vcf.Reader.__init__() return value
             m.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_bad_vcf_reader_init)
@@ -94,4 +94,4 @@ def test_load_vcf_content_with_wrong_format(monkeypatch):
     """
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     with pytest.raises(RuntimeError):
-        vcf_loader = MockPyVCFReader.get_bad_vcf(monkeypatch, [vcf_bam_tuple])
+        vcf_loader = MockPyVCFReader.get_invalid_vcf(monkeypatch, [vcf_bam_tuple])
