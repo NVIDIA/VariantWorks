@@ -24,6 +24,7 @@ from nemo.core.neural_factory import DeviceType
 
 from claragenomics.variantworks.neural_types import ReadPileupNeuralType
 
+
 class AlexNet(TrainableNM):
     @property
     @add_port_docs()
@@ -40,7 +41,7 @@ class AlexNet(TrainableNM):
         """Returns definitions of module output ports.
         """
         return {
-            'output_logit': NeuralType(('B', 'D'), LogitsType()), # Variant type
+            'output_logit': NeuralType(('B', 'D'), LogitsType()),  # Variant type
         }
 
     def __init__(self, num_input_channels, num_output_logits):

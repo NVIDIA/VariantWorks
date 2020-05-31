@@ -91,11 +91,10 @@ class ReadPileupDataLoader(DataLayerNM):
 
                     return label, encoding
 
-
         dataset = DatasetWrapper(data_loader_type, sample_encoder, sample_loader, label_encoder)
         self.dataloader = TorchDataLoader(dataset,
-                                     batch_size = batch_size, shuffle = shuffle,
-                                     num_workers = num_workers)
+                                          batch_size=batch_size, shuffle=shuffle,
+                                          num_workers=num_workers)
 
     def __len__(self):
         return len(self.dataloader)

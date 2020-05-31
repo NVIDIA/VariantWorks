@@ -24,10 +24,12 @@ import torch
 from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.types import Variant, VariantType, VariantZygosity
 
+
 class BaseEncoder():
     """An abstract class defining the interface to an encoder implementation. Encoder could
     be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
+
     def __init__(self):
         pass
 
@@ -58,7 +60,7 @@ class PileupEncoder(BaseEncoder):
         REFERENCE = 3
         ALLELE = 4
 
-    def __init__(self, window_size = 50, max_reads = 50, layers=[Layer.READ]):
+    def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ]):
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -90,7 +92,7 @@ class PileupEncoder(BaseEncoder):
     def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant):
         """Generate encoding for requested layer in pileup.
         """
-        #print(len(pileupread.alignment.get_reference_sequence()))
+        # print(len(pileupread.alignment.get_reference_sequence()))
         tensor = self.layer_dict[layer]
 
         query_pos = pileupread.query_position
@@ -109,7 +111,7 @@ class PileupEncoder(BaseEncoder):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = seq_qual[seq_pos]
         elif layer == self.Layer.MAPPING_QUALITY:
-             # Getch mapping quality of alignment
+            # Getch mapping quality of alignment
             map_qual = pileupread.alignment.mapping_quality
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
                 # Encode base characters to enum
@@ -120,7 +122,6 @@ class PileupEncoder(BaseEncoder):
         elif layer == self.Layer.ALLELE:
             # Only encode the allele at the variant position, rest all 0
             tensor[row, self.window_size] = base_enum_encoder[variant.allele]
-
 
     def __call__(self, variant):
         """Returns a torch Tensor pileup queried from a BAM file.
@@ -146,7 +147,7 @@ class PileupEncoder(BaseEncoder):
         pileups = bam.pileup(chrom,
                              variant_pos, variant_pos + 1,
                              truncate=True,
-                             max_depth = self.max_reads)
+                             max_depth=self.max_reads)
 
         for col, pileup_col in enumerate(pileups):
             for row, pileupread in enumerate(pileup_col.pileups):
@@ -169,7 +170,8 @@ class PileupEncoder(BaseEncoder):
                 # 1st read - Left offset is window size, and right offset is 4 bases
                 # 2nd read - Left offset is 5 bases, and right offset is window size
                 left_offset = min(self.window_size, pileupread.query_position)
-                right_offset = min(self.window_size + 1, len(pileupread.alignment.query_sequence) - pileupread.query_position)
+                right_offset = min(self.window_size + 1, len(pileupread.alignment.query_sequence) -
+                                   pileupread.query_position)
 
                 pileup_pos_range = (self.window_size - left_offset, self.window_size + right_offset)
                 for layer in self.layers:
@@ -179,23 +181,25 @@ class PileupEncoder(BaseEncoder):
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
 
+
 class ZygosityLabelEncoder(BaseEncoder):
     """A label encoder that returns an output label encoding for zygosity
     only. Converts zygosity type to a class number.
     """
+
     def __init__(self):
         super().__init__()
         self._dict = {
-                VariantZygosity.NO_VARIANT: 0,
-                VariantZygosity.HOMOZYGOUS: 1,
-                VariantZygosity.HETEROZYGOUS: 2,
-                }
+            VariantZygosity.NO_VARIANT: 0,
+            VariantZygosity.HOMOZYGOUS: 1,
+            VariantZygosity.HETEROZYGOUS: 2,
+        }
 
         self._inverse = {
-                0: VariantZygosity.NO_VARIANT,
-                1: VariantZygosity.HOMOZYGOUS,
-                2: VariantZygosity.HETEROZYGOUS,
-                }
+            0: VariantZygosity.NO_VARIANT,
+            1: VariantZygosity.HOMOZYGOUS,
+            2: VariantZygosity.HETEROZYGOUS,
+        }
         pass
 
     def size(self):

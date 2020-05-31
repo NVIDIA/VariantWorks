@@ -58,14 +58,16 @@ def test_simple_vc_trainer():
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
 
     # Create train DAG
-    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader, batch_size=32, shuffle=True, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
+                                         batch_size=32, shuffle=True, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, vcf_loader, batch_size=32, shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, vcf_loader, batch_size=32,
+                                        shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
     vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
@@ -73,36 +75,36 @@ def test_simple_vc_trainer():
 
     # Logger callback
     logger_callback = nemo.core.SimpleLossLoggerCallback(
-            tensors=[vz_loss, vz, vz_labels],
-            step_freq=1,
-            )
+        tensors=[vz_loss, vz, vz_labels],
+        step_freq=1,
+    )
 
     evaluator_callback = nemo.core.EvaluatorCallback(
-            eval_tensors=[vz_loss_eval, vz_eval, vz_labels_eval],
-            user_iter_callback=eval_iter_callback,
-            user_epochs_done_callback=eval_epochs_done_callback,
-            eval_step=1,
-            )
+        eval_tensors=[vz_loss_eval, vz_eval, vz_labels_eval],
+        user_iter_callback=eval_iter_callback,
+        user_epochs_done_callback=eval_epochs_done_callback,
+        eval_step=1,
+    )
 
     # Checkpointing models through NeMo callback
     checkpoint_callback = nemo.core.CheckpointCallback(
-            folder=nf.checkpoint_dir,
-            load_from_folder=None,
-            # Checkpointing frequency in steps
-            step_freq=-1,
-            # Checkpointing frequency in epochs
-            epoch_freq=1,
-            # Number of checkpoints to keep
-            checkpoints_to_keep=1,
-            # If True, CheckpointCallback will raise an Error if restoring fails
-            force_load=False
-            )
+        folder=nf.checkpoint_dir,
+        load_from_folder=None,
+        # Checkpointing frequency in steps
+        step_freq=-1,
+        # Checkpointing frequency in epochs
+        epoch_freq=1,
+        # Number of checkpoints to keep
+        checkpoints_to_keep=1,
+        # If True, CheckpointCallback will raise an Error if restoring fails
+        force_load=False
+    )
 
     # Invoke the "train" action.
     nf.train([vz_loss],
-            callbacks=[logger_callback, checkpoint_callback, evaluator_callback],
-            optimization_params={"num_epochs": 4, "lr": 0.001},
-            optimizer="adam")
+             callbacks=[logger_callback, checkpoint_callback, evaluator_callback],
+             optimization_params={"num_epochs": 4, "lr": 0.001},
+             optimizer="adam")
 
     # Remove checkpoint directory
     model_dir = os.path.join(get_data_folder(), ".test_model")
@@ -128,7 +130,8 @@ def test_simple_vc_infer():
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFLabelLoader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
-    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32, shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
+                                        shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)

@@ -16,7 +16,8 @@
 
 import pytest
 
-from claragenomics.variantworks.base_encoder import base_enum_encoder 
+from claragenomics.variantworks.base_encoder import base_enum_encoder
+
 
 def test_base_encoder():
     seq = "ATCGNTCGA"

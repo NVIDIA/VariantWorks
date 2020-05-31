@@ -18,9 +18,11 @@
 
 from nemo.core.neural_types import ElementType, LabelsType, ChannelType
 
+
 class ReadPileupNeuralType(ChannelType):
     """Element type to represent a variant encoding.
     """
+
 
 class VariantZygosityNeuralType(LabelsType):
     """Element type to represent variant type (no variant, heterozygous or homozygous.
