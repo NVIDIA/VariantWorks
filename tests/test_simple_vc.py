@@ -19,16 +19,16 @@ import os
 import pytest
 import shutil
 import tempfile
-
+import torch
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
-import torch
 
 from claragenomics.variantworks.dataset import DataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
+from claragenomics.variantworks.result_writer import VCFResultWriter
 from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 
 
@@ -45,7 +45,8 @@ def test_simple_vc_trainer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
     pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
@@ -119,8 +120,9 @@ def test_simple_vc_infer():
     nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
@@ -137,10 +139,15 @@ def test_simple_vc_infer():
 
     # Invoke the "train" action.
     results = nf.infer([vz], checkpoint_dir=model_dir, verbose=True)
+
+    # Decode inference results to labels
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            for pred in predicted_classes:
-                print(zyg_encoder.decode_class(pred))
+            inferred_zygosity = [zyg_encoder.decode_class(pred) for pred in predicted_classes]
+
+    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
+
+    result_writer.write_output()
 
     shutil.rmtree(model_dir)
