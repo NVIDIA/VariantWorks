@@ -18,6 +18,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Dict
 
 
 class VariantZygosity(Enum):
@@ -35,10 +36,16 @@ class VariantType(Enum):
 @dataclass
 class Variant:
     chrom: str
-    pos: str
+    pos: int
+    id: str
     ref: str
+    allele: str
+    quality: int
+    filter: str
+    info: Dict
+    format: List[str]
+    samples: List[List]
     zygosity: VariantZygosity
     type: VariantType
-    allele: str
     vcf: str
     bam: str

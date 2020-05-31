@@ -92,29 +92,32 @@ class VCFLabelLoader(BaseLabelLoader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
-    @classmethod
-    def _create_variant_tuple_from_record(cls, record, vcf_file, bam, is_fp):
-        chrom = record.CHROM
-        pos = record.POS
-        ref = record.REF
-        var_zyg = cls._get_variant_zygosity(record, is_fp)
-        var_type = cls._get_variant_type(record)
+    def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
+        var_zyg = self._get_variant_zygosity(record, is_fp)
+        var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
         for alt in record.ALT:
             var_allele = alt.sequence
-            yield Variant(chrom, pos, ref, var_zyg, var_type, var_allele, vcf_file, bam)
+            yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
+                          allele=var_allele, quality=record.QUAL, filter=record.FILTER,
+                          info=record.INFO, format=record.FORMAT.split(':'),
+                          samples=[[field_value for field_value in sample.data] for sample in record.samples],
+                          zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
         """
         assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
-        vcf_reader = vcf.Reader(open(vcf_file, "rb"))
+        vcf_reader = vcf.Reader(filename=vcf_file)
+        if len(vcf_reader.samples) != 1:
+            raise RuntimeError(
+                "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
         for record in vcf_reader:
+            if record.num_called < len(vcf_reader.samples):
+                raise RuntimeError(
+                    "Can not parse record %s in %s,  all samples must be called" % (record, vcf_file))
             if not record.is_snp:
                 warnings.warn("%s is filtered - not an SNP record" % record)
-                continue
-            if record.num_called > 1:
-                warnings.warn("%s is filtered - multisample records are not supported" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
