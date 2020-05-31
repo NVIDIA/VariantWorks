@@ -25,11 +25,11 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import *
 
 from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.neural_types import VariantEncodingType, VariantAlleleType, VariantZygosityType
+from claragenomics.variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 from claragenomics.variantworks.types import VariantZygosity
 
 
-class DataLoader(DataLayerNM):
+class ReadPileupDataLoader(DataLayerNM):
     """Data layer that outputs (variant type, variant allele, variant position) tuples.
 
     Args:
@@ -53,14 +53,14 @@ class DataLoader(DataLayerNM):
     def output_ports(self):
         """Returns definitions of module output ports.
         """
-        if self.data_loader_type == DataLoader.Type.TEST:
+        if self.data_loader_type == ReadPileupDataLoader.Type.TEST:
             return {
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
+                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
         else:
             return {
-                "label": NeuralType(tuple('B'), VariantZygosityType()),
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), VariantEncodingType()),
+                "label": NeuralType(tuple('B'), VariantZygosityNeuralType()),
+                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
 
     def __init__(self, data_loader_type, sample_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=None, label_encoder=None):
@@ -81,35 +81,13 @@ class DataLoader(DataLayerNM):
             def __getitem__(self, idx):
                 sample = self.sample_loader[idx]
 
-                if self.data_loader_type == DataLoader.Type.TEST:
-                    if self.sample_encoder:
-                        sample = self.sample_encoder(sample)
+                if self.data_loader_type == ReadPileupDataLoader.Type.TEST:
+                    sample = self.sample_encoder(sample)
 
                     return sample
                 else:
-                    encoding = None
-                    label = None
-
-                    if (isinstance(sample, tuple) and len(sample) != 2):
-                        # Unknown number of outputs, throw error
-                        raise RuntimeError("Unknown number ofooutputs returned by sample loader class. \
-                                Can only handle single object or tuple of 2.")
-                    elif (isinstance(sample, tuple) and len(sample) == 2):
-                        # The sample loader is returning both label and encoding.
-                        label = sample[0]
-                        encoding = sample[1]
-
-                        # If encoding is provided for any of them, run the encoding
-                        if self.sample_encoder:
-                            encoding = self.sample_encoder(encoding)
-
-                        if self.label_encoder:
-                            label = self.label_encoder(label)
-                    else:
-                        # If sample loader returned only single output, then it needs to be run through
-                        # custom encoding for sample and label.
-                        encoding = self.sample_encoder(sample)
-                        label = self.label_encoder(sample)
+                    encoding = self.sample_encoder(sample)
+                    label = self.label_encoder(sample)
 
                     return label, encoding
 
