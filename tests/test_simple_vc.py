@@ -25,7 +25,7 @@ from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
 
-from claragenomics.variantworks.dataset import ReadPileupDataLoader
+from claragenomics.variantworks.dataloader import ReadPileupDataLoader
 from claragenomics.variantworks.label_loader import VCFLabelLoader
 from claragenomics.variantworks.networks import AlexNet
 from claragenomics.variantworks.result_writer import VCFResultWriter
