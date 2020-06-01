@@ -41,7 +41,8 @@ class AlexNet(TrainableNM):
         """Returns definitions of module output ports.
         """
         return {
-            'output_logit': NeuralType(('B', 'D'), LogitsType()),  # Variant type
+            # Variant type
+            'output_logit': NeuralType(('B', 'D'), LogitsType()),
         }
 
     def __init__(self, num_input_channels, num_output_logits):
@@ -50,7 +51,8 @@ class AlexNet(TrainableNM):
         self.num_input_channels = num_input_channels
 
         self.features = nn.Sequential(
-            nn.Conv2d(self.num_input_channels, 64, kernel_size=11, stride=4, padding=2),
+            nn.Conv2d(self.num_input_channels, 64,
+                      kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
             nn.Conv2d(64, 192, kernel_size=5, padding=2),
@@ -75,7 +77,8 @@ class AlexNet(TrainableNM):
         )
         self.classifier = nn.Linear(4096, self.num_output_logits)
 
-        self._device = torch.device("cuda" if self.placement == DeviceType.GPU else "cpu")
+        self._device = torch.device(
+            "cuda" if self.placement == DeviceType.GPU else "cpu")
         self.to(self._device)
 
     def forward(self, encoding):

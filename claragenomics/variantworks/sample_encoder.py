@@ -70,7 +70,8 @@ class PileupEncoder(SampleEncoder):
         self.layer_tensors = []
         self.layer_dict = {}
         for layer in layers:
-            tensor = torch.zeros((self.height, self.width), dtype=torch.float32)
+            tensor = torch.zeros(
+                (self.height, self.width), dtype=torch.float32)
             self.layer_tensors.append(tensor)
             self.layer_dict[layer] = tensor
 
@@ -101,13 +102,15 @@ class PileupEncoder(SampleEncoder):
         # Currently only support adding reads
         if layer == self.Layer.READ:
             # Fetch the subsequence based on the offsets
-            seq = pileupread.alignment.query_sequence[query_pos - left_offset: query_pos + right_offset]
+            seq = pileupread.alignment.query_sequence[query_pos -
+                                                      left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
         elif layer == self.Layer.BASE_QUALITY:
             # Fetch the subsequence based on the offsets
-            seq_qual = pileupread.alignment.query_qualities[query_pos - left_offset: query_pos + right_offset]
+            seq_qual = pileupread.alignment.query_qualities[query_pos -
+                                                            left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = seq_qual[seq_pos]
@@ -136,7 +139,8 @@ class PileupEncoder(SampleEncoder):
         variant_pos = variant.pos
         bam_file = variant.bam
 
-        assert(variant.type == VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
+        assert(variant.type ==
+               VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
 
         # Create BAM object if one hasn't been opened before.
         if (bam_file not in self.bams):
@@ -174,9 +178,11 @@ class PileupEncoder(SampleEncoder):
                 right_offset = min(self.window_size + 1, len(pileupread.alignment.query_sequence) -
                                    pileupread.query_position)
 
-                pileup_pos_range = (self.window_size - left_offset, self.window_size + right_offset)
+                pileup_pos_range = (
+                    self.window_size - left_offset, self.window_size + right_offset)
                 for layer in self.layers:
-                    self._fill_layer(layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant)
+                    self._fill_layer(layer, pileupread, left_offset,
+                                     right_offset, row, pileup_pos_range, variant)
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
@@ -205,6 +211,7 @@ class ZygosityLabelEncoder(SampleEncoder):
         assert(var_zyg in self._dict)
 
         return torch.tensor(self._dict[var_zyg])
+
 
 class ZygosityLabelDecoder(SampleEncoder):
     """A label encoder that returns an output label encoding for zygosity

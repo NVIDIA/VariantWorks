@@ -42,12 +42,14 @@ def test_simple_vc_trainer():
     tempdir = tempfile.mkdtemp()
 
     # Create neural factory
-    nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
+    nf = nemo.core.NeuralModuleFactory(
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
 
     # Generate dataset
     encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
                        PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
+    pileup_encoder = PileupEncoder(
+        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
@@ -55,7 +57,8 @@ def test_simple_vc_trainer():
     zyg_encoder = ZygosityLabelEncoder()
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
+    alexnet = AlexNet(num_input_channels=len(
+        encoding_layers), num_output_logits=3)
 
     # Create train DAG
     dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
@@ -102,7 +105,8 @@ def test_simple_vc_trainer():
 
     # Invoke the "train" action.
     nf.train([vz_loss],
-             callbacks=[logger_callback, checkpoint_callback, evaluator_callback],
+             callbacks=[logger_callback,
+                        checkpoint_callback, evaluator_callback],
              optimization_params={"num_epochs": 4, "lr": 0.001},
              optimizer="adam")
 
@@ -119,12 +123,14 @@ def test_simple_vc_infer():
     model_dir = os.path.join(test_data_dir, ".test_model")
 
     # Create neural factory
-    nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
+    nf = nemo.core.NeuralModuleFactory(
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
     encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
                        PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
+    pileup_encoder = PileupEncoder(
+        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
@@ -133,7 +139,8 @@ def test_simple_vc_infer():
                                         shuffle=False, sample_encoder=pileup_encoder)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
+    alexnet = AlexNet(num_input_channels=len(
+        encoding_layers), num_output_logits=3)
 
     # Create train DAG
     encoding = test_dataset()
@@ -147,7 +154,8 @@ def test_simple_vc_infer():
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            inferred_zygosity = [zyg_decoder(pred) for pred in predicted_classes]
+            inferred_zygosity = [zyg_decoder(pred)
+                                 for pred in predicted_classes]
 
     result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
 

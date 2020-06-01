@@ -42,7 +42,8 @@ def test_snp_encoder_basic(snp_variant):
     height = max_reads
     layers = [PileupEncoder.Layer.READ]
 
-    encoder = PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
     assert(encoder.size == (len(layers), height, width))
 
     variant = snp_variant
@@ -56,7 +57,8 @@ def test_snp_ref_encoding(snp_variant):
     window_size = 5
     layers = [PileupEncoder.Layer.REFERENCE]
 
-    encoder = PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
 
     variant = snp_variant
     encoding = encoder(variant)
@@ -68,7 +70,8 @@ def test_snp_allele_encoding(snp_variant):
     window_size = 5
     layers = [PileupEncoder.Layer.ALLELE]
 
-    encoder = PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
 
     variant = snp_variant
     encoding = encoder(variant)
@@ -82,6 +85,8 @@ def test_pileup_unknown_layer():
         width = 2 * window_size + 1
         height = max_reads
         layers = [PileupEncoder.Layer.BLAH]
-        encoder = PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+        encoder = PileupEncoder(window_size=window_size,
+                                max_reads=max_reads, layers=layers)
     except:
-        assert(True)  # Should reach here because an unknown layer is being passed in
+        # Should reach here because an unknown layer is being passed in
+        assert(True)

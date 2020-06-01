@@ -41,13 +41,15 @@ class VCFReader():
     """VCF based label loader for true and false positive example files.
     """
 
-    VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
+    VcfBamPaths = namedtuple(
+        'VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
 
     def __init__(self, vcf_bam_list):
         super().__init__()
         self._labels = []
         for elem in vcf_bam_list:
-            assert (elem.vcf is not None and elem.bam is not None and type(elem.is_fp) is bool)
+            assert (elem.vcf is not None and elem.bam is not None and type(
+                elem.is_fp) is bool)
             self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
 
     def __getitem__(self, idx):
@@ -93,13 +95,15 @@ class VCFReader():
             yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
                           allele=var_allele, quality=record.QUAL, filter=record.FILTER,
                           info=record.INFO, format=record.FORMAT.split(':'),
-                          samples=[[field_value for field_value in sample.data] for sample in record.samples],
+                          samples=[[field_value for field_value in sample.data]
+                                   for sample in record.samples],
                           zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
         """
-        assert(vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
+        assert(
+            vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
         if len(vcf_reader.samples) != 1:
             raise RuntimeError(
@@ -112,7 +116,8 @@ class VCFReader():
                 warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
             if len(record.ALT) > 1:
-                warnings.warn("%s is filtered - multiallele recrods are not supported" % record)
+                warnings.warn(
+                    "%s is filtered - multiallele recrods are not supported" % record)
                 continue
             for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp):
                 labels.append(variant)
