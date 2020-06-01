@@ -25,7 +25,7 @@ from claragenomics.variantworks.base_encoder import base_enum_encoder
 from claragenomics.variantworks.types import Variant, VariantType, VariantZygosity
 
 
-class BaseEncoder():
+class SampleEncoder():
     """An abstract class defining the interface to an encoder implementation. Encoder could
     be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
@@ -47,7 +47,7 @@ class BaseEncoder():
         raise NotImplementedError
 
 
-class PileupEncoder(BaseEncoder):
+class PileupEncoder(SampleEncoder):
     """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
     generates a pileup tensor around the variant position.
     """
@@ -60,7 +60,7 @@ class PileupEncoder(BaseEncoder):
         REFERENCE = 3
         ALLELE = 4
 
-    def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ]):
+    def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -72,6 +72,10 @@ class PileupEncoder(BaseEncoder):
             tensor = torch.zeros((self.height, self.width), dtype=torch.float32)
             self.layer_tensors.append(tensor)
             self.layer_dict[layer] = tensor
+        if base_encoder:
+            self.base_encoder = base_encoder
+        else:
+            self.base_encoder = base_enum_encoder
 
     @property
     def width(self):
@@ -103,7 +107,7 @@ class PileupEncoder(BaseEncoder):
             seq = pileupread.alignment.query_sequence[query_pos - left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = base_enum_encoder[seq[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
         elif layer == self.Layer.BASE_QUALITY:
             # Fetch the subsequence based on the offsets
             seq_qual = pileupread.alignment.query_qualities[query_pos - left_offset: query_pos + right_offset]
@@ -118,10 +122,10 @@ class PileupEncoder(BaseEncoder):
                 tensor[row, pileup_pos] = map_qual
         elif layer == self.Layer.REFERENCE:
             # Only encode the reference at the variant position, rest all 0
-            tensor[row, self.window_size] = base_enum_encoder[variant.ref]
+            tensor[row, self.window_size] = self.base_encoder[variant.ref]
         elif layer == self.Layer.ALLELE:
             # Only encode the allele at the variant position, rest all 0
-            tensor[row, self.window_size] = base_enum_encoder[variant.allele]
+            tensor[row, self.window_size] = self.base_encoder[variant.allele]
 
     def __call__(self, variant):
         """Returns a torch Tensor pileup queried from a BAM file.
@@ -182,7 +186,7 @@ class PileupEncoder(BaseEncoder):
         return encoding
 
 
-class ZygosityLabelEncoder(BaseEncoder):
+class ZygosityLabelEncoder(SampleEncoder):
     """A label encoder that returns an output label encoding for zygosity
     only. Converts zygosity type to a class number.
     """

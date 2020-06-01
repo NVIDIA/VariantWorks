@@ -24,7 +24,7 @@ from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import *
 
-from claragenomics.variantworks.base_encoder import base_enum_encoder
+from claragenomics.variantworks.sample_encoder import PileupEncoder
 from claragenomics.variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 from claragenomics.variantworks.types import VariantZygosity
 
