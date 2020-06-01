@@ -46,7 +46,8 @@ class VCFResultWriter(ResultWriter):
         self.vcf_path_to_reader_writer = dict()
         self.variant_label_loader = variant_label_loader
         self.inferred_zygosities = inferred_zygosities
-        self.output_location = Path(output_location) if output_location else Path(mkdtemp())
+        self.output_location = Path(
+            output_location) if output_location else Path(mkdtemp())
 
     def _get_encoded_zygosity_to_genotype(self, idx):
         return VCFResultWriter.zygosity_to_vcf_genotype[self.inferred_zygosities[idx]]
@@ -56,7 +57,8 @@ class VCFResultWriter(ResultWriter):
         ret_list = list()
         for k, v in info_dict.items():
             if type(v) is list:
-                ret_list.append("{}={}".format(k, ','.join(map(lambda x: str(x), v))))
+                ret_list.append("{}={}".format(
+                    k, ','.join(map(lambda x: str(x), v))))
             elif type(v) is bool:
                 ret_list.append(str(k))
             else:
@@ -68,9 +70,11 @@ class VCFResultWriter(ResultWriter):
             [variant.chrom, variant.pos, variant.id, variant.ref,
              variant.allele, variant.quality, variant.filter,
              self._serialize_record_info(variant.info), ':'.join(variant.format)]
-        output_line = [str(entry) if entry is not None else '.' for entry in output_line]
+        output_line = [
+            str(entry) if entry is not None else '.' for entry in output_line]
         # We don't support multisample - only set the inferred GT value for the first sample
-        variant.samples[0][variant.format.index('GT')] = self._get_encoded_zygosity_to_genotype(idx)
+        variant.samples[0][variant.format.index(
+            'GT')] = self._get_encoded_zygosity_to_genotype(idx)
         variant.samples = [':'.join([str(field_value) if field_value is not None else '.'
                                      for field_value in sample])
                            for sample in variant.samples]
@@ -82,7 +86,8 @@ class VCFResultWriter(ResultWriter):
         vcf_reader = vcf.Reader(filename=str(vcf_file_path))
         modified_headers_metadata = vcf_reader._header_lines
         for meta_data_line in append_to_format_headers:
-            metadata_type_to_search = re.search('##(.*=<)', meta_data_line).group(1)
+            metadata_type_to_search = re.search(
+                '##(.*=<)', meta_data_line).group(1)
             last_format_header_line_index = \
                 max([line_number for line_number, hline in enumerate(modified_headers_metadata)
                      if metadata_type_to_search in hline])
@@ -90,14 +95,17 @@ class VCFResultWriter(ResultWriter):
                 modified_headers_metadata[0:last_format_header_line_index + 1] + \
                 [meta_data_line] + \
                 modified_headers_metadata[last_format_header_line_index + 1:]
-        modified_headers_metadata.append('#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
+        modified_headers_metadata.append(
+            '#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
         return '\n'.join(modified_headers_metadata) + '\n'
 
     def _get_variant_file_writer(self, variant):
         vcf_file_path = os.path.abspath(variant.vcf)
         if vcf_file_path not in self.vcf_path_to_reader_writer:
-            vcf_writer = open(os.path.join(self.output_location, os.path.basename(vcf_file_path + '.vcf')), 'w')
-            vcf_writer.write(self._get_modified_reader_headers(vcf_file_path, []))
+            vcf_writer = open(os.path.join(
+                self.output_location, os.path.basename(vcf_file_path + '.vcf')), 'w')
+            vcf_writer.write(
+                self._get_modified_reader_headers(vcf_file_path, []))
             self.vcf_path_to_reader_writer[vcf_file_path] = vcf_writer
         return self.vcf_path_to_reader_writer[vcf_file_path]
 
