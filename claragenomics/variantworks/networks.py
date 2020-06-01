@@ -22,8 +22,6 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import *
 from nemo.core.neural_factory import DeviceType
 
-from claragenomics.variantworks.neural_types import ReadPileupNeuralType
-
 
 class AlexNet(TrainableNM):
     @property
@@ -32,7 +30,7 @@ class AlexNet(TrainableNM):
         """Returns definitions of module input ports.
         """
         return {
-            "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+            "encoding": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
         }
 
     @property
