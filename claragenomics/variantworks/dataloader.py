@@ -24,7 +24,7 @@ from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import *
 
-from claragenomics.variantworks.sample_encoder import PileupEncoder
+from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 from claragenomics.variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 from claragenomics.variantworks.types import VariantZygosity
 
@@ -65,7 +65,11 @@ class ReadPileupDataLoader(DataLayerNM):
 
     def __init__(self, data_loader_type, sample_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=None, label_encoder=None):
         super().__init__()
+
         self.data_loader_type = data_loader_type
+        self.sample_loader = sample_loader
+        self.sample_encoder = sample_encoder if sample_encoder is not None else PileupEncoder(window_size=50, max_reads=50, layers=[PileupEncoder.Layer.READ])
+        self.label_encoder = label_encoder if label_encoder is not None else ZygosityLabelEncoder()
 
         class DatasetWrapper(TorchDataset):
             def __init__(self, data_loader_type, sample_encoder, sample_loader, label_encoder):
@@ -91,7 +95,7 @@ class ReadPileupDataLoader(DataLayerNM):
 
                     return label, encoding
 
-        dataset = DatasetWrapper(data_loader_type, sample_encoder, sample_loader, label_encoder)
+        dataset = DatasetWrapper(data_loader_type, self.sample_encoder, self.sample_loader, self.label_encoder)
         self.dataloader = TorchDataLoader(dataset,
                                           batch_size=batch_size, shuffle=shuffle,
                                           num_workers=num_workers)

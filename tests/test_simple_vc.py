@@ -29,7 +29,7 @@ from claragenomics.variantworks.dataloader import ReadPileupDataLoader
 from claragenomics.variantworks.io.vcfio import VCFReader
 from claragenomics.variantworks.networks import AlexNet
 from claragenomics.variantworks.result_writer import VCFResultWriter
-from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
 
 
 from test_utils import get_data_folder
@@ -129,9 +129,8 @@ def test_simple_vc_infer():
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
-    zyg_encoder = ZygosityLabelEncoder()
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
-                                        shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+                                        shuffle=False, sample_encoder=pileup_encoder)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=len(encoding_layers), num_output_logits=3)
@@ -144,10 +143,11 @@ def test_simple_vc_infer():
     results = nf.infer([vz], checkpoint_dir=model_dir, verbose=True)
 
     # Decode inference results to labels
+    zyg_decoder = ZygosityLabelDecoder()
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            inferred_zygosity = [zyg_encoder.decode_class(pred) for pred in predicted_classes]
+            inferred_zygosity = [zyg_decoder(pred) for pred in predicted_classes]
 
     result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
 

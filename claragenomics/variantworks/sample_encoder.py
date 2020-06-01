@@ -66,16 +66,13 @@ class PileupEncoder(SampleEncoder):
         self.max_reads = max_reads
         self.layers = layers
         self.bams = dict()
+        self.base_encoder = base_encoder if base_encoder is not None else base_enum_encoder
         self.layer_tensors = []
         self.layer_dict = {}
         for layer in layers:
             tensor = torch.zeros((self.height, self.width), dtype=torch.float32)
             self.layer_tensors.append(tensor)
             self.layer_dict[layer] = tensor
-        if base_encoder:
-            self.base_encoder = base_encoder
-        else:
-            self.base_encoder = base_enum_encoder
 
     @property
     def width(self):
@@ -199,13 +196,6 @@ class ZygosityLabelEncoder(SampleEncoder):
             VariantZygosity.HETEROZYGOUS: 2,
         }
 
-        self._inverse = {
-            0: VariantZygosity.NO_VARIANT,
-            1: VariantZygosity.HOMOZYGOUS,
-            2: VariantZygosity.HETEROZYGOUS,
-        }
-        pass
-
     def size(self):
         return ((1))
 
@@ -216,6 +206,22 @@ class ZygosityLabelEncoder(SampleEncoder):
 
         return torch.tensor(self._dict[var_zyg])
 
-    def decode_class(self, class_id):
-        assert(class_id.item() in self._inverse)
-        return self._inverse[class_id.item()]
+class ZygosityLabelDecoder(SampleEncoder):
+    """A label encoder that returns an output label encoding for zygosity
+    only. Converts zygosity type to a class number.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._dict = {
+            0: VariantZygosity.NO_VARIANT,
+            1: VariantZygosity.HOMOZYGOUS,
+            2: VariantZygosity.HETEROZYGOUS,
+        }
+
+    def size(self):
+        return ((1))
+
+    def __call__(self, class_id):
+        assert(class_id.item() in self._dict)
+        return self._dict[class_id.item()]
