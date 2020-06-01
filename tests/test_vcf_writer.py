@@ -18,7 +18,7 @@ import os
 import shutil
 import vcf
 
-from claragenomics.variantworks.label_loader import VCFLabelLoader
+from claragenomics.variantworks.io.vcfio import VCFReader
 from claragenomics.variantworks.types import VariantZygosity
 from claragenomics.variantworks.result_writer import VCFResultWriter
 
@@ -38,11 +38,11 @@ class MockPyVCFReader:
 def test_vcf_outputting(monkeypatch):
     """Write inference output into vcf files
     """
-    first_vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
-    second_vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
+    first_vcf_bam_tuple = VCFReader.VcfBamPaths(vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
+    second_vcf_bam_tuple = VCFReader.VcfBamPaths(vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
     with monkeypatch.context() as mp:
         mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        vcf_loader = VCFLabelLoader([first_vcf_bam_tuple, second_vcf_bam_tuple])
+        vcf_loader = VCFReader([first_vcf_bam_tuple, second_vcf_bam_tuple])
     inferred_results = [VariantZygosity.HOMOZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS,
                         VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS]
     assert (len(inferred_results) == len(vcf_loader))

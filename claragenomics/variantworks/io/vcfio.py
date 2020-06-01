@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-# Abstract and implementation clases for label loaders.
+# Implementation clases for VCF IO.
 from abc import ABC, abstractmethod
 from collections import namedtuple
 import vcf
@@ -23,27 +23,32 @@ import warnings
 from claragenomics.variantworks.types import VariantZygosity, VariantType, Variant
 
 
-class LabelLoaderIterator:
-    def __init__(self, label_loader):
-        assert(isinstance(label_loader, BaseLabelLoader))
-        self._label_loader = label_loader
+class VCFReaderIterator:
+    def __init__(self, vcf_reader):
+        assert(isinstance(vcf_reader, VCFReader))
+        self._vcf_reader = vcf_reader
         self._index = 0
 
     def __next__(self):
-        if self._index < len(self._label_loader):
-            result = self._label_loader[self._index]
+        if self._index < len(self._vcf_reader):
+            result = self._vcf_reader[self._index]
             self._index += 1
             return result
         raise StopIteration
 
 
-class BaseLabelLoader(ABC):
-    @abstractmethod
-    def __init__(self):
-        """Base class label loader that sotres variant filters and implements indexing
-        and length methods.
-        """
+class VCFReader():
+    """VCF based label loader for true and false positive example files.
+    """
+
+    VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
+
+    def __init__(self, vcf_bam_list):
+        super().__init__()
         self._labels = []
+        for elem in vcf_bam_list:
+            assert (elem.vcf is not None and elem.bam is not None and type(elem.is_fp) is bool)
+            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
 
     def __getitem__(self, idx):
         return self._labels[idx]
@@ -52,20 +57,7 @@ class BaseLabelLoader(ABC):
         return len(self._labels)
 
     def __iter__(self):
-        return LabelLoaderIterator(self)
-
-
-class VCFLabelLoader(BaseLabelLoader):
-    """VCF based label loader for true and false positive example files.
-    """
-
-    VcfBamPaths = namedtuple('VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
-
-    def __init__(self, vcf_bam_list):
-        super().__init__()
-        for elem in vcf_bam_list:
-            assert (elem.vcf is not None and elem.bam is not None and type(elem.is_fp) is bool)
-            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
+        return VCFReaderIterator(self)
 
     @staticmethod
     def _get_variant_zygosity(record, is_fp=False):
