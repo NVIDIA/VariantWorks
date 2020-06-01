@@ -76,12 +76,14 @@ def get_tracked_files(repo_root):
     repo_root - Root folder for git
     """
     os.chdir(repo_root)
-    branch = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8')
+    branch = check_output(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8')
     branch = branch.replace('\n', '')
     filelist = check_output(["git", "ls-tree", "-r", branch, "--name-only"])
     tracked_files = list()
     for tracked_file in filelist.splitlines():
-        tracked_files.append(os.path.join(repo_root, tracked_file.decode('utf-8')))
+        tracked_files.append(os.path.join(
+            repo_root, tracked_file.decode('utf-8')))
     return tracked_files
 
 

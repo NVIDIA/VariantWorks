@@ -19,17 +19,17 @@ import os
 import pytest
 import shutil
 import tempfile
-
+import torch
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
-import torch
 
-from claragenomics.variantworks.dataset import VariantDataLoader
-from claragenomics.variantworks.label_loader import VCFLabelLoader
+from claragenomics.variantworks.dataloader import ReadPileupDataLoader
+from claragenomics.variantworks.io.vcfio import VCFReader
 from claragenomics.variantworks.networks import AlexNet
-from claragenomics.variantworks.variant_encoder import PileupEncoder, ZygosityLabelEncoder
+from claragenomics.variantworks.result_writer import VCFResultWriter
+from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
 
 
 from test_utils import get_data_folder
@@ -42,29 +42,35 @@ def test_simple_vc_trainer():
     tempdir = tempfile.mkdtemp()
 
     # Create neural factory
-    nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
+    nf = nemo.core.NeuralModuleFactory(
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(window_size=100, max_reads=100, layers=encoding_layers)
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+    pileup_encoder = PileupEncoder(
+        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
-    vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFLabelLoader([vcf_bam_tuple])
+    vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
+    vcf_loader = VCFReader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
+    alexnet = AlexNet(num_input_channels=len(
+        encoding_layers), num_output_logits=3)
 
     # Create train DAG
-    dataset_train = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=True)
+    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
+                                         batch_size=32, shuffle=True, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    dataset_eval = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, vcf_loader, batch_size=32,
+                                        shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
     vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
@@ -72,36 +78,37 @@ def test_simple_vc_trainer():
 
     # Logger callback
     logger_callback = nemo.core.SimpleLossLoggerCallback(
-            tensors=[vz_loss, vz, vz_labels],
-            step_freq=1,
-            )
+        tensors=[vz_loss, vz, vz_labels],
+        step_freq=1,
+    )
 
     evaluator_callback = nemo.core.EvaluatorCallback(
-            eval_tensors=[vz_loss_eval, vz_eval, vz_labels_eval],
-            user_iter_callback=eval_iter_callback,
-            user_epochs_done_callback=eval_epochs_done_callback,
-            eval_step=1,
-            )
+        eval_tensors=[vz_loss_eval, vz_eval, vz_labels_eval],
+        user_iter_callback=eval_iter_callback,
+        user_epochs_done_callback=eval_epochs_done_callback,
+        eval_step=1,
+    )
 
     # Checkpointing models through NeMo callback
     checkpoint_callback = nemo.core.CheckpointCallback(
-            folder=nf.checkpoint_dir,
-            load_from_folder=None,
-            # Checkpointing frequency in steps
-            step_freq=-1,
-            # Checkpointing frequency in epochs
-            epoch_freq=1,
-            # Number of checkpoints to keep
-            checkpoints_to_keep=1,
-            # If True, CheckpointCallback will raise an Error if restoring fails
-            force_load=False
-            )
+        folder=nf.checkpoint_dir,
+        load_from_folder=None,
+        # Checkpointing frequency in steps
+        step_freq=-1,
+        # Checkpointing frequency in epochs
+        epoch_freq=1,
+        # Number of checkpoints to keep
+        checkpoints_to_keep=1,
+        # If True, CheckpointCallback will raise an Error if restoring fails
+        force_load=False
+    )
 
     # Invoke the "train" action.
     nf.train([vz_loss],
-            callbacks=[logger_callback, checkpoint_callback, evaluator_callback],
-            optimization_params={"num_epochs": 4, "lr": 0.001},
-            optimizer="adam")
+             callbacks=[logger_callback,
+                        checkpoint_callback, evaluator_callback],
+             optimization_params={"num_epochs": 4, "lr": 0.001},
+             optimizer="adam")
 
     # Remove checkpoint directory
     model_dir = os.path.join(get_data_folder(), ".test_model")
@@ -116,31 +123,42 @@ def test_simple_vc_infer():
     model_dir = os.path.join(test_data_dir, ".test_model")
 
     # Create neural factory
-    nf = nemo.core.NeuralModuleFactory(placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
+    nf = nemo.core.NeuralModuleFactory(
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(window_size = 100, max_reads = 100, layers = encoding_layers)
+    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
+                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+    pileup_encoder = PileupEncoder(
+        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
-    vcf_bam_tuple = VCFLabelLoader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFLabelLoader([vcf_bam_tuple])
-    zyg_encoder = ZygosityLabelEncoder()
-    test_dataset = VariantDataLoader(pileup_encoder, vcf_loader, zyg_encoder, batch_size=32, shuffle=False)
+    vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
+    vcf_loader = VCFReader([vcf_bam_tuple])
+    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
+                                        shuffle=False, sample_encoder=pileup_encoder)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(encoding_layers), num_vz=3)
+    alexnet = AlexNet(num_input_channels=len(
+        encoding_layers), num_output_logits=3)
 
     # Create train DAG
-    _, encoding = test_dataset()
+    encoding = test_dataset()
     vz = alexnet(encoding=encoding)
 
     # Invoke the "train" action.
     results = nf.infer([vz], checkpoint_dir=model_dir, verbose=True)
+
+    # Decode inference results to labels
+    zyg_decoder = ZygosityLabelDecoder()
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            for pred in predicted_classes:
-                print(zyg_encoder.decode_class(pred))
+            inferred_zygosity = [zyg_decoder(pred)
+                                 for pred in predicted_classes]
+
+    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
+
+    result_writer.write_output()
 
     shutil.rmtree(model_dir)
