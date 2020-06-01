@@ -92,12 +92,15 @@ class VCFReader():
         # Split multi alleles into multiple entries
         for alt in record.ALT:
             var_allele = alt.sequence
-            yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
-                          allele=var_allele, quality=record.QUAL, filter=record.FILTER,
-                          info=record.INFO, format=record.FORMAT.split(':'),
-                          samples=[[field_value for field_value in sample.data]
-                                   for sample in record.samples],
-                          zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
+            try:
+                yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
+                              allele=var_allele, quality=record.QUAL, filter=record.FILTER,
+                              info=record.INFO, format=record.FORMAT.split(':'),
+                              samples=[[field_value for field_value in sample.data]
+                                       for sample in record.samples],
+                              zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
+            except:
+                raise RuntimeError("Could not parse variant from entry - {}".format(record))
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
