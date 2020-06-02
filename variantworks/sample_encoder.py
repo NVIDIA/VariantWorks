@@ -13,16 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-# Classes and functions to encode pileups
+"""Classes and functions for encoding samples."""
 
 import abc
 from enum import Enum
 import pysam
 import torch
 
-from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.types import Variant, VariantType, VariantZygosity
+from variantworks.base_encoder import base_enum_encoder
+from variantworks.types import Variant, VariantType, VariantZygosity
 
 
 class SampleEncoder():
@@ -33,27 +32,26 @@ class SampleEncoder():
     def __init__(self):
         pass
 
-    @property
     @abc.abstractmethod
-    def size(self):
-        """Return size of encoding.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __call__(self, variant):
+    def __call__(self, *sample):
         """Computes the encoding of a sample.
         """
+
         raise NotImplementedError
 
 
 class PileupEncoder(SampleEncoder):
-    """A pileup encoder for SNVs. For a given SNP position and base context, the encoder
-    generates a pileup tensor around the variant position.
+    """A pileup encoder for SNPs.
+
+    For a given SNP position and nucleotide context, the encoder generates a pileup
+    tensor around the variant position. The pileup can have configurable depth based on
+    the type of information that is selected to be embedded.
     """
+
     class Layer(Enum):
         """Layers that can be added to the pileup encoding.
         """
+
         READ = 0
         BASE_QUALITY = 1
         MAPPING_QUALITY = 2
@@ -61,6 +59,21 @@ class PileupEncoder(SampleEncoder):
         ALLELE = 4
 
     def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
+        """Constructor for class.
+
+        Args:
+            window_size : A nucleotide context size on either side of variant position [50].
+            max_reads : Max number of reads to consider in the pileip. If reads fewer than max_reads
+            are available, the entries are all masked to 0. [50]
+            layers : A list defining the layers to add to the encoding. The ordering of channels in the
+            encoding follows the ordering of layers in the list. [Layer.READ]
+            base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
+            [base_encoder.base_enum_encoder]
+
+        Returns:
+            Instance of class.
+        """
+
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -77,23 +90,23 @@ class PileupEncoder(SampleEncoder):
 
     @property
     def width(self):
+        """Returns width of pileup."""
+
         return 2 * self.window_size + 1
 
     @property
     def height(self):
+        """Returns height of pileup."""
+
         return self.max_reads
 
     @property
     def depth(self):
+        """Returns number of layers in pileup."""
+
         return len(self.layers)
 
-    @property
-    def size(self):
-        return ((self.depth, self.height, self.width))
-
     def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant):
-        """Generate encoding for requested layer in pileup.
-        """
         # print(len(pileupread.alignment.get_reference_sequence()))
         tensor = self.layer_dict[layer]
 
@@ -131,9 +144,9 @@ class PileupEncoder(SampleEncoder):
         """Returns a torch Tensor pileup queried from a BAM file.
 
         Args:
-            bam_file : Path to bam file
-            variant : Variant struct holding information about variant locus
+            variant : Variant struct holding information about variant locus.
         """
+
         # Locus information
         chrom = variant.chrom
         variant_pos = variant.pos
@@ -195,6 +208,8 @@ class ZygosityLabelEncoder(SampleEncoder):
     """
 
     def __init__(self):
+        """Constructor."""
+
         super().__init__()
         self._dict = {
             VariantZygosity.NO_VARIANT: 0,
@@ -202,10 +217,13 @@ class ZygosityLabelEncoder(SampleEncoder):
             VariantZygosity.HETEROZYGOUS: 2,
         }
 
-    def size(self):
-        return ((1))
-
     def __call__(self, variant):
+        """Encodes variant to class for zygosity.
+
+        Returns:
+           Zygosity encoded as number.
+        """
+
         assert(isinstance(variant, Variant))
         var_zyg = variant.zygosity
         assert(var_zyg in self._dict)
@@ -214,8 +232,7 @@ class ZygosityLabelEncoder(SampleEncoder):
 
 
 class ZygosityLabelDecoder(SampleEncoder):
-    """A label encoder that returns an output label encoding for zygosity
-    only. Converts zygosity type to a class number.
+    """A decoder to convert a class to a zygosity enum.
     """
 
     def __init__(self):
@@ -226,9 +243,12 @@ class ZygosityLabelDecoder(SampleEncoder):
             2: VariantZygosity.HETEROZYGOUS,
         }
 
-    def size(self):
-        return ((1))
-
     def __call__(self, class_id):
+        """Decodes class to variant zygosity enum.
+
+        Returns:
+            Variant zygosity.
+        """
+
         assert(class_id.item() in self._dict)
         return self._dict[class_id.item()]

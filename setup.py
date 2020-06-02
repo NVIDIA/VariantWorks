@@ -13,7 +13,7 @@
 
 import os
 
-from setuptools import find_namespace_packages, setup
+from setuptools import find_packages, setup
 
 
 def get_verified_absolute_path(path):
@@ -75,9 +75,9 @@ setup(name='variantworks',
           get_verified_absolute_path(
               os.path.join(current_dir, 'requirements.txt')))
       ],
-      packages=find_namespace_packages(where=current_dir,
-                                       include=['claragenomics.*']),
-      python_requires='>=3.5',
+      packages=find_packages(where=current_dir,
+                             include=['variantworks']),
+      python_requires='>=3.7',
       long_description='Python libraries and utilities for manipulating '
                        'genomics data',
       classifiers=pyaw_classifiers,

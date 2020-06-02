@@ -25,11 +25,11 @@ from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
 
-from claragenomics.variantworks.dataloader import ReadPileupDataLoader
-from claragenomics.variantworks.io.vcfio import VCFReader
-from claragenomics.variantworks.networks import AlexNet
-from claragenomics.variantworks.result_writer import VCFResultWriter
-from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
+from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.io.vcfio import VCFReader
+from variantworks.networks import AlexNet
+from variantworks.result_writer import VCFResultWriter
+from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
 
 
 from test_utils import get_data_folder
@@ -52,7 +52,7 @@ def test_simple_vc_trainer():
         window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
-    vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
+    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
     zyg_encoder = ZygosityLabelEncoder()
 
@@ -133,7 +133,7 @@ def test_simple_vc_infer():
         window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
-    vcf_bam_tuple = VCFReader.VcfBamPaths(vcf=labels, bam=bam, is_fp=False)
+    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
                                         shuffle=False, sample_encoder=pileup_encoder)
