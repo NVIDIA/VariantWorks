@@ -16,7 +16,7 @@
 
 import pytest
 
-from claragenomics.variantworks.base_encoder import base_enum_encoder
+from variantworks.base_encoder import base_enum_encoder
 
 
 def test_base_encoder():

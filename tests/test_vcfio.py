@@ -16,8 +16,8 @@
 
 import pytest
 
-from claragenomics.variantworks.io.vcfio import VCFReader
-from claragenomics.variantworks.types import VariantZygosity
+from variantworks.io.vcfio import VCFReader
+from variantworks.types import VariantZygosity
 
 from data.vcf_file_mock import MockPyVCFReader
 
@@ -25,7 +25,7 @@ from data.vcf_file_mock import MockPyVCFReader
 def test_vcf_loader_snps(monkeypatch):
     """Get all variants from mocked file stream, filter SNPs, multi allele & multi samples
     """
-    vcf_bam_tuple = VCFReader.VcfBamPaths(
+    vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     vcf_loader = \
         MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
@@ -35,7 +35,7 @@ def test_vcf_loader_snps(monkeypatch):
 def test_vcf_fetch_variant(monkeypatch):
     """Get first variant from mocked VCF file stream.
     """
-    vcf_bam_tuple = VCFReader.VcfBamPaths(
+    vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     vcf_loader = \
         MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
@@ -48,7 +48,7 @@ def test_vcf_fetch_variant(monkeypatch):
 def test_vcf_load_fp(monkeypatch):
     """Get first variant from false positive mocked VCF file stream and check zygosity.
     """
-    vcf_bam_tuple = VCFReader.VcfBamPaths(
+    vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=True)
     vcf_loader = \
         MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
@@ -59,9 +59,9 @@ def test_vcf_load_fp(monkeypatch):
 def test_vcf_load_variant_from_multiple_files(monkeypatch):
     """Get variants from multiple mocked VCF files.
     """
-    first_vcf_bam_tuple = VCFReader.VcfBamPaths(
+    first_vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
-    second_vcf_bam_tuple = VCFReader.VcfBamPaths(
+    second_vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     vcf_loader = MockPyVCFReader.get_reader(
         monkeypatch, [first_vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
@@ -73,7 +73,7 @@ def test_vcf_load_variant_from_multiple_files(monkeypatch):
 def test_load_vcf_content_with_wrong_format(monkeypatch):
     """ parse vcf file with wrong format
     """
-    vcf_bam_tuple = VCFReader.VcfBamPaths(
+    vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     with pytest.raises(RuntimeError):
         vcf_loader = \
