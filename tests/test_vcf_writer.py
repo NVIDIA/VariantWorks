@@ -18,9 +18,9 @@ import os
 import shutil
 import vcf
 
-from claragenomics.variantworks.io.vcfio import VCFReader
-from claragenomics.variantworks.types import VariantZygosity
-from claragenomics.variantworks.result_writer import VCFResultWriter
+from variantworks.io.vcfio import VCFReader
+from variantworks.types import VariantZygosity
+from variantworks.result_writer import VCFResultWriter
 
 from data.vcf_file_mock import mock_vcf_file_reader_input
 
@@ -39,9 +39,9 @@ class MockPyVCFReader:
 def test_vcf_outputting(monkeypatch):
     """Write inference output into vcf files
     """
-    first_vcf_bam_tuple = VCFReader.VcfBamPaths(
+    first_vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
-    second_vcf_bam_tuple = VCFReader.VcfBamPaths(
+    second_vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
     with monkeypatch.context() as mp:
         mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)

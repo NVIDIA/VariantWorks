@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Set of functions and classes to write results of inference to various output formats."""
 
 from abc import ABC, abstractmethod
 import os
@@ -21,10 +22,12 @@ import re
 from tempfile import mkdtemp
 import vcf
 
-from claragenomics.variantworks.types import VariantZygosity
+from variantworks.types import VariantZygosity
 
 
 class ResultWriter(ABC):
+    """Abstract base class for result writers."""
+
     @abstractmethod
     def __init__(self):
         pass
@@ -35,6 +38,7 @@ class ResultWriter(ABC):
 
 
 class VCFResultWriter(ResultWriter):
+    """A result writer that outputs predicted zygosities to VCFs."""
 
     zygosity_to_vcf_genotype = {
         VariantZygosity.NO_VARIANT:     "0/0",
@@ -43,6 +47,17 @@ class VCFResultWriter(ResultWriter):
     }
 
     def __init__(self, variant_label_loader, inferred_zygosities, output_location=None):
+        """Constructor for VCFResultWriter class.
+
+        Args:
+            variant_label_loader : An instance of a VCF loader class.
+            inferred_zygosities : A list of inferred zygosity for each variant in VCF loader.
+            output_location : Output directory for result VCFs.
+
+        Returns:
+            Instance of class.
+        """
+
         self.vcf_path_to_reader_writer = dict()
         self.variant_label_loader = variant_label_loader
         self.inferred_zygosities = inferred_zygosities
@@ -110,6 +125,9 @@ class VCFResultWriter(ResultWriter):
         return self.vcf_path_to_reader_writer[vcf_file_path]
 
     def write_output(self):
+        """Write final output to file.
+        """
+
         # Iterate over all variances
         for idx, variant in enumerate(self.variant_label_loader):
             file_writer = self._get_variant_file_writer(variant)

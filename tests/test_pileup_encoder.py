@@ -18,9 +18,9 @@ import os
 import pytest
 import torch
 
-from claragenomics.variantworks.base_encoder import base_enum_encoder
-from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
-from claragenomics.variantworks.sample_encoder import PileupEncoder
+from variantworks.base_encoder import base_enum_encoder
+from variantworks.types import Variant, VariantZygosity, VariantType
+from variantworks.sample_encoder import PileupEncoder
 
 from test_utils import get_data_folder
 
@@ -44,7 +44,6 @@ def test_snp_encoder_basic(snp_variant):
 
     encoder = PileupEncoder(window_size=window_size,
                             max_reads=max_reads, layers=layers)
-    assert(encoder.size == (len(layers), height, width))
 
     variant = snp_variant
 

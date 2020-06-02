@@ -13,17 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Classes for reading and writing VCFs."""
 
-# Implementation clases for VCF IO.
 from abc import ABC, abstractmethod
 from collections import namedtuple
 import vcf
 import warnings
 
-from claragenomics.variantworks.types import VariantZygosity, VariantType, Variant
+from variantworks.types import VariantZygosity, VariantType, Variant
 
 
 class VCFReaderIterator:
+    """Iterator class for VCF reader."""
+
     def __init__(self, vcf_reader):
         assert(isinstance(vcf_reader, VCFReader))
         self._vcf_reader = vcf_reader
@@ -38,13 +40,22 @@ class VCFReaderIterator:
 
 
 class VCFReader():
-    """VCF based label loader for true and false positive example files.
+    """Reader for VCF files.
     """
 
-    VcfBamPaths = namedtuple(
+    VcfBamPath = namedtuple(
         'VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
 
     def __init__(self, vcf_bam_list):
+        """Constructor.
+
+        Args:
+            vcf_bam_list : A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.
+
+        Returns:
+           Instance of class.
+        """
+
         super().__init__()
         self._labels = []
         for elem in vcf_bam_list:
@@ -64,7 +75,17 @@ class VCFReader():
     @staticmethod
     def _get_variant_zygosity(record, is_fp=False):
         """Determine variant type from pyvcf record.
+
+        False positive variants are considered NO_VARIANT entries.
+
+        Args:
+            record : a pyVCF record.
+            is_fp : is the record a false positive variant.
+
+        Returns:
+            A variant type
         """
+
         if is_fp:
             return VariantZygosity.NO_VARIANT
         if record.num_het > 0:
@@ -76,7 +97,14 @@ class VCFReader():
     @staticmethod
     def _get_variant_type(record):
         """Determine variant type.
+
+        Args:
+            record : pyVCF entry.
+
+        Returns:
+            Type of variant - SNP, INSERTION or DELETION
         """
+
         if record.is_snp:
             return VariantType.SNP
         elif record.is_indel:
@@ -87,6 +115,19 @@ class VCFReader():
         raise ValueError("Unexpected variant type - {}".format(record))
 
     def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
+        """Create a variant record from pyVCF record.
+
+
+        Args:
+            record : pyVCF record
+            vcf_file : Path to VCF file
+            bam : Path to corresponding BAM file
+            is_fp : Boolean indicating whether entry is a false positive variant or not.
+
+        Returns:
+           Variant dataclass record.
+        """
+
         var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
@@ -101,7 +142,15 @@ class VCFReader():
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
+
+
+        Args:
+            vcf_file : Path to VCF file.
+            bam : Path to BAM file for VCF.
+            labels : List to store parsed variant records.
+            is_fp : Boolean to indicate if file is for false positive variants.
         """
+
         assert(
             vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
