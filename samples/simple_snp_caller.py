@@ -26,10 +26,11 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
 import torch
 
-from claragenomics.variantworks.dataloader import ReadPileupDataLoader
-from claragenomics.variantworks.io.vcfio import VCFReader
-from claragenomics.variantworks.networks import AlexNet
-from claragenomics.variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
+from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.io.vcfio import VCFReader
+from variantworks.networks import AlexNet
+from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
+from variantworks.result_writer import VCFResultWriter
 
 
 from distutils.dir_util import copy_tree
@@ -65,8 +66,8 @@ def train():
     # Setup loss
     
     # Create train DAG
-    tp_vcf = VCFReader.VcfBamPaths(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_tp.vcf.gz", bam=bam, is_fp=False)
-    fp_vcf = VCFReader.VcfBamPaths(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
+    tp_vcf = VCFReader.VcfBamPath(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_tp.vcf.gz", bam=bam, is_fp=False)
+    fp_vcf = VCFReader.VcfBamPath(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
     vcf_loader = VCFReader([tp_vcf, fp_vcf])
     print(len(vcf_loader))
     label_loader_time = time.time()
@@ -78,8 +79,8 @@ def train():
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
     
     # Create eval DAG
-    eval_tp_vcf = VCFReader.VcfBamPaths(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_tp.vcf.gz", bam=bam, is_fp=False)
-    eval_fp_vcf = VCFReader.VcfBamPaths(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
+    eval_tp_vcf = VCFReader.VcfBamPath(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_tp.vcf.gz", bam=bam, is_fp=False)
+    eval_fp_vcf = VCFReader.VcfBamPath(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
     eval_vcf_loader = VCFReader([eval_tp_vcf, eval_fp_vcf])
     print(len(eval_vcf_loader))
     label_loader_time = time.time()
@@ -92,8 +93,9 @@ def train():
     
     # Logger callback
     loggercallback = nemo.core.SimpleLossLoggerCallback(
-            tensors=[vz_loss, vz, vz_labels],
+            tensors=[vz_loss],
             step_freq=1,
+            print_func=lambda x: logging.info(f'Train Loss: {str(x[0].item())}'),
             )
     
     # Checkpointing models through NeMo callback
@@ -114,7 +116,7 @@ def train():
             eval_tensors=[eval_vz_loss, eval_vz, eval_vz_labels],
             user_iter_callback=eval_iter_callback,
             user_epochs_done_callback=eval_epochs_done_callback,
-            eval_step=1000,
+            eval_step=1,
             )
     
     # Invoke the "train" action.
@@ -132,7 +134,7 @@ def infer():
 
     # Generate dataset
     bam = "/ssd/VariantWorks/end_to_end_workflow_sample_files/HG001.hs37d5.30x.bam"
-    vcf_bam_tuple = VCFReader.VcfBamPaths(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
+    vcf_bam_tuple = VCFReader.VcfBamPath(vcf="/ssd/VariantWorks/end_to_end_workflow_sample_files/temp_fp.vcf.gz", bam=bam, is_fp=True)
     vcf_loader = VCFReader([vcf_bam_tuple])
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32, shuffle=False, sample_encoder=pileup_encoder)
     
@@ -141,14 +143,18 @@ def infer():
     vz = model(encoding=encoding)
     
     # Invoke the "train" action.
+    inferred_zygosity = []
     zyg_decoder = ZygosityLabelDecoder()
     results = nf.infer([vz], checkpoint_dir=tempdir, verbose=True)
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
-            for pred in predicted_classes:
-                print(zyg_decoder(pred))
+            inferred_zygosity += [zyg_decoder(pred)
+                    for pred in predicted_classes]
     
+    print(inferred_zygosity)
+    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity, output_location="./")
+    result_writer.write_output()
     shutil.rmtree(tempdir)
 
 def main():

@@ -58,6 +58,9 @@ class VCFResultWriter(ResultWriter):
             Instance of class.
         """
 
+        # Check if the inferred zygosities passed in are the same length as label loader
+        if (len(inferred_zygosities) != len(variant_label_loader)):
+            raise RuntimeError("VCFResultWriter needs an inferred zygosity per entry in the sample loader.")
         self.vcf_path_to_reader_writer = dict()
         self.variant_label_loader = variant_label_loader
         self.inferred_zygosities = inferred_zygosities

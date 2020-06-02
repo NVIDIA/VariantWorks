@@ -161,9 +161,9 @@ class VCFReader():
             raise RuntimeError(
                 "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
         for record in vcf_reader:
-            if record.num_called < len(vcf_reader.samples):
+            if not is_fp and record.num_called < len(vcf_reader.samples):
                 raise RuntimeError(
-                    "Can not parse record %s in %s,  all samples must be called" % (record, vcf_file))
+                    "Can not parse record %s in %s,  all samples must be called in true positive VCF file" % (record, vcf_file))
             if not record.is_snp:
                 #warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
