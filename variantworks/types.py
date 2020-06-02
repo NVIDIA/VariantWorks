@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-# Shared enums and types acrosss VariantWorks
+"""Shared enums and types across VariantWorks."""
 
 from dataclasses import dataclass
 from enum import Enum
@@ -22,12 +21,16 @@ from typing import List, Dict
 
 
 class VariantZygosity(Enum):
+    """An enum defining zygosity of variant."""
+
     NO_VARIANT = 0
     HOMOZYGOUS = 1
     HETEROZYGOUS = 2
 
 
 class VariantType(Enum):
+    """An enum defining type of variant."""
+
     SNP = 0
     INSERTION = 1
     DELETION = 2
@@ -35,6 +38,8 @@ class VariantType(Enum):
 
 @dataclass
 class Variant:
+    """A dataclass encapsulating a variant."""
+
     chrom: str
     pos: int
     id: str

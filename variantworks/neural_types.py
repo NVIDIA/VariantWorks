@@ -13,18 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Custom neural types for VariantWorks."""
 
-# Classes and function to encode bases in a read
+from nemo.core.neural_types import ElementType, LabelsType, ChannelType
 
-base_enum_encoder = {
-    'A': 1,
-    'a': 1,
-    'T': 2,
-    't': 2,
-    'C': 3,
-    'c': 3,
-    'G': 4,
-    'g': 4,
-    'N': 5,
-    'n': 5,
-}
+
+class ReadPileupNeuralType(ChannelType):
+    """Element type to represent a variant encoding.
+    """
+
+
+class VariantZygosityNeuralType(LabelsType):
+    """Element type to represent variant type (no variant, heterozygous or homozygous.
+    """

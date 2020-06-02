@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Common implementations of networks as Neural Modules."""
 
 import torch
 import torch.nn as nn
@@ -24,11 +25,17 @@ from nemo.core.neural_factory import DeviceType
 
 
 class AlexNet(TrainableNM):
+    """A Neural Module for AlexNet."""
+
     @property
     @add_port_docs()
     def input_ports(self):
         """Returns definitions of module input ports.
+
+        Returns:
+            Module input ports.
         """
+
         return {
             "encoding": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
         }
@@ -37,13 +44,27 @@ class AlexNet(TrainableNM):
     @add_port_docs()
     def output_ports(self):
         """Returns definitions of module output ports.
+
+        Returns:
+            Module output ports.
         """
+
         return {
             # Variant type
             'output_logit': NeuralType(('B', 'D'), LogitsType()),
         }
 
     def __init__(self, num_input_channels, num_output_logits):
+        """Constructor for AlexNet NeMo.
+
+        Args:
+            num_input_channels : Number of input channels in image.
+            num_output_logits : Number of output logits of classifier.
+
+        Returns:
+            Instance of class.
+        """
+
         super().__init__()
         self.num_output_logits = num_output_logits
         self.num_input_channels = num_input_channels
@@ -80,6 +101,15 @@ class AlexNet(TrainableNM):
         self.to(self._device)
 
     def forward(self, encoding):
+        """Abstract function to run the network.
+
+        Args:
+            encoding : Input image to run network on.
+
+        Returns:
+            Output of forward pass.
+        """
+
         encoding = self.features(encoding)
         encoding = self.avgpool(encoding)
         encoding = torch.flatten(encoding, 1)

@@ -17,15 +17,14 @@
 import os
 import torch
 
-from claragenomics.variantworks.types import Variant, VariantZygosity, VariantType
-from claragenomics.variantworks.sample_encoder import ZygosityLabelEncoder
+from variantworks.types import Variant, VariantZygosity, VariantType
+from variantworks.sample_encoder import ZygosityLabelEncoder
 
 from test_utils import get_data_folder
 
 
 def test_zygosity_encoder():
     encoder = ZygosityLabelEncoder()
-    assert(encoder.size() == 1)
 
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A', quality=60, filter=None,
