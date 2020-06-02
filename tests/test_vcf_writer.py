@@ -22,18 +22,7 @@ from claragenomics.variantworks.io.vcfio import VCFReader
 from claragenomics.variantworks.types import VariantZygosity
 from claragenomics.variantworks.result_writer import VCFResultWriter
 
-from data.vcf_file_mock import mock_vcf_file_reader_input
-
-
-class MockPyVCFReader:
-    original_pyvcf_reader_init_function = vcf.Reader.__init__
-
-    @staticmethod
-    def new_vcf_reader_init(self, *args, **kargs):
-        if 'filename' not in kargs:  # Reader must be initiated using `filename`
-            raise RuntimeError('Please use `filename` to initiate vcf.Reader')
-        MockPyVCFReader.original_pyvcf_reader_init_function(
-            self, mock_vcf_file_reader_input(kargs['filename']))
+from data.vcf_file_mock import MockPyVCFReader
 
 
 def test_vcf_outputting(monkeypatch):
@@ -43,16 +32,23 @@ def test_vcf_outputting(monkeypatch):
         vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
     second_vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
-    with monkeypatch.context() as mp:
-        mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        vcf_loader = VCFReader([first_vcf_bam_tuple, second_vcf_bam_tuple])
+    vcf_loader = MockPyVCFReader.get_reader(
+        monkeypatch,
+        [first_vcf_bam_tuple, second_vcf_bam_tuple],
+        content_type=MockPyVCFReader.ContentType.SMALL_FILTERED
+    )
+
     inferred_results = [VariantZygosity.HOMOZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS,
                         VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS]
     assert (len(inferred_results) == len(vcf_loader))
-    with monkeypatch.context() as mp:
-        mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        result_writer = VCFResultWriter(vcf_loader, inferred_results)
-        result_writer.write_output()
+
+    result_writer = VCFResultWriter(vcf_loader, inferred_results)
+    MockPyVCFReader.set_mocked_reader_content_and_call_function(
+        monkeypatch,
+        content_type=MockPyVCFReader.ContentType.SMALL_FILTERED,
+        function_to_call=result_writer.write_output
+    )
+
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
     i = 0
     for f in ['path1.gz.vcf', 'path2.gz.vcf']:

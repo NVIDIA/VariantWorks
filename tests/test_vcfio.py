@@ -15,43 +15,11 @@
 #
 
 import pytest
-import vcf
 
 from claragenomics.variantworks.io.vcfio import VCFReader
 from claragenomics.variantworks.types import VariantZygosity
-from data.vcf_file_mock import mock_file_input, mock_invalid_file_input
 
-
-class MockPyVCFReader:
-    original_pyvcf_reader_init_function = vcf.Reader.__init__
-
-    @staticmethod
-    def new_vcf_reader_init(self, *args, **kargs):
-        MockPyVCFReader.original_pyvcf_reader_init_function(
-            self, mock_file_input())
-
-    @staticmethod
-    def new_bad_vcf_reader_init(self, *args, **kargs):
-        MockPyVCFReader.original_pyvcf_reader_init_function(
-            self, mock_invalid_file_input())
-
-    @staticmethod
-    def get_vcf(mp, vcf_bam_list):
-        with mp.context() as m:
-            # Mock vcf.Reader.__init__() return value
-            m.setattr(vcf.Reader, "__init__",
-                      MockPyVCFReader.new_vcf_reader_init)
-            vcf_loader = VCFReader(vcf_bam_list)
-        return vcf_loader
-
-    @staticmethod
-    def get_invalid_vcf(mp, vcf_bam_list):
-        with mp.context() as m:
-            # Mock vcf.Reader.__init__() return value
-            m.setattr(vcf.Reader, "__init__",
-                      MockPyVCFReader.new_bad_vcf_reader_init)
-            vcf_loader = VCFReader(vcf_bam_list)
-        return vcf_loader
+from data.vcf_file_mock import MockPyVCFReader
 
 
 def test_vcf_loader_snps(monkeypatch):
@@ -59,7 +27,8 @@ def test_vcf_loader_snps(monkeypatch):
     """
     vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
-    vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [vcf_bam_tuple])
+    vcf_loader = \
+        MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
     assert(len(vcf_loader) == 13)
 
 
@@ -68,7 +37,8 @@ def test_vcf_fetch_variant(monkeypatch):
     """
     vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
-    vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [vcf_bam_tuple])
+    vcf_loader = \
+        MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
     try:
         entry = vcf_loader[0]
     except IndexError:
@@ -80,7 +50,8 @@ def test_vcf_load_fp(monkeypatch):
     """
     vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=True)
-    vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [vcf_bam_tuple])
+    vcf_loader = \
+        MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
     for v in vcf_loader:
         assert(v.zygosity == VariantZygosity.NO_VARIANT)
 
@@ -92,9 +63,10 @@ def test_vcf_load_variant_from_multiple_files(monkeypatch):
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     second_vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
-    vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [first_vcf_bam_tuple])
-    vcf_loader_2x = MockPyVCFReader.get_vcf(
-        monkeypatch, [first_vcf_bam_tuple, second_vcf_bam_tuple])
+    vcf_loader = MockPyVCFReader.get_reader(
+        monkeypatch, [first_vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
+    vcf_loader_2x = MockPyVCFReader.get_reader(
+        monkeypatch, [first_vcf_bam_tuple, second_vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.UNFILTERED)
     assert (2 * len(vcf_loader) == len(vcf_loader_2x))
 
 
@@ -104,5 +76,5 @@ def test_load_vcf_content_with_wrong_format(monkeypatch):
     vcf_bam_tuple = VCFReader.VcfBamPaths(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     with pytest.raises(RuntimeError):
-        vcf_loader = MockPyVCFReader.get_invalid_vcf(
-            monkeypatch, [vcf_bam_tuple])
+        vcf_loader = \
+            MockPyVCFReader.get_reader(monkeypatch, [vcf_bam_tuple], content_type=MockPyVCFReader.ContentType.INVALID)
