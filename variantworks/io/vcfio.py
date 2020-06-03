@@ -20,26 +20,11 @@ from collections import namedtuple
 import vcf
 import warnings
 
+from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
 
 
-class VCFReaderIterator:
-    """Iterator class for VCF reader."""
-
-    def __init__(self, vcf_reader):
-        assert(isinstance(vcf_reader, VCFReader))
-        self._vcf_reader = vcf_reader
-        self._index = 0
-
-    def __next__(self):
-        if self._index < len(self._vcf_reader):
-            result = self._vcf_reader[self._index]
-            self._index += 1
-            return result
-        raise StopIteration
-
-
-class VCFReader():
+class VCFReader(BaseReader):
     """Reader for VCF files.
     """
 
@@ -68,9 +53,6 @@ class VCFReader():
 
     def __len__(self):
         return len(self._labels)
-
-    def __iter__(self):
-        return VCFReaderIterator(self)
 
     @staticmethod
     def _get_variant_zygosity(record, is_fp=False):
