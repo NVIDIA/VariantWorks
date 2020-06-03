@@ -22,7 +22,13 @@ from variantworks.io.vcfio import VCFReader
 from variantworks.types import VariantZygosity
 from variantworks.result_writer import VCFResultWriter
 
-from data.vcf_file_mock import MockPyVCFReader
+from data.vcf_file_mock import MockPyVCFReader, mock_small_filtered_file_input
+
+
+def get_headers_from_file_for_writer(*args, **kargs):
+    return [line.strip() for line in mock_small_filtered_file_input() if line.startswith('##')], \
+           ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'], \
+           ['CALLED']
 
 
 def test_vcf_outputting(monkeypatch):
@@ -43,11 +49,10 @@ def test_vcf_outputting(monkeypatch):
     assert (len(inferred_results) == len(vcf_loader))
 
     result_writer = VCFResultWriter(vcf_loader, inferred_results)
-    MockPyVCFReader.set_mocked_reader_content_and_call_function(
-        monkeypatch,
-        content_type=MockPyVCFReader.ContentType.SMALL_FILTERED,
-        function_to_call=result_writer.write_output
-    )
+
+    with monkeypatch.context() as mp:
+        mp.setattr(VCFResultWriter, "_get_original_headers_from_vcf_reader", get_headers_from_file_for_writer)
+        result_writer.write_output()
 
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
     i = 0

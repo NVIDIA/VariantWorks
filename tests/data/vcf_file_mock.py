@@ -1,9 +1,7 @@
 from enum import Enum
 import io
-import vcf
 
 from variantworks.io.vcfio import VCFReader
-from variantworks.result_writer import VCFResultWriter
 
 
 def mock_file_input():
@@ -72,17 +70,19 @@ class MockPyVCFReader:
         INVALID = 1
         SMALL_FILTERED = 2
 
+    original_vcfeader_get_file_reader_method = VCFReader._get_file_reader
+
     @staticmethod
     def _get_unfiltered_vcf_reader(*args, **kargs):
-        return vcf.Reader(mock_file_input())
+        return MockPyVCFReader.original_vcfeader_get_file_reader_method(mock_file_input())
 
     @staticmethod
     def _get_invalid_vcf_reader(*args, **kargs):
-        return vcf.Reader(mock_invalid_file_input())
+        return MockPyVCFReader.original_vcfeader_get_file_reader_method(mock_invalid_file_input())
 
     @staticmethod
     def _get_small_filtered_vcf_reader(*args, **kargs):
-        return vcf.Reader(mock_small_filtered_file_input())
+        return MockPyVCFReader.original_vcfeader_get_file_reader_method(mock_small_filtered_file_input())
 
     _content_type_to_mocked_reader_method = {
         ContentType.UNFILTERED:         _get_unfiltered_vcf_reader.__func__,
@@ -91,22 +91,9 @@ class MockPyVCFReader:
     }
 
     @staticmethod
-    def _get_header_for_writer(*args, **kargs):
-        return [line.strip() for line in mock_small_filtered_file_input() if line.startswith('##')],\
-               ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'],\
-               ['CALLED']
-
-    @staticmethod
     def get_reader(mp, vcf_bam_list, content_type):
         with mp.context() as m:
             m.setattr(VCFReader, "_get_file_reader",
                       MockPyVCFReader._content_type_to_mocked_reader_method[content_type])
             vcf_loader = VCFReader(vcf_bam_list)
         return vcf_loader
-
-    @staticmethod
-    def set_mocked_reader_content_and_call_function(mp, content_type, function_to_call):
-        with mp.context() as m:
-            m.setattr(VCFResultWriter, "_get_original_headers_from_vcf_reader",
-                      MockPyVCFReader._get_header_for_writer)
-            function_to_call()
