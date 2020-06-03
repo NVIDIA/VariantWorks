@@ -122,6 +122,19 @@ class VCFReader(BaseReader):
                                    for sample in record.samples],
                           zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
 
+    @staticmethod
+    def _get_file_reader(vcf_file_path):
+        """
+        Create VCF file reader for file path.
+        Args:
+            vcf_file_path: VCF file path
+
+        Returns:
+            pyVCF Reader iterator
+        """
+        assert (vcf_file_path[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
+        return vcf.Reader(filename=vcf_file_path)
+
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
 
@@ -132,10 +145,7 @@ class VCFReader(BaseReader):
             labels : List to store parsed variant records.
             is_fp : Boolean to indicate if file is for false positive variants.
         """
-
-        assert(
-            vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
-        vcf_reader = vcf.Reader(filename=vcf_file)
+        vcf_reader = self._get_file_reader(vcf_file)
         if len(vcf_reader.samples) != 1:
             raise RuntimeError(
                 "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
