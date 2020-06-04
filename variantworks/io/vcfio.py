@@ -74,7 +74,8 @@ class VCFReader(BaseReader):
             return VariantZygosity.HETEROZYGOUS
         elif record.num_hom_alt > 0:
             return VariantZygosity.HOMOZYGOUS
-        raise ValueError("Unexpected variant zygosity - {}".format(record))
+        raise ValueError("Unexpected variant zygosity - {}, num_het - {}, num_hom_alt - {}".format(
+            record, record.num_het, record.num_hom_alt))
 
     @staticmethod
     def _get_variant_type(record):
@@ -115,12 +116,25 @@ class VCFReader(BaseReader):
         # Split multi alleles into multiple entries
         for alt in record.ALT:
             var_allele = alt.sequence
-            yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
-                          allele=var_allele, quality=record.QUAL, filter=record.FILTER,
-                          info=record.INFO, format=record.FORMAT.split(':'),
-                          samples=[[field_value for field_value in sample.data]
-                                   for sample in record.samples],
-                          zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
+            try:
+                var_format = record.FORMAT.split(':')
+            except:
+                if is_fp:
+                    var_format = []
+                else:
+                    raise RuntimeError(
+                        "Could not parse format field for entry - {}".format(record))
+
+            try:
+                yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
+                              allele=var_allele, quality=record.QUAL, filter=record.FILTER,
+                              info=record.INFO, format=var_format,
+                              samples=[[field_value for field_value in sample.data]
+                                       for sample in record.samples],
+                              zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
+            except:
+                raise RuntimeError(
+                    "Could not parse variant from entry - {}".format(record))
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
@@ -136,15 +150,15 @@ class VCFReader(BaseReader):
         assert(
             vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
-        if len(vcf_reader.samples) != 1:
+        if not is_fp and len(vcf_reader.samples) != 1:
             raise RuntimeError(
                 "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
         for record in vcf_reader:
-            if record.num_called < len(vcf_reader.samples):
+            if not is_fp and record.num_called < len(vcf_reader.samples):
                 raise RuntimeError(
-                    "Can not parse record %s in %s,  all samples must be called" % (record, vcf_file))
+                    "Can not parse record %s in %s,  all samples must be called in true positive VCF file" % (record, vcf_file))
             if not record.is_snp:
-                warnings.warn("%s is filtered - not an SNP record" % record)
+                #warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn(

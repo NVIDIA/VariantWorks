@@ -55,7 +55,7 @@ def test_vcf_outputting(monkeypatch):
         result_writer.write_output()
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
     i = 0
-    for f in ['path1.gz.vcf', 'path2.gz.vcf']:
+    for f in ['inferred_path1.vcf', 'inferred_path2.vcf']:
         vcf_reader = vcf.Reader(filename=os.path.join(
             result_writer.output_location, f))
         for record in vcf_reader:

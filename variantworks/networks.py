@@ -23,8 +23,6 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import *
 from nemo.core.neural_factory import DeviceType
 
-from variantworks.neural_types import ReadPileupNeuralType
-
 
 class AlexNet(TrainableNM):
     """A Neural Module for AlexNet."""
@@ -39,7 +37,7 @@ class AlexNet(TrainableNM):
         """
 
         return {
-            "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+            "encoding": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
         }
 
     @property
