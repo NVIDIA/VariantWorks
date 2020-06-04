@@ -16,6 +16,9 @@ SNP Zygosity Predictor
 This example showcases how to develop a SNP zygosity predictor from variant SNP candidates. This example is
 also available as a sample.
 
+For more details on training and inference using NeMo (including features such as multi-GPU training, half-precision
+trainig, model parallel training, etc.), please refer to the `Nemo documentation <https://nvidia.github.io/NeMo/tutorials/examples.html>`_.
+
 Training
 ````````
 
