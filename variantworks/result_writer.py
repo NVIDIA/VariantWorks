@@ -104,10 +104,13 @@ class VCFResultWriter(ResultWriter):
 
     @staticmethod
     def _serialize_record_filter(var_filter):
-        if not var_filter:
-            return "PASS"
+        if var_filter is None:
+            return "."
         elif type(var_filter) is list:
-            return ";".join(var_filter)
+            if len(var_filter) == 0:
+                return "PASS"
+            else:
+                return ";".join(var_filter)
         else:
             return str(var_filter)
 
