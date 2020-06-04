@@ -14,11 +14,9 @@
 # limitations under the License.
 #
 
-from distutils.dir_util import copy_tree
 import os
 import pytest
 import shutil
-import tempfile
 
 import nemo
 from nemo import logging
