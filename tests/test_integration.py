@@ -14,23 +14,21 @@
 # limitations under the License.
 #
 
-from distutils.dir_util import copy_tree
 import os
 import pytest
 import shutil
-import tempfile
-import torch
+
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
+import torch
 
 from variantworks.dataloader import ReadPileupDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
 from variantworks.result_writer import VCFResultWriter
-from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder, ZygosityLabelDecoder
-
+from variantworks.sample_encoder import ZygosityLabelDecoder
 
 from test_utils import get_data_folder
 
@@ -38,31 +36,23 @@ from test_utils import get_data_folder
 def test_simple_vc_trainer():
     # Train a sample model with test data
 
-    # Create temporary folder
-    tempdir = tempfile.mkdtemp()
-
     # Create neural factory
+    model_dir = os.path.join(get_data_folder(), ".test_model")
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
-                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(
-        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
-    zyg_encoder = ZygosityLabelEncoder()
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(
-        encoding_layers), num_output_logits=3)
+    alexnet = AlexNet(num_input_channels=1, num_output_logits=3)
 
     # Create train DAG
     dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
-                                         batch_size=32, shuffle=True, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+                                         batch_size=32, shuffle=True)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = dataset_train()
     vz = alexnet(encoding=encoding)
@@ -70,7 +60,7 @@ def test_simple_vc_trainer():
 
     # Create evaluation DAG using same dataset as training
     dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, vcf_loader, batch_size=32,
-                                        shuffle=False, sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+                                        shuffle=False)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
     vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
@@ -107,13 +97,10 @@ def test_simple_vc_trainer():
     nf.train([vz_loss],
              callbacks=[logger_callback,
                         checkpoint_callback, evaluator_callback],
-             optimization_params={"num_epochs": 4, "lr": 0.001},
+             optimization_params={"num_epochs": 1, "lr": 0.001},
              optimizer="adam")
 
-    # Remove checkpoint directory
-    model_dir = os.path.join(get_data_folder(), ".test_model")
-    copy_tree(tempdir, model_dir)
-    shutil.rmtree(tempdir)
+    assert(os.path.exists(os.path.join(model_dir, "AlexNet-EPOCH-1.pt")))
 
 
 @pytest.mark.depends(on=['test_simple_vc_trainer'])
@@ -127,20 +114,15 @@ def test_simple_vc_infer():
         placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
 
     # Generate dataset
-    encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY,
-                       PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
-    pileup_encoder = PileupEncoder(
-        window_size=100, max_reads=100, layers=encoding_layers)
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
-                                        shuffle=False, sample_encoder=pileup_encoder)
+                                        shuffle=False)
 
     # Neural Network
-    alexnet = AlexNet(num_input_channels=len(
-        encoding_layers), num_output_logits=3)
+    alexnet = AlexNet(num_input_channels=1, num_output_logits=3)
 
     # Create train DAG
     encoding = test_dataset()
@@ -157,8 +139,6 @@ def test_simple_vc_infer():
             inferred_zygosity = [zyg_decoder(pred)
                                  for pred in predicted_classes]
 
-    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
-
-    result_writer.write_output()
+    assert(len(inferred_zygosity) == len(vcf_loader))
 
     shutil.rmtree(model_dir)

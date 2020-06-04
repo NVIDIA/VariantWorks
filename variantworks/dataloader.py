@@ -57,7 +57,8 @@ class ReadPileupDataLoader(DataLayerNM):
                 "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
 
-    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=None, label_encoder=None):
+    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=PileupEncoder(
+            window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]), label_encoder=ZygosityLabelEncoder()):
         """Constructor for data loader.
 
         Args:
@@ -66,8 +67,8 @@ class ReadPileupDataLoader(DataLayerNM):
             batch_size : batch size for data loader [32]
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
-            sample_encoder : Custom pileup encoder for variant [None]
-            label_encoder : Custom label encoder for variant [None] (Only applicable when type=TRAIN/EVAL)
+            sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]
+            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable when type=TRAIN/EVAL)
 
         Returns:
             Instance of class.
@@ -76,9 +77,8 @@ class ReadPileupDataLoader(DataLayerNM):
         super().__init__()
         self.data_loader_type = data_loader_type
         self.variant_loader = variant_loader
-        self.sample_encoder = sample_encoder if sample_encoder is not None else PileupEncoder(
-            window_size=50, max_reads=50, layers=[PileupEncoder.Layer.READ])
-        self.label_encoder = label_encoder if label_encoder is not None else ZygosityLabelEncoder()
+        self.sample_encoder = sample_encoder
+        self.label_encoder = label_encoder
 
         class DatasetWrapper(TorchDataset):
             """A wrapper around Torch dataset class to generate individual samples."""
