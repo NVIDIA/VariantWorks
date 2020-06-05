@@ -124,7 +124,7 @@ class HDFPileupDataLoader(DataLayerNM):
                     return torch.tensor(encoding, dtype=self.encoding_dtype)
                 else:
                     encoding_data = hdf.get(self.hdf_encoding_key)
-                    label_data = hdf.get(self.hdf_encoding_key)
+                    label_data = hdf.get(self.hdf_label_key)
 
                     encoding = torch.tensor(
                         encoding_data[idx], dtype=self.encoding_dtype)
@@ -134,7 +134,9 @@ class HDFPileupDataLoader(DataLayerNM):
                     return label, encoding
 
         dataset = DatasetWrapper(
-            data_loader_type, self.hdf_file, encoding_dtype, label_dtype)
+            data_loader_type, self.hdf_file, encoding_dtype, label_dtype,
+            hdf_encoding_key, hdf_label_key)
+        print(len(dataset))
         self.dataloader = TorchDataLoader(dataset,
                                           batch_size=batch_size, shuffle=shuffle,
                                           num_workers=num_workers)
