@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Core Features &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="VariantWorks SDK Developer Guide" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Core Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#encoders">Encoders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#i-o">I/O</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#format-readers">Format Readers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-writers">Results Writers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data-loaders">Data Loaders</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reference-networks">Reference Networks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Core Features</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/features.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="core-features">
+<h1>Core Features<a class="headerlink" href="#core-features" title="Permalink to this headline">¶</a></h1>
+<p>VariantWorks provides most of its functionality in the form of library functions that
+encapsulate common algorithms, encodings and utilites helpful for variant processing.
+The following sections will walk through an explanation of each feature that is currently
+supported.</p>
+<div class="section" id="encoders">
+<h2>Encoders<a class="headerlink" href="#encoders" title="Permalink to this headline">¶</a></h2>
+<p>Encoders are classes that generate an encoding for the neural network. The classes can be used to
+not only generate encodings, but also augment and transform them.</p>
+<p>All encoders need to inherit from the base class <a class="reference internal" href="apidocs/variantworks.html#variantworks.sample_encoder.SampleEncoder" title="variantworks.sample_encoder.SampleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SampleEncoder</span></code></a>
+and implement the abstract method <cite>__call__</cite>, which triggers the encoding generation.</p>
+<img alt="_images/encoder.png" src="_images/encoder.png" />
+<p>Currently available encoders -</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.sample_encoder.PileupEncoder" title="variantworks.sample_encoder.PileupEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">PileupEncoder</span></code></a> - Encoding read pileups as multi dimensional images.
+<strong>Only SNP encoding is available right now.*</strong></p></li>
+</ul>
+</div>
+<div class="section" id="i-o">
+<h2>I/O<a class="headerlink" href="#i-o" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="format-readers">
+<h3>Format Readers<a class="headerlink" href="#format-readers" title="Permalink to this headline">¶</a></h3>
+<p>Reading entries from common genomics file formats (such as BAM, VCF) is a precursor to almost all variant calling pipelines.
+VariantWorks provides parsing (based on pyVCF) for VCFs, and leverages pySAM for working with BAM files.</p>
+<p>The Reader classes follow a similar structure to Encoders when it comes to inheritence. All readers must inherit from
+<a class="reference internal" href="apidocs/variantworks.html#variantworks.io.baseio.BaseReader" title="variantworks.io.baseio.BaseReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseReader</span></code></a> and implement the abstract methods <cite>__len__</cite> and <cite>__getitem__</cite> to make them
+compatible and easy to use with data loaders.</p>
+<p>Currently available readers -</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.io.vcfio.VCFReader" title="variantworks.io.vcfio.VCFReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">VCFReader</span></code></a> - Reader for VCF compressed and indexed VCF files.
+<strong>VCFReader only support reading single sample VCFs.*</strong></p></li>
+</ul>
+</div>
+<div class="section" id="results-writers">
+<h3>Results Writers<a class="headerlink" href="#results-writers" title="Permalink to this headline">¶</a></h3>
+<p>After variants have been predicted/evaluated, they are usually required to be output into file formats such as VCF for
+downstream processing. VariantWorks provides a <a class="reference internal" href="apidocs/variantworks.html#variantworks.result_writer.ResultWriter" title="variantworks.result_writer.ResultWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultWriter</span></code></a> base class
+to facilitate the creation of result writers. Custom writers need to implement only the <cite>write_output</cite> function to be compatible
+with the base class.</p>
+<p>Currently support result writers -</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.result_writer.VCFResultWriter" title="variantworks.result_writer.VCFResultWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">VCFResultWriter</span></code></a> class which can output predicted zygosities into a VCF file.</p></li>
+</ul>
+</div>
+<div class="section" id="data-loaders">
+<h3>Data Loaders<a class="headerlink" href="#data-loaders" title="Permalink to this headline">¶</a></h3>
+<p>Data loaders are core to generating datasets in batches for training a nerual network. Since VariantWorks is based on the
+NeMo toolkit, we leverage the data loader abstractions defined in
+<a class="reference external" href="https://nvidia.github.io/NeMo/tutorials/custommodules.html#data-layer-module">DataLayerNM</a>.</p>
+<p>Currently available data loaders -</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader" title="variantworks.dataloader.ReadPileupDataLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadPileupDataLoader</span></code></a> - encapsulates loading samples from VCF and using PileupEncoders to generate training data.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="reference-networks">
+<h2>Reference Networks<a class="headerlink" href="#reference-networks" title="Permalink to this headline">¶</a></h2>
+<p>Reference architectures suitable for variant calling and/or consensus calling are packaged
+as part of VariantWorks to quickly bootstrap DL powered variant caling pipelies.</p>
+<p>Like the data loaders, reference neural networks are also defined within the NeMo paradigm as
+<a class="reference external" href="https://nvidia.github.io/NeMo/tutorials/custommodules.html#trainable-module">TrainableNM</a> modules.</p>
+<p>Currently available networks -</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.networks.AlexNet" title="variantworks.networks.AlexNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlexNext</span></code></a></p></li>
+</ul>
+<p>Most customized networks architectures will be added over time.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="VariantWorks SDK Developer Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,853 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Encoders &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="API" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Core Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Encoders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-variantworks.dataloader">Dataloaders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-variantworks.networks">Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-variantworks.io.baseio">IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-variantworks.types">Types</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">API</a> &raquo;</li>
+        
+      <li>Encoders</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidocs/variantworks.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-variantworks.sample_encoder">
+<span id="encoders"></span><h1>Encoders<a class="headerlink" href="#module-variantworks.sample_encoder" title="Permalink to this headline">¶</a></h1>
+<p>Classes and functions for encoding samples.</p>
+<dl class="py class">
+<dt id="variantworks.sample_encoder.PileupEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.sample_encoder.</code><code class="sig-name descname">PileupEncoder</code><span class="sig-paren">(</span><em class="sig-param">window_size=50, max_reads=50, layers=[&lt;Layer.READ: 0&gt;], base_encoder=None</em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.sample_encoder.SampleEncoder" title="variantworks.sample_encoder.SampleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.sample_encoder.SampleEncoder</span></code></a></p>
+<p>A pileup encoder for SNPs.</p>
+<p>For a given SNP position and nucleotide context, the encoder generates a pileup
+tensor around the variant position. The pileup can have configurable depth based on
+the type of information that is selected to be embedded.</p>
+<dl class="py class">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer">
+<em class="property">class </em><code class="sig-name descname">Layer</code><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Layers that can be added to the pileup encoding.</p>
+<dl class="py attribute">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer.ALLELE">
+<code class="sig-name descname">ALLELE</code><em class="property"> = 4</em><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer.ALLELE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer.BASE_QUALITY">
+<code class="sig-name descname">BASE_QUALITY</code><em class="property"> = 1</em><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer.BASE_QUALITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer.MAPPING_QUALITY">
+<code class="sig-name descname">MAPPING_QUALITY</code><em class="property"> = 2</em><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer.MAPPING_QUALITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer.READ">
+<code class="sig-name descname">READ</code><em class="property"> = 0</em><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer.READ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.sample_encoder.PileupEncoder.Layer.REFERENCE">
+<code class="sig-name descname">REFERENCE</code><em class="property"> = 3</em><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.Layer.REFERENCE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.PileupEncoder.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variant</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a torch Tensor pileup queried from a BAM file.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>variant : Variant struct holding information about variant locus.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.PileupEncoder.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">window_size=50, max_reads=50, layers=[&lt;Layer.READ: 0&gt;], base_encoder=None</em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for class.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>window_size : A nucleotide context size on either side of variant position [50].
+max_reads : Max number of reads to consider in the pileip. If reads fewer than max_reads
+are available, the entries are all masked to 0. [50]
+layers : A list defining the layers to add to the encoding. The ordering of channels in the
+encoding follows the ordering of layers in the list. [Layer.READ]
+base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
+[base_encoder.base_enum_encoder]</p>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.PileupEncoder.depth">
+<em class="property">property </em><code class="sig-name descname">depth</code><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns number of layers in pileup.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.PileupEncoder.height">
+<em class="property">property </em><code class="sig-name descname">height</code><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.height" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns height of pileup.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.PileupEncoder.width">
+<em class="property">property </em><code class="sig-name descname">width</code><a class="headerlink" href="#variantworks.sample_encoder.PileupEncoder.width" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns width of pileup.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.sample_encoder.SampleEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.sample_encoder.</code><code class="sig-name descname">SampleEncoder</code><a class="headerlink" href="#variantworks.sample_encoder.SampleEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An abstract class defining the interface to an encoder implementation. Encoder could
+be used for encoding inputs to network, as well as encoding target labels for prediction.</p>
+<dl class="py method">
+<dt id="variantworks.sample_encoder.SampleEncoder.__call__">
+<em class="property">abstract </em><code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">sample</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.SampleEncoder.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the encoding of a sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.SampleEncoder.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.SampleEncoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.sample_encoder.ZygosityLabelDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.sample_encoder.</code><code class="sig-name descname">ZygosityLabelDecoder</code><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.sample_encoder.SampleEncoder" title="variantworks.sample_encoder.SampleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.sample_encoder.SampleEncoder</span></code></a></p>
+<p>A decoder to convert a class to a zygosity enum.</p>
+<dl class="py method">
+<dt id="variantworks.sample_encoder.ZygosityLabelDecoder.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">class_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelDecoder.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decodes class to variant zygosity enum.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Variant zygosity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.ZygosityLabelDecoder.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelDecoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.sample_encoder.ZygosityLabelEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.sample_encoder.</code><code class="sig-name descname">ZygosityLabelEncoder</code><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.sample_encoder.SampleEncoder" title="variantworks.sample_encoder.SampleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.sample_encoder.SampleEncoder</span></code></a></p>
+<p>A label encoder that returns an output label encoding for zygosity
+only. Converts zygosity type to a class number.</p>
+<dl class="py method">
+<dt id="variantworks.sample_encoder.ZygosityLabelEncoder.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variant</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelEncoder.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encodes variant to class for zygosity.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Zygosity encoded as number.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.sample_encoder.ZygosityLabelEncoder.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.sample_encoder.ZygosityLabelEncoder.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-variantworks.base_encoder"></span><p>Classes and function to encode bases in a read.</p>
+</div>
+<div class="section" id="module-variantworks.dataloader">
+<span id="dataloaders"></span><h1>Dataloaders<a class="headerlink" href="#module-variantworks.dataloader" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="variantworks.dataloader.HDFPileupDataLoader">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.dataloader.</code><code class="sig-name descname">HDFPileupDataLoader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_loader_type</span></em>, <em class="sig-param"><span class="n">hdf_file</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">shuffle</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">encoding_dtype</span><span class="o">=</span><span class="default_value">torch.float32</span></em>, <em class="sig-param"><span class="n">label_dtype</span><span class="o">=</span><span class="default_value">torch.int64</span></em>, <em class="sig-param"><span class="n">hdf_encoding_key</span><span class="o">=</span><span class="default_value">'encodings'</span></em>, <em class="sig-param"><span class="n">hdf_label_key</span><span class="o">=</span><span class="default_value">'labels'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.backends.pytorch.nm.DataLayerNM</span></code></p>
+<p>Data loader class to load pileup encodings and zygosity labels from HDF5 file.</p>
+<dl class="py class">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.Type">
+<em class="property">class </em><code class="sig-name descname">Type</code><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.Type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Type of data loader.</p>
+<dl class="py attribute">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.Type.EVAL">
+<code class="sig-name descname">EVAL</code><em class="property"> = 1</em><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.Type.EVAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.Type.TEST">
+<code class="sig-name descname">TEST</code><em class="property"> = 2</em><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.Type.TEST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.Type.TRAIN">
+<code class="sig-name descname">TRAIN</code><em class="property"> = 0</em><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.Type.TRAIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_loader_type</span></em>, <em class="sig-param"><span class="n">hdf_file</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">shuffle</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">encoding_dtype</span><span class="o">=</span><span class="default_value">torch.float32</span></em>, <em class="sig-param"><span class="n">label_dtype</span><span class="o">=</span><span class="default_value">torch.int64</span></em>, <em class="sig-param"><span class="n">hdf_encoding_key</span><span class="o">=</span><span class="default_value">'encodings'</span></em>, <em class="sig-param"><span class="n">hdf_label_key</span><span class="o">=</span><span class="default_value">'labels'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for data loader.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>data_loader_type : Type of data loader (HDFPileupDataLoader.Type.TRAIN/EVAL/TEST)
+hdf_file : Path to HDF file with pileup encodings
+batch_size : batch size for data loader [32]
+shuffle : shuffle dataset [True]
+num_workers : numbers of parallel data loader threads [4]
+encoding_dtype : Torch data type for encoding [torch.float32]
+label_dtype : Torch data type for label [torch.int64]
+hdf_encoding_key : HDF5 key for encodings. [encodings]
+hdf_label_key : HDF5 key for labels. [labels]</p>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.data_iterator">
+<em class="property">property </em><code class="sig-name descname">data_iterator</code><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.data_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns Torch dataloader instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.dataset">
+<em class="property">property </em><code class="sig-name descname">dataset</code><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.HDFPileupDataLoader.output_ports">
+<em class="property">property </em><code class="sig-name descname">output_ports</code><a class="headerlink" href="#variantworks.dataloader.HDFPileupDataLoader.output_ports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns definitions of module output ports.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>NeMo output port.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.dataloader.ReadPileupDataLoader">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.dataloader.</code><code class="sig-name descname">ReadPileupDataLoader</code><span class="sig-paren">(</span><em class="sig-param">data_loader_type</em>, <em class="sig-param">variant_loader</em>, <em class="sig-param">batch_size=32</em>, <em class="sig-param">shuffle=True</em>, <em class="sig-param">num_workers=4</em>, <em class="sig-param">sample_encoder=&lt;variantworks.sample_encoder.PileupEncoder object&gt;</em>, <em class="sig-param">label_encoder=&lt;variantworks.sample_encoder.ZygosityLabelEncoder object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.backends.pytorch.nm.DataLayerNM</span></code></p>
+<p>Data loader class to train zygosity predictions from variant pileup encodings.</p>
+<dl class="py class">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.Type">
+<em class="property">class </em><code class="sig-name descname">Type</code><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.Type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Type of data loader.</p>
+<dl class="py attribute">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.Type.EVAL">
+<code class="sig-name descname">EVAL</code><em class="property"> = 1</em><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.Type.EVAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.Type.TEST">
+<code class="sig-name descname">TEST</code><em class="property"> = 2</em><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.Type.TEST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.Type.TRAIN">
+<code class="sig-name descname">TRAIN</code><em class="property"> = 0</em><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.Type.TRAIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">data_loader_type</em>, <em class="sig-param">variant_loader</em>, <em class="sig-param">batch_size=32</em>, <em class="sig-param">shuffle=True</em>, <em class="sig-param">num_workers=4</em>, <em class="sig-param">sample_encoder=&lt;variantworks.sample_encoder.PileupEncoder object&gt;</em>, <em class="sig-param">label_encoder=&lt;variantworks.sample_encoder.ZygosityLabelEncoder object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for data loader.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>data_loader_type : Type of data loader (ReadPileupDataLoader.Type.TRAIN/EVAL/TEST)
+variant_loader : A loader class for variants
+batch_size : batch size for data loader [32]
+shuffle : shuffle dataset [True]
+num_workers : numbers of parallel data loader threads [4]
+sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]
+label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable when type=TRAIN/EVAL)</p>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.data_iterator">
+<em class="property">property </em><code class="sig-name descname">data_iterator</code><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.data_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns Torch dataloader instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.dataset">
+<em class="property">property </em><code class="sig-name descname">dataset</code><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.dataloader.ReadPileupDataLoader.output_ports">
+<em class="property">property </em><code class="sig-name descname">output_ports</code><a class="headerlink" href="#variantworks.dataloader.ReadPileupDataLoader.output_ports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns definitions of module output ports.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>NeMo output port.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-variantworks.networks">
+<span id="networks"></span><h1>Networks<a class="headerlink" href="#module-variantworks.networks" title="Permalink to this headline">¶</a></h1>
+<p>Common implementations of networks as Neural Modules.</p>
+<dl class="py class">
+<dt id="variantworks.networks.AlexNet">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.networks.</code><code class="sig-name descname">AlexNet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_input_channels</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.networks.AlexNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.backends.pytorch.nm.TrainableNM</span></code></p>
+<p>A Neural Module for AlexNet.</p>
+<dl class="py method">
+<dt id="variantworks.networks.AlexNet.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_input_channels</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.networks.AlexNet.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for AlexNet NeMo.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>num_input_channels : Number of input channels in image.
+num_output_logits : Number of output logits of classifier.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.networks.AlexNet.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">encoding</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.networks.AlexNet.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract function to run the network.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>encoding : Input image to run network on.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Output of forward pass.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.networks.AlexNet.input_ports">
+<em class="property">property </em><code class="sig-name descname">input_ports</code><a class="headerlink" href="#variantworks.networks.AlexNet.input_ports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns definitions of module input ports.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Module input ports.</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><em>encoding</em> : axes: (batch, dimension, height, width);  elements_type: ChannelType</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.networks.AlexNet.output_ports">
+<em class="property">property </em><code class="sig-name descname">output_ports</code><a class="headerlink" href="#variantworks.networks.AlexNet.output_ports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns definitions of module output ports.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Module output ports.</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><em>output_logit</em> : axes: (batch, dimension);  elements_type: LogitsType</p></li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-variantworks.io.baseio">
+<span id="io"></span><h1>IO<a class="headerlink" href="#module-variantworks.io.baseio" title="Permalink to this headline">¶</a></h1>
+<p>Base class readers and writers.</p>
+<dl class="py class">
+<dt id="variantworks.io.baseio.BaseReader">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.baseio.</code><code class="sig-name descname">BaseReader</code><a class="headerlink" href="#variantworks.io.baseio.BaseReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Base class for format reader.</p>
+<dl class="py method">
+<dt id="variantworks.io.baseio.BaseReader.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.baseio.BaseReader.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.io.baseio.BaseReaderIterator">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.baseio.</code><code class="sig-name descname">BaseReaderIterator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reader</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.baseio.BaseReaderIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Iterator class for VCF reader.</p>
+<dl class="py method">
+<dt id="variantworks.io.baseio.BaseReaderIterator.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reader</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.baseio.BaseReaderIterator.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-variantworks.io.vcfio"></span><p>Classes for reading and writing VCFs.</p>
+<dl class="py class">
+<dt id="variantworks.io.vcfio.VCFReader">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.vcfio.</code><code class="sig-name descname">VCFReader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf_bam_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.vcfio.VCFReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.io.baseio.BaseReader" title="variantworks.io.baseio.BaseReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.io.baseio.BaseReader</span></code></a></p>
+<p>Reader for VCF files.</p>
+<dl class="py class">
+<dt id="variantworks.io.vcfio.VCFReader.VcfBamPath">
+<em class="property">class </em><code class="sig-name descname">VcfBamPath</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bam</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.VcfBamPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Data class encapsulating paired VCF and BAM inputs.</p>
+<dl class="py method">
+<dt id="variantworks.io.vcfio.VCFReader.VcfBamPath.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bam</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#variantworks.io.vcfio.VCFReader.VcfBamPath.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.io.vcfio.VCFReader.VcfBamPath.bam">
+<code class="sig-name descname">bam</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.VcfBamPath.bam" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.io.vcfio.VCFReader.VcfBamPath.is_fp">
+<code class="sig-name descname">is_fp</code><em class="property">: bool</em><em class="property"> = False</em><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.VcfBamPath.is_fp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.io.vcfio.VCFReader.VcfBamPath.vcf">
+<code class="sig-name descname">vcf</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.VcfBamPath.vcf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.io.vcfio.VCFReader.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf_bam_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>vcf_bam_list: A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.</dt><dd><p>The VCF file must be bgzip compressed and indexed.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-variantworks.result_writer"></span><p>Set of functions and classes to write results of inference to various output formats.</p>
+<dl class="py class">
+<dt id="variantworks.result_writer.ResultWriter">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.result_writer.</code><code class="sig-name descname">ResultWriter</code><a class="headerlink" href="#variantworks.result_writer.ResultWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract base class for result writers.</p>
+<dl class="py method">
+<dt id="variantworks.result_writer.ResultWriter.__init__">
+<em class="property">abstract </em><code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.result_writer.ResultWriter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.result_writer.ResultWriter.write_output">
+<em class="property">abstract </em><code class="sig-name descname">write_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.result_writer.ResultWriter.write_output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.result_writer.VCFResultWriter">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.result_writer.</code><code class="sig-name descname">VCFResultWriter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variant_label_loader</span></em>, <em class="sig-param"><span class="n">inferred_zygosities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_location</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.result_writer.VCFResultWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.result_writer.ResultWriter" title="variantworks.result_writer.ResultWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.result_writer.ResultWriter</span></code></a></p>
+<p>A result writer that outputs predicted zygosities to VCFs.</p>
+<dl class="py method">
+<dt id="variantworks.result_writer.VCFResultWriter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variant_label_loader</span></em>, <em class="sig-param"><span class="n">inferred_zygosities</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_location</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.result_writer.VCFResultWriter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for VCFResultWriter class.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>variant_label_loader : An instance of a VCF loader class.
+inferred_zygosities : A list of inferred zygosity for each variant in VCF loader.
+output_location : Output directory for result VCFs.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.result_writer.VCFResultWriter.write_output">
+<code class="sig-name descname">write_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.result_writer.VCFResultWriter.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write final output to file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.result_writer.VCFResultWriter.zygosity_to_vcf_genotype">
+<code class="sig-name descname">zygosity_to_vcf_genotype</code><em class="property"> = {&lt;VariantZygosity.NO_VARIANT: 0&gt;: '0/0', &lt;VariantZygosity.HETEROZYGOUS: 2&gt;: '0/1', &lt;VariantZygosity.HOMOZYGOUS: 1&gt;: '1/1'}</em><a class="headerlink" href="#variantworks.result_writer.VCFResultWriter.zygosity_to_vcf_genotype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-variantworks.types">
+<span id="types"></span><h1>Types<a class="headerlink" href="#module-variantworks.types" title="Permalink to this headline">¶</a></h1>
+<p>Shared enums and types across VariantWorks.</p>
+<dl class="py class">
+<dt id="variantworks.types.Variant">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.types.</code><code class="sig-name descname">Variant</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chrom</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">pos</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">ref</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">allele</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">quality</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">filter</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">info</span><span class="p">:</span> <span class="n">Dict</span></em>, <em class="sig-param"><span class="n">format</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">samples</span><span class="p">:</span> <span class="n">List<span class="p">[</span>List<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">zygosity</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#variantworks.types.VariantZygosity" title="variantworks.types.VariantZygosity">variantworks.types.VariantZygosity</a></span></em>, <em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#variantworks.types.VariantType" title="variantworks.types.VariantType">variantworks.types.VariantType</a></span></em>, <em class="sig-param"><span class="n">vcf</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bam</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#variantworks.types.Variant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A dataclass encapsulating a variant.</p>
+<dl class="py method">
+<dt id="variantworks.types.Variant.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chrom</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">pos</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">ref</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">allele</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">quality</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">filter</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">info</span><span class="p">:</span> <span class="n">Dict</span></em>, <em class="sig-param"><span class="n">format</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">samples</span><span class="p">:</span> <span class="n">List<span class="p">[</span>List<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">zygosity</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#variantworks.types.VariantZygosity" title="variantworks.types.VariantZygosity">variantworks.types.VariantZygosity</a></span></em>, <em class="sig-param"><span class="n">type</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#variantworks.types.VariantType" title="variantworks.types.VariantType">variantworks.types.VariantType</a></span></em>, <em class="sig-param"><span class="n">vcf</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">bam</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#variantworks.types.Variant.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.allele">
+<code class="sig-name descname">allele</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.allele" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.bam">
+<code class="sig-name descname">bam</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.bam" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.chrom">
+<code class="sig-name descname">chrom</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.chrom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.filter">
+<code class="sig-name descname">filter</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.format">
+<code class="sig-name descname">format</code><em class="property">: List[str]</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.format" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.id">
+<code class="sig-name descname">id</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.info">
+<code class="sig-name descname">info</code><em class="property">: Dict</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.pos">
+<code class="sig-name descname">pos</code><em class="property">: int</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.quality">
+<code class="sig-name descname">quality</code><em class="property">: int</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.quality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.ref">
+<code class="sig-name descname">ref</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.ref" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.samples">
+<code class="sig-name descname">samples</code><em class="property">: List[List]</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.type">
+<code class="sig-name descname">type</code><em class="property">: VariantType</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.vcf">
+<code class="sig-name descname">vcf</code><em class="property">: str</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.vcf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.Variant.zygosity">
+<code class="sig-name descname">zygosity</code><em class="property">: VariantZygosity</em><em class="property"> = None</em><a class="headerlink" href="#variantworks.types.Variant.zygosity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.types.VariantType">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.types.</code><code class="sig-name descname">VariantType</code><a class="headerlink" href="#variantworks.types.VariantType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enum defining type of variant.</p>
+<dl class="py attribute">
+<dt id="variantworks.types.VariantType.DELETION">
+<code class="sig-name descname">DELETION</code><em class="property"> = 2</em><a class="headerlink" href="#variantworks.types.VariantType.DELETION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.VariantType.INSERTION">
+<code class="sig-name descname">INSERTION</code><em class="property"> = 1</em><a class="headerlink" href="#variantworks.types.VariantType.INSERTION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.VariantType.SNP">
+<code class="sig-name descname">SNP</code><em class="property"> = 0</em><a class="headerlink" href="#variantworks.types.VariantType.SNP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.types.VariantZygosity">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.types.</code><code class="sig-name descname">VariantZygosity</code><a class="headerlink" href="#variantworks.types.VariantZygosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enum defining zygosity of variant.</p>
+<dl class="py attribute">
+<dt id="variantworks.types.VariantZygosity.HETEROZYGOUS">
+<code class="sig-name descname">HETEROZYGOUS</code><em class="property"> = 2</em><a class="headerlink" href="#variantworks.types.VariantZygosity.HETEROZYGOUS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.VariantZygosity.HOMOZYGOUS">
+<code class="sig-name descname">HOMOZYGOUS</code><em class="property"> = 1</em><a class="headerlink" href="#variantworks.types.VariantZygosity.HOMOZYGOUS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="variantworks.types.VariantZygosity.NO_VARIANT">
+<code class="sig-name descname">NO_VARIANT</code><em class="property"> = 0</em><a class="headerlink" href="#variantworks.types.VariantZygosity.NO_VARIANT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-variantworks.neural_types"></span><p>Custom neural types for VariantWorks.</p>
+<dl class="py class">
+<dt id="variantworks.neural_types.ReadPileupNeuralType">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.neural_types.</code><code class="sig-name descname">ReadPileupNeuralType</code><a class="headerlink" href="#variantworks.neural_types.ReadPileupNeuralType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.core.neural_types.elements.ChannelType</span></code></p>
+<p>Element type to represent a variant encoding.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="variantworks.neural_types.VariantZygosityNeuralType">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.neural_types.</code><code class="sig-name descname">VariantZygosityNeuralType</code><a class="headerlink" href="#variantworks.neural_types.VariantZygosityNeuralType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.core.neural_types.elements.LabelsType</span></code></p>
+<p>Element type to represent variant type (no variant, heterozygous or homozygous.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="modules.html" class="btn btn-neutral float-left" title="API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

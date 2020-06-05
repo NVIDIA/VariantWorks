@@ -1,0 +1,403 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Examples &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API" href="apidocs/modules.html" />
+    <link rel="prev" title="Core Features" href="features.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Core Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#snp-zygosity-predictor">SNP Zygosity Predictor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#training">Training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inference">Inference</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hdf5-pileup-dataset-generator">HDF5 Pileup Dataset Generator</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Examples</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/examples.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>VariantWorks can be used to setup training and inference pipelines using the available encoders, data loaders
+and I/O libraries.</p>
+<div class="section" id="snp-zygosity-predictor">
+<h2>SNP Zygosity Predictor<a class="headerlink" href="#snp-zygosity-predictor" title="Permalink to this headline">¶</a></h2>
+<p>This example showcases how to develop a SNP zygosity predictor from variant SNP candidates. This example is
+also available as a sample.</p>
+<p>For more details on training and inference using NeMo (including features such as multi-GPU training, half-precision
+trainig, model parallel training, etc.), please refer to the <a class="reference external" href="https://nvidia.github.io/NeMo/tutorials/examples.html">Nemo documentation</a>.</p>
+<div class="section" id="training">
+<h3>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
+<span class="kn">import</span> <span class="nn">nemo</span>
+<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoders</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># Create neural factory</span>
+<span class="n">nf</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">NeuralModuleFactory</span><span class="p">(</span>
+    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">tempdir</span><span class="p">)</span>
+
+<span class="c1"># Create pileup encoder by selecting layers to encode. More encoding layers</span>
+<span class="c1"># can be found in the documentation for PilupEncoder class.</span>
+<span class="n">encoding_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span> <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">BASE_QUALITY</span><span class="p">]</span>
+<span class="n">pileup_encoder</span> <span class="o">=</span> <span class="n">PileupEncoder</span><span class="p">(</span>
+    <span class="n">window_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">encoding_layers</span><span class="p">)</span>
+
+<span class="c1"># Instantiate a zygosity encoder that generates output labels. Converts a variant entry</span>
+<span class="c1"># into a class label for no variant, homozygous variant or heterozygous variant.</span>
+<span class="n">zyg_encoder</span> <span class="o">=</span> <span class="n">ZygosityLabelEncoder</span><span class="p">()</span>
+
+<span class="c1"># Create neural network that receives 2 channel inputs (encoding layers defined above)</span>
+<span class="c1"># and outputs a logit over three classes (no variant, homozygous variant, heterozygous variant.</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AlexNet</span><span class="p">(</span><span class="n">num_input_channels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span>
+    <span class="n">encoding_layers</span><span class="p">),</span> <span class="n">num_output_logits</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Get datasets to train on.</span>
+<span class="c1"># NOTE: To train a neural network well, the model needs to see samples from all types of classes.</span>
+<span class="c1"># The example here shows a file that has true variant (either homozygous or heterozygous),</span>
+<span class="c1"># but in practice one also needs to pass a set of false positive samples so the model can learn to</span>
+<span class="c1"># ignore them. False positive samples can be marked with `is_fp` so the reader can appripriately</span>
+<span class="c1"># assign their variant types.</span>
+<span class="n">data_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root_dir</span><span class="p">,</span> <span class="s2">&quot;tests&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="n">bam</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;small_bam.bam&quot;</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;candidates.vcf.gz&quot;</span><span class="p">)</span>
+<span class="n">vcf_loader</span> <span class="o">=</span> <span class="n">VCFReader</span><span class="p">([</span><span class="n">VCFReader</span><span class="o">.</span><span class="n">VcfBamPath</span><span class="p">(</span><span class="n">vcf</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span> <span class="n">bam</span><span class="o">=</span><span class="n">bam</span><span class="p">,</span> <span class="n">is_fp</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+
+<span class="c1"># Create a data loader with custom sample and label encoder.</span>
+<span class="n">dataset_train</span> <span class="o">=</span> <span class="n">ReadPileupDataLoader</span><span class="p">(</span><span class="n">ReadPileupDataLoader</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TRAIN</span><span class="p">,</span> <span class="n">vcf_loader</span><span class="p">,</span>
+                                     <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">sample_encoder</span><span class="o">=</span><span class="n">pileup_encoder</span><span class="p">,</span> <span class="n">label_encoder</span><span class="o">=</span><span class="n">zyg_encoder</span><span class="p">)</span>
+
+<span class="c1"># Use CrossEntropyLoss to train.</span>
+<span class="n">vz_ce_loss</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">pytorch</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">CrossEntropyLossNM</span><span class="p">(</span><span class="n">logits_ndim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Create NeMo training DAG.</span>
+<span class="n">vz_labels</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="p">()</span>
+<span class="n">vz</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+<span class="n">vz_loss</span> <span class="o">=</span> <span class="n">vz_ce_loss</span><span class="p">(</span><span class="n">logits</span><span class="o">=</span><span class="n">vz</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">vz_labels</span><span class="p">)</span>
+
+<span class="c1"># Logger callback</span>
+<span class="n">logger_callback</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">SimpleLossLoggerCallback</span><span class="p">(</span>
+    <span class="n">tensors</span><span class="o">=</span><span class="p">[</span><span class="n">vz_loss</span><span class="p">],</span>
+    <span class="n">print_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+<span class="p">)</span>
+
+<span class="c1"># Kick off training</span>
+<span class="n">nf</span><span class="o">.</span><span class="n">train</span><span class="p">([</span><span class="n">vz_loss</span><span class="p">],</span>
+         <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">logger_callback</span><span class="p">,</span>
+                    <span class="n">checkpoint_callback</span><span class="p">,</span> <span class="n">evaluator_callback</span><span class="p">],</span>
+         <span class="n">optimization_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">},</span>
+         <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;adam&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="inference">
+<h3>Inference<a class="headerlink" href="#inference" title="Permalink to this headline">¶</a></h3>
+<p>The inference pipeline works in a very similar fashion, except the final NeMo DAG looks different.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
+<span class="kn">import</span> <span class="nn">nemo</span>
+<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoders</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.result_writer</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick</span>
+<span class="c1"># up a pre-trained model.</span>
+<span class="n">nf</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">NeuralModuleFactory</span><span class="p">(</span>
+    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">model_dir</span><span class="p">)</span>
+
+<span class="c1"># Neural Network</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AlexNet</span><span class="p">(</span><span class="n">num_input_channels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span>
+    <span class="n">encoding_layers</span><span class="p">),</span> <span class="n">num_output_logits</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Dataset generation is done in a similar manner. It&#39;s important to note that the encoder used</span>
+<span class="c1"># for inference much match that for training.</span>
+<span class="n">encoding_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span> <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">BASE_QUALITY</span><span class="p">]</span>
+<span class="n">pileup_encoder</span> <span class="o">=</span> <span class="n">PileupEncoder</span><span class="p">(</span>
+    <span class="n">window_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">encoding_layers</span><span class="p">)</span>
+
+<span class="c1"># Similar to training, a dataloader needs to be setup for the relevant datasets. In the case of</span>
+<span class="c1"># inference, it doesn&#39;t matter if the files are tagged as false positive or not. Each example will be</span>
+<span class="c1"># evaluated by the network. For simplicity the example is using the same dataset from training.</span>
+<span class="c1"># Note: No label encoder is required in inference.</span>
+<span class="n">data_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root_dir</span><span class="p">,</span> <span class="s2">&quot;tests&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="n">bam</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;small_bam.bam&quot;</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;candidates.vcf.gz&quot;</span><span class="p">)</span>
+<span class="n">vcf_bam_tuple</span> <span class="o">=</span> <span class="n">VCFReader</span><span class="o">.</span><span class="n">VcfBamPath</span><span class="p">(</span><span class="n">vcf</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">bam</span><span class="o">=</span><span class="n">bam</span><span class="p">,</span> <span class="n">is_fp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">vcf_loader</span> <span class="o">=</span> <span class="n">VCFReader</span><span class="p">([</span><span class="n">vcf_bam_tuple</span><span class="p">])</span>
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">ReadPileupDataLoader</span><span class="p">(</span><span class="n">ReadPileupDataLoader</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEST</span><span class="p">,</span> <span class="n">vcf_loader</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+                                    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sample_encoder</span><span class="o">=</span><span class="n">pileup_encoder</span><span class="p">)</span>
+
+<span class="c1"># Create inference DAG</span>
+<span class="n">encoding</span> <span class="o">=</span> <span class="n">test_dataset</span><span class="p">()</span>
+<span class="n">vz</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+
+<span class="c1"># Invoke the &quot;infer&quot; action.</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">nf</span><span class="o">.</span><span class="n">infer</span><span class="p">([</span><span class="n">vz</span><span class="p">],</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">model_dir</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Instantiate a decoder that converts the predicted output of the network to</span>
+<span class="c1"># a zygosity enum.</span>
+<span class="n">zyg_decoder</span> <span class="o">=</span> <span class="n">ZygosityLabelDecoder</span><span class="p">()</span>
+
+<span class="c1"># Decode inference results to labels</span>
+<span class="k">for</span> <span class="n">tensor_batches</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tensor_batches</span><span class="p">:</span>
+        <span class="n">predicted_classes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">inferred_zygosity</span> <span class="o">+=</span> <span class="p">[</span><span class="n">zyg_decoder</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predicted_classes</span><span class="p">]</span>
+
+<span class="c1"># Use the VCFResultWriter to output predicted zygosities to a VCF file.</span>
+<span class="n">result_writer</span> <span class="o">=</span> <span class="n">VCFResultWriter</span><span class="p">(</span><span class="n">vcf_loader</span><span class="p">,</span> <span class="n">inferred_zygosity</span><span class="p">)</span>
+
+<span class="n">result_writer</span><span class="o">.</span><span class="n">write_output</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="hdf5-pileup-dataset-generator">
+<h2>HDF5 Pileup Dataset Generator<a class="headerlink" href="#hdf5-pileup-dataset-generator" title="Permalink to this headline">¶</a></h2>
+<p>This example is designed to highlight how the encoder classes can be used independent
+of the training framework to generate encodings for samples and serializing them to a
+file for later consumption. This sort of pipeline is often used when data generation
+takes a proportionally larger portion of the compute time compared to the network training
+or inference components.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="n">PileupEncoder</span><span class="p">,</span> <span class="n">ZygosityLabelEncoder</span>
+<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="n">VCFReader</span>
+
+<span class="c1"># Get BAM and VCF files for the raw sample data.</span>
+<span class="n">data_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repo_root_dir</span><span class="p">,</span> <span class="s2">&quot;tests&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="n">bam</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;small_bam.bam&quot;</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_folder</span><span class="p">,</span> <span class="s2">&quot;candidates.vcf.gz&quot;</span><span class="p">)</span>
+
+<span class="c1"># Generate the variant entries using VCF reader.</span>
+<span class="n">vcf_reader</span> <span class="o">=</span> <span class="n">VCFReader</span><span class="p">([</span><span class="n">VCFReader</span><span class="o">.</span><span class="n">VcfBamPath</span><span class="p">(</span><span class="n">vcf</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span> <span class="n">bam</span><span class="o">=</span><span class="n">bam</span><span class="p">,</span> <span class="n">is_fp</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Serializing </span><span class="si">{}</span><span class="s2"> entries...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vcf_reader</span><span class="p">)))</span>
+
+<span class="c1"># Setup encoder for samples and labels.</span>
+<span class="n">sample_encoder</span> <span class="o">=</span> <span class="n">PileupEncoder</span><span class="p">(</span><span class="n">window_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span>
+                               <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">])</span>
+<span class="n">label_encoder</span> <span class="o">=</span> <span class="n">ZygosityLabelEncoder</span><span class="p">()</span>
+
+<span class="c1"># Create HDF5 datasets.</span>
+<span class="n">h5_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+<span class="n">encoded_data</span> <span class="o">=</span> <span class="n">h5_file</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;encodings&quot;</span><span class="p">,</span>
+                                      <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vcf_reader</span><span class="p">),</span> <span class="n">sample_encoder</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
+                                             <span class="n">sample_encoder</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">sample_encoder</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
+                                      <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">label_data</span> <span class="o">=</span> <span class="n">h5_file</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;labels&quot;</span><span class="p">,</span>
+                                    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vcf_reader</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Loop through all entries, encode them and save them in HDF5.</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">variant</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vcf_reader</span><span class="p">):</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">sample_encoder</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">label_encoder</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span>
+    <span class="n">encoded_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">encoding</span>
+    <span class="n">label_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+
+<span class="c1"># Close HDF5 file.</span>
+<span class="n">h5_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="apidocs/modules.html" class="btn btn-neutral float-right" title="API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="features.html" class="btn btn-neutral float-left" title="Core Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
