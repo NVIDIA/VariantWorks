@@ -56,8 +56,9 @@ Training
     # but in practice one also needs to pass a set of false positive samples so the model can learn to
     # ignore them. False positive samples can be marked with `is_fp` so the reader can appripriately
     # assign their variant types.
-    bam = os.path.join(get_data_folder(), "small_bam.bam")
-    samples = os.path.join(get_data_folder(), "candidates.vcf.gz")
+    data_folder = os.path.join(repo_root_dir, "tests", "data")
+    bam = os.path.join(data_folder, "small_bam.bam")
+    samples = os.path.join(data_folder, "candidates.vcf.gz")
     vcf_loader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
 
     # Create a data loader with custom sample and label encoder.
@@ -121,8 +122,9 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     # inference, it doesn't matter if the files are tagged as false positive or not. Each example will be
     # evaluated by the network. For simplicity the example is using the same dataset from training.
     # Note: No label encoder is required in inference.
-    bam = os.path.join(test_data_dir, "small_bam.bam")
-    labels = os.path.join(test_data_dir, "candidates.vcf.gz")
+    data_folder = os.path.join(repo_root_dir, "tests", "data")
+    bam = os.path.join(data_folder, "small_bam.bam")
+    labels = os.path.join(data_folder, "candidates.vcf.gz")
     vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
@@ -169,8 +171,9 @@ or inference components.
     from variantworks.io.vcfio import VCFReader
 
     # Get BAM and VCF files for the raw sample data.
-    bam = os.path.join(get_data_folder(), "small_bam.bam")
-    samples = os.path.join(get_data_folder(), "candidates.vcf.gz")
+    data_folder = os.path.join(repo_root_dir, "tests", "data")
+    bam = os.path.join(data_folder, "small_bam.bam")
+    samples = os.path.join(data_folder, "candidates.vcf.gz")
 
     # Generate the variant entries using VCF reader.
     vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
