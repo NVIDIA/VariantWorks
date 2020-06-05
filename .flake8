@@ -14,8 +14,5 @@
 # limitations under the License.
 #
 
-nemo-toolkit==0.10.1
-pysam==0.15.4
-pytest==4.4.1
-pytest-depends==1.0.1
-PyVCF==0.6.8
+[flake8]
+max-line-length=120
