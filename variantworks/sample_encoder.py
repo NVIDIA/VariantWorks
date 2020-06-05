@@ -18,14 +18,13 @@
 import abc
 from enum import Enum
 import pysam
-import time
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
 from variantworks.types import Variant, VariantType, VariantZygosity
 
 
-class SampleEncoder():
+class SampleEncoder:
     """An abstract class defining the interface to an encoder implementation. Encoder could
     be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
@@ -156,10 +155,8 @@ class PileupEncoder(SampleEncoder):
         assert(variant.type ==
                VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
 
-        start = time.time()
-
         # Create BAM object if one hasn't been opened before.
-        if (bam_file not in self.bams):
+        if bam_file not in self.bams:
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
@@ -178,9 +175,6 @@ class PileupEncoder(SampleEncoder):
                 # Check if reference base is missing (either deleted or skipped).
                 if pileupread.is_del or pileupread.is_refskip:
                     continue
-
-                # Position of variant locus in read
-                # query_pos = pileupread.query_position
 
                 # Using the variant locus as the center, find the left and right offset
                 # from that locus to use as bounds for fetching bases from reads.
@@ -203,7 +197,6 @@ class PileupEncoder(SampleEncoder):
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
-        print("Total time {}".format(time.time() - start))
         return encoding
 
 
