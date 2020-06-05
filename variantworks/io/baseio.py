@@ -16,9 +16,6 @@
 """Base class readers and writers."""
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-import vcf
-import warnings
 
 
 class BaseReaderIterator:

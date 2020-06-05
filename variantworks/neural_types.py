@@ -15,7 +15,7 @@
 #
 """Custom neural types for VariantWorks."""
 
-from nemo.core.neural_types import ElementType, LabelsType, ChannelType
+from nemo.core.neural_types import LabelsType, ChannelType
 
 
 class ReadPileupNeuralType(ChannelType):

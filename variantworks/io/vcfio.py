@@ -15,7 +15,6 @@
 #
 """Classes for reading and writing VCFs."""
 
-from abc import ABC, abstractmethod
 from collections import namedtuple
 import vcf
 import warnings
@@ -118,12 +117,11 @@ class VCFReader(BaseReader):
             var_allele = alt.sequence
             try:
                 var_format = record.FORMAT.split(':')
-            except:
+            except AttributeError:
                 if is_fp:
                     var_format = []
                 else:
-                    raise RuntimeError(
-                        "Could not parse format field for entry - {}".format(record))
+                    raise RuntimeError("Could not parse format field for entry - {}".format(record))
 
             try:
                 yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
@@ -132,7 +130,7 @@ class VCFReader(BaseReader):
                               samples=[[field_value for field_value in sample.data]
                                        for sample in record.samples],
                               zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
-            except:
+            except Exception:
                 raise RuntimeError(
                     "Could not parse variant from entry - {}".format(record))
 
@@ -156,9 +154,11 @@ class VCFReader(BaseReader):
         for record in vcf_reader:
             if not is_fp and record.num_called < len(vcf_reader.samples):
                 raise RuntimeError(
-                    "Can not parse record %s in %s,  all samples must be called in true positive VCF file" % (record, vcf_file))
+                    "Can not parse record %s in %s, all samples must be called in true positive VCF file" % (
+                        record, vcf_file)
+                )
             if not record.is_snp:
-                #warnings.warn("%s is filtered - not an SNP record" % record)
+                # warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn(

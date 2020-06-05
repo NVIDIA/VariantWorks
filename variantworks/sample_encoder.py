@@ -180,7 +180,7 @@ class PileupEncoder(SampleEncoder):
                     continue
 
                 # Position of variant locus in read
-                query_pos = pileupread.query_position
+                # query_pos = pileupread.query_position
 
                 # Using the variant locus as the center, find the left and right offset
                 # from that locus to use as bounds for fetching bases from reads.
@@ -203,7 +203,7 @@ class PileupEncoder(SampleEncoder):
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
-        #print("Total time {}".format(time.time() - start))
+        print("Total time {}".format(time.time() - start))
         return encoding
 
 

@@ -78,14 +78,8 @@ def test_snp_allele_encoding(snp_variant):
 
 
 def test_pileup_unknown_layer():
-    try:
-        max_reads = 100
-        window_size = 5
-        width = 2 * window_size + 1
-        height = max_reads
+    max_reads = 100
+    window_size = 5
+    with pytest.raises(AttributeError):
         layers = [PileupEncoder.Layer.BLAH]
-        encoder = PileupEncoder(window_size=window_size,
-                                max_reads=max_reads, layers=layers)
-    except:
-        # Should reach here because an unknown layer is being passed in
-        assert(True)
+        PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)

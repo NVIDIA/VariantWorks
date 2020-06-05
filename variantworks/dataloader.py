@@ -18,15 +18,13 @@
 
 from enum import Enum
 from torch.utils.data import Dataset as TorchDataset, DataLoader as TorchDataLoader
-import vcf
 
 from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import *
+from nemo.core.neural_types import NeuralType
 
 from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
-from variantworks.types import VariantZygosity
 
 
 class ReadPileupDataLoader(DataLayerNM):
@@ -57,8 +55,9 @@ class ReadPileupDataLoader(DataLayerNM):
                 "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
 
-    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=PileupEncoder(
-            window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]), label_encoder=ZygosityLabelEncoder()):
+    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4,
+                 sample_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
+                 label_encoder=ZygosityLabelEncoder()):
         """Constructor for data loader.
 
         Args:
@@ -68,7 +67,8 @@ class ReadPileupDataLoader(DataLayerNM):
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
             sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]
-            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable when type=TRAIN/EVAL)
+            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable
+            when type=TRAIN/EVAL)
 
         Returns:
             Instance of class.

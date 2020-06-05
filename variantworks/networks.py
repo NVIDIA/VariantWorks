@@ -20,7 +20,7 @@ import torch.nn as nn
 
 from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import *
+from nemo.core.neural_types import NeuralType, ChannelType, LogitsType
 from nemo.core.neural_factory import DeviceType
 
 
