@@ -150,3 +150,52 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
 
     result_writer.write_output()
+
+
+HDF5 Pileup Dataset Generator
+-----------------------------
+
+This example is designed to highlight how the encoder classes can be used independent
+of the training framework to generate encodings for samples and serializing them to a
+file for later consumption. This sort of pipeline is often used when data generation
+takes a proportionally larger portion of the compute time compared to the network training
+or inference components.
+
+.. code-block:: python
+
+    import h5py
+    import numpy as np
+    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+    from variantworks.io.vcfio import VCFReader
+
+    # Get BAM and VCF files for the raw sample data.
+    bam = os.path.join(get_data_folder(), "small_bam.bam")
+    samples = os.path.join(get_data_folder(), "candidates.vcf.gz")
+
+    # Generate the variant entries using VCF reader.
+    vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
+    print("Serializing {} entries...".format(len(vcf_reader)))
+
+    # Setup encoder for samples and labels.
+    sample_encoder = PileupEncoder(window_size=100, max_reads=100, layers=[
+                                   PileupEncoder.Layer.READ])
+    label_encoder = ZygosityLabelEncoder()
+
+    # Create HDF5 datasets.
+    h5_file = h5py.File(args.output_file, "w")
+    encoded_data = h5_file.create_dataset("encodings",
+                                          shape=(len(vcf_reader), sample_encoder.depth,
+                                                 sample_encoder.height, sample_encoder.width),
+                                          dtype=np.float32, fillvalue=0)
+    label_data = h5_file.create_dataset("labels",
+                                        shape=(len(vcf_reader),), dtype=np.int64, fillvalue=0)
+
+    # Loop through all entries, encode them and save them in HDF5.
+    for i, variant in enumerate(vcf_reader):
+        encoding = sample_encoder(variant)
+        label = label_encoder(variant)
+        encoded_data[i] = encoding
+        label_data[i] = label
+
+    # Close HDF5 file.
+    h5_file.close()

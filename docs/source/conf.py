@@ -60,3 +60,13 @@ html_static_path = ['_static']
 
 
 # -- Extension configuration -------------------------------------------------
+
+# Add custom configuration to always document __init__ and
+# __call__ methods.
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__init__" or name == "__call__":
+        return False
+    return would_skip
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)

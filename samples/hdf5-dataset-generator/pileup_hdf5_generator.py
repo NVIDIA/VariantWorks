@@ -25,7 +25,6 @@ import sys
 
 import h5py
 import numpy as np
-import torch
 
 from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 from variantworks.io.vcfio import VCFReader

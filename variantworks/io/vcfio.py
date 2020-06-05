@@ -17,8 +17,10 @@
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
-import vcf
+from dataclasses import dataclass
 import warnings
+
+import vcf
 
 from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
@@ -28,14 +30,21 @@ class VCFReader(BaseReader):
     """Reader for VCF files.
     """
 
-    VcfBamPath = namedtuple(
-        'VcfBamPaths', ['vcf', 'bam', 'is_fp'], defaults=[False])
+    @dataclass
+    class VcfBamPath:
+        """Data class encapsulating paired VCF and BAM inputs.
+        """
+
+        vcf: str
+        bam: str
+        is_fp: bool = False
 
     def __init__(self, vcf_bam_list):
         """Constructor.
 
         Args:
-            vcf_bam_list : A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.
+            vcf_bam_list: A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.
+                           The VCF file must be bgzip compressed and indexed.
 
         Returns:
            Instance of class.
