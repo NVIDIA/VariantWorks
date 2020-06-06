@@ -14,10 +14,7 @@
 # limitations under the License.
 #
 
-h5py==2.10.0
-nemo-toolkit==0.10.1
-numpy==1.18.3
-pysam==0.15.4
-pytest==4.4.1
-pytest-depends==1.0.1
-PyVCF==0.6.8
+flake8==3.8.2
+pydocstyle==5.0.2
+Sphinx==3.0.4
+sphinx-rtd-theme==0.4.3

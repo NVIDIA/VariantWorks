@@ -15,13 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+"""Sample showcasing the generation of HDF5 datasets with variant encodings."""
 
 import argparse
 from functools import partial
-import os
 import multiprocessing as mp
-import sys
 
 import h5py
 import numpy as np
@@ -31,12 +29,17 @@ from variantworks.io.vcfio import VCFReader
 
 
 def encode(sample_encoder, label_encoder, variant):
+    """Generate sample and label encoding for variant."""
     encoding = sample_encoder(variant)
     label = label_encoder(variant)
     return (encoding, label)
 
 
 def generate_hdf5(args):
+    """Serialize encodings to HDF5.
+
+    Generate encodings in multiprocess loop and save tensors to HDF5.
+    """
     # Get list of files from arguments.
     bam = args.bam
     file_list = []
@@ -52,7 +55,7 @@ def generate_hdf5(args):
 
     # Setup encoder for samples and labels.
     sample_encoder = PileupEncoder(window_size=100, max_reads=100,
-            layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY])
+                                   layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY])
     label_encoder = ZygosityLabelEncoder()
 
     encode_func = partial(encode, sample_encoder, label_encoder)
@@ -80,6 +83,7 @@ def generate_hdf5(args):
 
 
 def build_parser():
+    """Setup option parsing for sample."""
     parser = argparse.ArgumentParser(
         description="Store encoded data in HDF5 format.")
     parser.add_argument("--tp-files", nargs="+",

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Copyright 2020 NVIDIA CORPORATION.
 #
@@ -14,10 +16,14 @@
 # limitations under the License.
 #
 
-h5py==2.10.0
-nemo-toolkit==0.10.1
-numpy==1.18.3
-pysam==0.15.4
-pytest==4.4.1
-pytest-depends==1.0.1
-PyVCF==0.6.8
+set -e
+
+VW_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+
+echo "Run Python formatting check..."
+flake8 "$VW_DIR"
+
+echo "Run Python docstring conventions check..."
+pydocstyle --convention=google "$VW_DIR" -v --match-dir='^(?!docs|ci).*'
+
+echo "Style check passed!"

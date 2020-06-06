@@ -14,24 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A sample program highlighting usage of VariantWorks SDK to write a
-simple SNP variant caller using a CNN.
-"""
+"""A sample program highlighting usage of VariantWorks SDK to write a simple SNP variant caller using a CNN."""
 
 import argparse
-import os
 
 import nemo
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
-from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
-import torch
+from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
 
 from variantworks.dataloader import HDFPileupDataLoader
 from variantworks.networks import AlexNet
 
 
 def create_model():
+    """Return neural network to train."""
     # Neural Network
     alexnet = AlexNet(num_input_channels=2, num_output_logits=3)
 
@@ -39,8 +36,7 @@ def create_model():
 
 
 def train(args):
-    # Train a sample model with test data
-
+    """Train a sample model with test data."""
     # Create neural factory as per NeMo requirements.
     nf = nemo.core.NeuralModuleFactory(
         placement=nemo.core.neural_factory.DeviceType.GPU)
@@ -110,6 +106,7 @@ def train(args):
 
 
 def build_parser():
+    """Build parser object with options for sample."""
     parser = argparse.ArgumentParser(
         description="Simple SNP caller based on VariantWorks.")
 
@@ -133,11 +130,7 @@ def build_parser():
     return parser
 
 
-def main():
+if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
     train(args)
-
-
-if __name__ == "__main__":
-    main()

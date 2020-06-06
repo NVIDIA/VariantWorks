@@ -16,20 +16,19 @@
 """Base class readers and writers."""
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-import vcf
-import warnings
 
 
 class BaseReaderIterator:
     """Iterator class for VCF reader."""
 
     def __init__(self, reader):
+        """Initialize an iterator for a reader instance."""
         assert(isinstance(reader, BaseReader))
         self._reader = reader
         self._index = 0
 
     def __next__(self):
+        """Get next entry in reader instance."""
         if self._index < len(self._reader):
             result = self._reader[self._index]
             self._index += 1
@@ -41,21 +40,19 @@ class BaseReader(ABC):
     """Base class for format reader."""
 
     def __init__(self):
-        """Constructor."""
-
+        """Initialize a reader instance."""
         pass
 
     @abstractmethod
     def __getitem__(self, idx):
         """Index into reader class to fetch entry."""
-
         raise NotImplementedError
 
     @abstractmethod
     def __len__(self):
-        """Returns total number of entries in reader."""
-
+        """Return total number of entries in reader."""
         return NotImplementedError
 
     def __iter__(self):
+        """Iterate over class entries."""
         return BaseReaderIterator(self)

@@ -15,8 +15,6 @@
 #
 """Classes for reading and writing VCFs."""
 
-from abc import ABC, abstractmethod
-from collections import namedtuple
 from dataclasses import dataclass
 import warnings
 
@@ -27,20 +25,17 @@ from variantworks.types import VariantZygosity, VariantType, Variant
 
 
 class VCFReader(BaseReader):
-    """Reader for VCF files.
-    """
+    """Reader for VCF files."""
 
     @dataclass
     class VcfBamPath:
-        """Data class encapsulating paired VCF and BAM inputs.
-        """
-
+        """Data class encapsulating paired VCF and BAM inputs."""
         vcf: str
         bam: str
         is_fp: bool = False
 
     def __init__(self, vcf_bam_list):
-        """Constructor.
+        """Parse and extract variants from a vcf/bam tuple.
 
         Args:
             vcf_bam_list: A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.
@@ -49,7 +44,6 @@ class VCFReader(BaseReader):
         Returns:
            Instance of class.
         """
-
         super().__init__()
         self._labels = []
         for elem in vcf_bam_list:
@@ -58,9 +52,17 @@ class VCFReader(BaseReader):
             self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
 
     def __getitem__(self, idx):
+        """Get Variant instance in location.
+
+        Args:
+            idx: Variant index
+        Returns:
+            Variant instance
+        """
         return self._labels[idx]
 
     def __len__(self):
+        """Return number of Varint objects."""
         return len(self._labels)
 
     @staticmethod
@@ -76,7 +78,6 @@ class VCFReader(BaseReader):
         Returns:
             A variant type
         """
-
         if is_fp:
             return VariantZygosity.NO_VARIANT
         if record.num_het > 0:
@@ -96,7 +97,6 @@ class VCFReader(BaseReader):
         Returns:
             Type of variant - SNP, INSERTION or DELETION
         """
-
         if record.is_snp:
             return VariantType.SNP
         elif record.is_indel:
@@ -109,7 +109,6 @@ class VCFReader(BaseReader):
     def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
         """Create a variant record from pyVCF record.
 
-
         Args:
             record : pyVCF record
             vcf_file : Path to VCF file
@@ -119,7 +118,6 @@ class VCFReader(BaseReader):
         Returns:
            Variant dataclass record.
         """
-
         var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
@@ -127,12 +125,11 @@ class VCFReader(BaseReader):
             var_allele = alt.sequence
             try:
                 var_format = record.FORMAT.split(':')
-            except:
+            except AttributeError:
                 if is_fp:
                     var_format = []
                 else:
-                    raise RuntimeError(
-                        "Could not parse format field for entry - {}".format(record))
+                    raise RuntimeError("Could not parse format field for entry - {}".format(record))
 
             try:
                 yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
@@ -141,13 +138,12 @@ class VCFReader(BaseReader):
                               samples=[[field_value for field_value in sample.data]
                                        for sample in record.samples],
                               zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
-            except:
+            except Exception:
                 raise RuntimeError(
                     "Could not parse variant from entry - {}".format(record))
 
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
-
 
         Args:
             vcf_file : Path to VCF file.
@@ -155,7 +151,6 @@ class VCFReader(BaseReader):
             labels : List to store parsed variant records.
             is_fp : Boolean to indicate if file is for false positive variants.
         """
-
         assert(
             vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
         vcf_reader = vcf.Reader(filename=vcf_file)
@@ -165,9 +160,11 @@ class VCFReader(BaseReader):
         for record in vcf_reader:
             if not is_fp and record.num_called < len(vcf_reader.samples):
                 raise RuntimeError(
-                    "Can not parse record %s in %s,  all samples must be called in true positive VCF file" % (record, vcf_file))
+                    "Can not parse record %s in %s, all samples must be called in true positive VCF file" % (
+                        record, vcf_file)
+                )
             if not record.is_snp:
-                #warnings.warn("%s is filtered - not an SNP record" % record)
+                # warnings.warn("%s is filtered - not an SNP record" % record)
                 continue
             if len(record.ALT) > 1:
                 warnings.warn(
