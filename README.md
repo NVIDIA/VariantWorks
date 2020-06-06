@@ -35,6 +35,6 @@ ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
 
 ## Unit Tests
 ```
-cd test
+cd tests
 pytest -s .
 ```
