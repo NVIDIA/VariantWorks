@@ -49,18 +49,17 @@ def generate_hdf5(args):
 
     # Generate the variant entries using VCF reader.
     vcf_reader = VCFReader(file_list)
-    print("Serializing {} entries...".format(len(vcf_reader)))
 
     # Setup encoder for samples and labels.
-    sample_encoder = PileupEncoder(window_size=100, max_reads=100, layers=[
-                                   PileupEncoder.Layer.READ])
+    sample_encoder = PileupEncoder(window_size=100, max_reads=100,
+            layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY])
     label_encoder = ZygosityLabelEncoder()
 
     encode_func = partial(encode, sample_encoder, label_encoder)
 
     # Create HDF5 datasets.
     h5_file = h5py.File(args.output_file, "w")
-    encoded_data = h5_file.create_dataset("encoding",
+    encoded_data = h5_file.create_dataset("encodings",
                                           shape=(len(vcf_reader), sample_encoder.depth,
                                                  sample_encoder.height, sample_encoder.width),
                                           dtype=np.float32, fillvalue=0)
@@ -68,12 +67,14 @@ def generate_hdf5(args):
                                         shape=(len(vcf_reader),), dtype=np.int64, fillvalue=0)
 
     pool = mp.Pool(args.threads)
+    print("Serializing {} entries...".format(len(vcf_reader)))
     for i, out in enumerate(pool.imap(encode_func, vcf_reader)):
         if i % 1000 == 0:
             print("Saved {} entries".format(i))
         encoding, label = out
         encoded_data[i] = encoding
         label_data[i] = label
+    print("Saved {} entries".format(len(vcf_reader)))
 
     h5_file.close()
 
