@@ -18,7 +18,8 @@ import pytest
 import vcf
 
 from variantworks.io.vcfio import VCFReader
-from variantworks.types import VariantZygosity
+from variantworks.types import VariantZygosity, Variant
+
 from data.vcf_file_mock import mock_file_input, mock_invalid_file_input
 
 
@@ -66,13 +67,12 @@ def test_vcf_loader_snps(monkeypatch):
 def test_vcf_fetch_variant(monkeypatch):
     """Get first variant from mocked VCF file stream.
     """
-    vcf_bam_tuple = VCFReader.VcfBamPath(
-        vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
+    vcf_bam_tuple = VCFReader.VcfBamPath(vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [vcf_bam_tuple])
     try:
-        entry = vcf_loader[0]
+        assert (type(vcf_loader[0]) == Variant)
     except IndexError:
-        raise
+        pytest.fail("Can not retrieve first element from VCFReader")
 
 
 def test_vcf_load_fp(monkeypatch):
@@ -104,5 +104,4 @@ def test_load_vcf_content_with_wrong_format(monkeypatch):
     vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     with pytest.raises(RuntimeError):
-        vcf_loader = MockPyVCFReader.get_invalid_vcf(
-            monkeypatch, [vcf_bam_tuple])
+        MockPyVCFReader.get_invalid_vcf(monkeypatch, [vcf_bam_tuple])

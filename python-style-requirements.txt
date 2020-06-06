@@ -13,14 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Custom neural types for VariantWorks."""
 
-from nemo.core.neural_types import LabelsType, ChannelType
-
-
-class ReadPileupNeuralType(ChannelType):
-    """Element type to represent a variant encoding."""
-
-
-class VariantZygosityNeuralType(LabelsType):
-    """Element type to represent variant type (no variant, heterozygous or homozygous."""
+flake8==3.8.2
+pydocstyle==5.0.2
+Sphinx==3.0.4

@@ -19,15 +19,13 @@ import pytest
 import shutil
 
 import nemo
-from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
-from nemo.backends.pytorch.torchvision.helpers import compute_accuracy, eval_epochs_done_callback, eval_iter_callback
+from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
 import torch
 
 from variantworks.dataloader import ReadPileupDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
-from variantworks.result_writer import VCFResultWriter
 from variantworks.sample_encoder import ZygosityLabelDecoder
 
 from test_utils import get_data_folder
