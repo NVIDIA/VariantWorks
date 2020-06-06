@@ -30,12 +30,11 @@ class AlexNet(TrainableNM):
     @property
     @add_port_docs()
     def input_ports(self):
-        """Returns definitions of module input ports.
+        """Return definitions of module input ports.
 
         Returns:
             Module input ports.
         """
-
         return {
             "encoding": NeuralType(('B', 'C', 'H', 'W'), ChannelType()),
         }
@@ -43,19 +42,18 @@ class AlexNet(TrainableNM):
     @property
     @add_port_docs()
     def output_ports(self):
-        """Returns definitions of module output ports.
+        """Return definitions of module output ports.
 
         Returns:
             Module output ports.
         """
-
         return {
             # Variant type
             'output_logit': NeuralType(('B', 'D'), LogitsType()),
         }
 
     def __init__(self, num_input_channels, num_output_logits):
-        """Constructor for AlexNet NeMo.
+        """Construct an AlexNet NeMo instance.
 
         Args:
             num_input_channels : Number of input channels in image.
@@ -64,7 +62,6 @@ class AlexNet(TrainableNM):
         Returns:
             Instance of class.
         """
-
         super().__init__()
         self.num_output_logits = num_output_logits
         self.num_input_channels = num_input_channels
@@ -109,7 +106,6 @@ class AlexNet(TrainableNM):
         Returns:
             Output of forward pass.
         """
-
         encoding = self.features(encoding)
         encoding = self.avgpool(encoding)
         encoding = torch.flatten(encoding, 1)
