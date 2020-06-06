@@ -47,10 +47,26 @@ class PileupEncoder(SampleEncoder):
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
     the type of information that is selected to be embedded.
+
+    The variant location of interest is kept centered in the pileup, and the layers input in
+    the constructor define the channels created in the encoding. For more details on available
+    channels, please check the documentation for the Layers enum.
     """
 
     class Layer(Enum):
         """Layers that can be added to the pileup encoding.
+
+        Values:
+            READ : Encode each aligned read as a row of the pileup. The bases in the
+            read are encoded using a base_encoder dict passed into the class. The reads
+            in the row are positioned according to the pileup alignment.\n
+            BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
+            qualities of each read are added to a new row, following the same positioning as for READS. The base
+            qualities are normalized to [0,1]..\n
+            MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping quality
+            values are noramlize to [0,1].\n
+            REFERENCE : Only the reference allele location is encoded in each row.\n
+            ALLELE : Only the alt allele location is encoded in each row.\n
         """
 
         READ = 0
@@ -122,15 +138,17 @@ class PileupEncoder(SampleEncoder):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
         elif layer == self.Layer.BASE_QUALITY:
+            MAX_BASE_QUALITY = 93.0
             # Fetch the subsequence based on the offsets
             seq_qual = pileupread.alignment.query_qualities[query_pos -
                                                             left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = seq_qual[seq_pos]
+                tensor[row, pileup_pos] = seq_qual[seq_pos] / MAX_BASE_QUALITY
         elif layer == self.Layer.MAPPING_QUALITY:
+            MAX_MAPPING_QUALITY = 255.0
             # Getch mapping quality of alignment
-            map_qual = pileupread.alignment.mapping_quality
+            map_qual = pileupread.alignment.mapping_quality / MAX_MAPPING_QUALITY
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = map_qual

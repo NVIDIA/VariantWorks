@@ -76,6 +76,47 @@ def test_snp_allele_encoding(snp_variant):
     encoding = encoder(variant)
     assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
 
+def test_snp_encoder_base_quality(snp_variant):
+    max_reads = 100
+    window_size = 5
+    width = 2 * window_size + 1
+    height = max_reads
+    layers = [PileupEncoder.Layer.BASE_QUALITY]
+
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
+
+    variant = snp_variant
+
+    encoding = encoder(variant)
+    assert(encoding.size() == torch.Size([len(layers), height, width]))
+
+    # Verify that all elements are <= 1 by first outputing a bool tensor
+    # and then converting it to a long tensor and summing up all elements to match
+    # against total size.
+    all_lt_1 = (encoding <= 1.0).long()
+    assert(torch.sum(all_lt_1) == (max_reads * width))
+
+def test_snp_encoder_mapping_quality(snp_variant):
+    max_reads = 100
+    window_size = 5
+    width = 2 * window_size + 1
+    height = max_reads
+    layers = [PileupEncoder.Layer.MAPPING_QUALITY]
+
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
+
+    variant = snp_variant
+
+    encoding = encoder(variant)
+    assert(encoding.size() == torch.Size([len(layers), height, width]))
+
+    # Verify that all elements are <= 1 by first outputing a bool tensor
+    # and then converting it to a long tensor and summing up all elements to match
+    # against total size.
+    all_lt_1 = (encoding <= 1.0).long()
+    assert(torch.sum(all_lt_1) == (max_reads * width))
 
 def test_pileup_unknown_layer():
     try:
