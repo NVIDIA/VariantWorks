@@ -1,7 +1,10 @@
+"""Contains mocked file object inputs for tests."""
+
 import io
 
 
 def mock_file_input():
+    """Return a string stream of an unfiltered vcf file content."""
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
@@ -29,8 +32,9 @@ def mock_file_input():
 
 
 def mock_invalid_file_input():
-    """Returns a string stream of a vcf file content which is supposed to raise a RuntimeError (more than one called
-    sample)
+    """Returns a string stream of a vcf file content which is supposed to raise a RuntimeError.
+
+    More than one called sample
     """
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -45,6 +49,7 @@ def mock_invalid_file_input():
 
 
 def mock_vcf_file_reader_input(dummy_file_path):
+    """Return string stream of small filtered vcf content."""
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">

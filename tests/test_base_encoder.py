@@ -14,8 +14,6 @@
 # limitations under the License.
 #
 
-import pytest
-
 from variantworks.base_encoder import base_enum_encoder
 
 

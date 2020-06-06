@@ -18,26 +18,25 @@
 import abc
 from enum import Enum
 import pysam
-import time
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
 from variantworks.types import Variant, VariantType, VariantZygosity
 
 
-class SampleEncoder():
-    """An abstract class defining the interface to an encoder implementation. Encoder could
-    be used for encoding inputs to network, as well as encoding target labels for prediction.
+class SampleEncoder:
+    """An abstract class defining the interface to an encoder implementation.
+
+    Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
 
     def __init__(self):
+        """Construct a class instance."""
         pass
 
     @abc.abstractmethod
     def __call__(self, *sample):
-        """Computes the encoding of a sample.
-        """
-
+        """Compute the encoding of a sample."""
         raise NotImplementedError
 
 
@@ -50,8 +49,7 @@ class PileupEncoder(SampleEncoder):
     """
 
     class Layer(Enum):
-        """Layers that can be added to the pileup encoding.
-        """
+        """Layers that can be added to the pileup encoding."""
 
         READ = 0
         BASE_QUALITY = 1
@@ -60,7 +58,7 @@ class PileupEncoder(SampleEncoder):
         ALLELE = 4
 
     def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
-        """Constructor for class.
+        """Construct class instance.
 
         Args:
             window_size : A nucleotide context size on either side of variant position [50].
@@ -74,7 +72,6 @@ class PileupEncoder(SampleEncoder):
         Returns:
             Instance of class.
         """
-
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -91,20 +88,17 @@ class PileupEncoder(SampleEncoder):
 
     @property
     def width(self):
-        """Returns width of pileup."""
-
+        """Return width of pileup."""
         return 2 * self.window_size + 1
 
     @property
     def height(self):
-        """Returns height of pileup."""
-
+        """Return height of pileup."""
         return self.max_reads
 
     @property
     def depth(self):
-        """Returns number of layers in pileup."""
-
+        """Return number of layers in pileup."""
         return len(self.layers)
 
     def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant):
@@ -142,12 +136,11 @@ class PileupEncoder(SampleEncoder):
             tensor[row, self.window_size] = self.base_encoder[variant.allele]
 
     def __call__(self, variant):
-        """Returns a torch Tensor pileup queried from a BAM file.
+        """Return a torch Tensor pileup queried from a BAM file.
 
         Args:
             variant : Variant struct holding information about variant locus.
         """
-
         # Locus information
         chrom = variant.chrom
         variant_pos = variant.pos
@@ -156,10 +149,8 @@ class PileupEncoder(SampleEncoder):
         assert(variant.type ==
                VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
 
-        start = time.time()
-
         # Create BAM object if one hasn't been opened before.
-        if (bam_file not in self.bams):
+        if bam_file not in self.bams:
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
@@ -178,9 +169,6 @@ class PileupEncoder(SampleEncoder):
                 # Check if reference base is missing (either deleted or skipped).
                 if pileupread.is_del or pileupread.is_refskip:
                     continue
-
-                # Position of variant locus in read
-                query_pos = pileupread.query_position
 
                 # Using the variant locus as the center, find the left and right offset
                 # from that locus to use as bounds for fetching bases from reads.
@@ -203,18 +191,17 @@ class PileupEncoder(SampleEncoder):
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
-        #print("Total time {}".format(time.time() - start))
         return encoding
 
 
 class ZygosityLabelEncoder(SampleEncoder):
-    """A label encoder that returns an output label encoding for zygosity
-    only. Converts zygosity type to a class number.
+    """A label encoder that returns an output label encoding for zygosity only.
+
+    Converts zygosity type to a class number.
     """
 
     def __init__(self):
-        """Constructor."""
-
+        """Construct a class instance."""
         super().__init__()
         self._dict = {
             VariantZygosity.NO_VARIANT: 0,
@@ -223,12 +210,11 @@ class ZygosityLabelEncoder(SampleEncoder):
         }
 
     def __call__(self, variant):
-        """Encodes variant to class for zygosity.
+        """Encode variant to class for zygosity.
 
         Returns:
            Zygosity encoded as number.
         """
-
         assert(isinstance(variant, Variant))
         var_zyg = variant.zygosity
         assert(var_zyg in self._dict)
@@ -237,10 +223,10 @@ class ZygosityLabelEncoder(SampleEncoder):
 
 
 class ZygosityLabelDecoder(SampleEncoder):
-    """A decoder to convert a class to a zygosity enum.
-    """
+    """A decoder to convert a class to a zygosity enum."""
 
     def __init__(self):
+        """Construct a class instance."""
         super().__init__()
         self._dict = {
             0: VariantZygosity.NO_VARIANT,
@@ -249,11 +235,10 @@ class ZygosityLabelDecoder(SampleEncoder):
         }
 
     def __call__(self, class_id):
-        """Decodes class to variant zygosity enum.
+        """Decode class to variant zygosity enum.
 
         Returns:
             Variant zygosity.
         """
-
         assert(class_id.item() in self._dict)
         return self._dict[class_id.item()]

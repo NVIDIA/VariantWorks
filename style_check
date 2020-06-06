@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 # Copyright 2020 NVIDIA CORPORATION.
 #
@@ -13,14 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Custom neural types for VariantWorks."""
 
-from nemo.core.neural_types import LabelsType, ChannelType
+set -e
 
+VW_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
-class ReadPileupNeuralType(ChannelType):
-    """Element type to represent a variant encoding."""
+echo "Run Python formatting check..."
+flake8 "$VW_DIR"
 
+echo "Run Python docstring conventions check..."
+pydocstyle --convention=google "$VW_DIR" -v --match-dir='^(?!docs|ci).*'
 
-class VariantZygosityNeuralType(LabelsType):
-    """Element type to represent variant type (no variant, heterozygous or homozygous."""
+echo "Style check passed!"

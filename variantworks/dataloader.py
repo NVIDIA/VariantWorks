@@ -14,19 +14,17 @@
 # limitations under the License.
 #
 
-# Abstract class for creating a dataset from BAM and VCF files
+"""A class for creating a dataset from BAM and VCF files."""
 
 from enum import Enum
 from torch.utils.data import Dataset as TorchDataset, DataLoader as TorchDataLoader
-import vcf
 
 from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
-from nemo.core.neural_types import *
+from nemo.core.neural_types import NeuralType
 
 from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
-from variantworks.types import VariantZygosity
 
 
 class ReadPileupDataLoader(DataLayerNM):
@@ -42,7 +40,7 @@ class ReadPileupDataLoader(DataLayerNM):
     @property
     @add_port_docs()
     def output_ports(self):
-        """Returns definitions of module output ports.
+        """Return definitions of module output ports.
 
         Returns:
             NeMo output port.
@@ -57,9 +55,10 @@ class ReadPileupDataLoader(DataLayerNM):
                 "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
 
-    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4, sample_encoder=PileupEncoder(
-            window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]), label_encoder=ZygosityLabelEncoder()):
-        """Constructor for data loader.
+    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4,
+                 sample_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
+                 label_encoder=ZygosityLabelEncoder()):
+        """Construct a data loader.
 
         Args:
             data_loader_type : Type of data loader (ReadPileupDataLoader.Type.TRAIN/EVAL/TEST)
@@ -68,12 +67,12 @@ class ReadPileupDataLoader(DataLayerNM):
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
             sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]
-            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable when type=TRAIN/EVAL)
+            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable
+            when type=TRAIN/EVAL)
 
         Returns:
             Instance of class.
         """
-
         super().__init__()
         self.data_loader_type = data_loader_type
         self.variant_loader = variant_loader
@@ -84,7 +83,7 @@ class ReadPileupDataLoader(DataLayerNM):
             """A wrapper around Torch dataset class to generate individual samples."""
 
             def __init__(self, data_loader_type, sample_encoder, variant_loader, label_encoder):
-                """Constructor for dataset wrapper.
+                """Construct a dataset wrapper.
 
                 Args:
                     data_loader_type : Type of data loader
@@ -95,7 +94,6 @@ class ReadPileupDataLoader(DataLayerNM):
                 Returns:
                     Instance of class.
                 """
-
                 super().__init__()
                 self.variant_loader = variant_loader
                 self.label_encoder = label_encoder
@@ -125,12 +123,15 @@ class ReadPileupDataLoader(DataLayerNM):
                                           num_workers=num_workers)
 
     def __len__(self):
+        """Return number of items in dataloader instance."""
         return len(self.dataloader)
 
     @property
     def data_iterator(self):
+        """Return Torch dataloader instance."""
         return self.dataloader
 
     @property
     def dataset(self):
+        """Not used."""
         return None
