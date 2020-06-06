@@ -76,6 +76,7 @@ def test_snp_allele_encoding(snp_variant):
     encoding = encoder(variant)
     assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
 
+
 def test_snp_encoder_base_quality(snp_variant):
     max_reads = 100
     window_size = 5
@@ -97,6 +98,7 @@ def test_snp_encoder_base_quality(snp_variant):
     all_lt_1 = (encoding <= 1.0).long()
     assert(torch.sum(all_lt_1) == (max_reads * width))
 
+
 def test_snp_encoder_mapping_quality(snp_variant):
     max_reads = 100
     window_size = 5
@@ -117,6 +119,7 @@ def test_snp_encoder_mapping_quality(snp_variant):
     # against total size.
     all_lt_1 = (encoding <= 1.0).long()
     assert(torch.sum(all_lt_1) == (max_reads * width))
+
 
 def test_pileup_unknown_layer():
     max_reads = 100

@@ -53,7 +53,7 @@ class PileupEncoder(SampleEncoder):
     """
 
     class Layer(Enum):
-        """Layers that can be added to the pileup encoding.
+        r"""Layers that can be added to the pileup encoding.
 
         Values:
             READ : Encode each aligned read as a row of the pileup. The bases in the
@@ -62,8 +62,8 @@ class PileupEncoder(SampleEncoder):
             BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
             qualities of each read are added to a new row, following the same positioning as for READS. The base
             qualities are normalized to [0,1]..\n
-            MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping quality
-            values are noramlize to [0,1].\n
+            MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
+            quality values are noramlize to [0,1].\n
             REFERENCE : Only the reference allele location is encoded in each row.\n
             ALLELE : Only the alt allele location is encoded in each row.\n
         """
