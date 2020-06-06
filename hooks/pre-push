@@ -32,9 +32,10 @@ echo ""
 
 cd $sdk_root_dir
 echo ""
-echo "Running copyright check from $PWD..."
+echo "Running copyright and style check from $PWD..."
 echo ""
 python $sdk_root_dir/ci/checks/check_copyright.py
+$sdk_root_dir/style_check
 
 cd $tests_dir
 echo ""
