@@ -77,7 +77,7 @@ setup(name='variantworks',
       version='0.1.0',
       description='NVIDIA genomics python libraries and utiliites',
       author='NVIDIA Corporation',
-      url="https://github.com/clara-genomics/VariantWorks",
+      url="https://github.com/clara-parabricks/VariantWorks",
       include_package_data=True,
       install_requires=[get_installation_requirments(
           get_verified_absolute_path(
