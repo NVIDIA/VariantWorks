@@ -61,9 +61,11 @@ class PileupEncoder(SampleEncoder):
             in the row are positioned according to the pileup alignment.\n
             BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
             qualities of each read are added to a new row, following the same positioning as for READS. The base
-            qualities are normalized to [0,1]..\n
+            qualities are normalized to [0,1] (using max value of 93 per SAM format).
+            Missing base quality is set to 0.\n
             MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
-            quality values are noramlize to [0,1].\n
+            quality values are noramlize to [0,1] (assuming max value of 50).
+            Missing mapping quality is set to 0.\n
             REFERENCE : Only the reference allele location is encoded in each row.\n
             ALLELE : Only the alt allele location is encoded in each row.\n
         """
@@ -133,17 +135,28 @@ class PileupEncoder(SampleEncoder):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
         elif layer == self.Layer.BASE_QUALITY:
+            # From SAM format docs.
             MAX_BASE_QUALITY = 93.0
             # Fetch the subsequence based on the offsets
             seq_qual = pileupread.alignment.query_qualities[query_pos -
                                                             left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = seq_qual[seq_pos] / MAX_BASE_QUALITY
+                qual = seq_qual[seq_pos]
+                if qual == 255:
+                    qual = 0.
+                else:
+                    qual = qual / MAX_BASE_QUALITY
+                tensor[row, pileup_pos] = qual
         elif layer == self.Layer.MAPPING_QUALITY:
-            MAX_MAPPING_QUALITY = 255.0
+            MAX_MAPPING_QUALITY = 50.0
             # Getch mapping quality of alignment
-            map_qual = pileupread.alignment.mapping_quality / MAX_MAPPING_QUALITY
+            map_qual = pileupread.alignment.mapping_quality
+            # Missing mapiping quality is 255
+            if map_qual == 255:
+                map_qual = 0.0
+            else:
+                map_qual = pileupread.alignment.mapping_quality / MAX_MAPPING_QUALITY
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = map_qual
