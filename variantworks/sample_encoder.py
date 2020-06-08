@@ -58,16 +58,20 @@ class PileupEncoder(SampleEncoder):
         Values:
             READ : Encode each aligned read as a row of the pileup. The bases in the
             read are encoded using a base_encoder dict passed into the class. The reads
-            in the row are positioned according to the pileup alignment.\n
+            in the row are positioned according to the pileup alignment.
+
             BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
             qualities of each read are added to a new row, following the same positioning as for READS. The base
             qualities are normalized to [0,1] (using max value of 93 per SAM format).
-            Missing base quality is set to 0.\n
+            Missing base quality is set to 0.
+
             MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
             quality values are noramlize to [0,1] (assuming max value of 50).
-            Missing mapping quality is set to 0.\n
-            REFERENCE : Only the reference allele location is encoded in each row.\n
-            ALLELE : Only the alt allele location is encoded in each row.\n
+            Missing mapping quality is set to 0.
+
+            REFERENCE : Only the reference allele location is encoded in each row.
+
+            ALLELE : Only the alt allele location is encoded in each row.
         """
 
         READ = 0
