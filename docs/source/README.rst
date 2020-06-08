@@ -31,13 +31,6 @@ Requirements
 Getting Started
 ---------------
 
-* Install latest released version from PyPI
-
-.. code-block:: bash
-
-    pip install variantworks
-
-
 * Install latest development code from source
 
 .. code-block:: bash
