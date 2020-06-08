@@ -10,6 +10,7 @@ Developer Guide
    :hidden:
    :maxdepth: 2
 
+   Introduction <self>
    features
    examples
    apidocs/modules

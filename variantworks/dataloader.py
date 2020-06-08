@@ -19,12 +19,136 @@
 from enum import Enum
 from torch.utils.data import Dataset as TorchDataset, DataLoader as TorchDataLoader
 
+import h5py
 from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType
+import torch
 
 from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
+
+
+class HDFPileupDataLoader(DataLayerNM):
+    """Dataloader class to load pileup encodings and zygosity labels from HDF5 file."""
+
+    class Type(Enum):
+        """Type of data loader."""
+
+        TRAIN = 0
+        EVAL = 1
+        TEST = 2
+
+    @property
+    @add_port_docs()
+    def output_ports(self):
+        """Returns definitions of module output ports.
+
+        Returns:
+            NeMo output port.
+        """
+        if self.data_loader_type == HDFPileupDataLoader.Type.TEST:
+            return {
+                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+            }
+        else:
+            return {
+                "label": NeuralType(tuple('B'), VariantZygosityNeuralType()),
+                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+            }
+
+    def __init__(self, data_loader_type, hdf_file, batch_size=32, shuffle=True,
+                 num_workers=4, encoding_dtype=torch.float32, label_dtype=torch.int64,
+                 hdf_encoding_key="encodings", hdf_label_key="labels"):
+        """Constructor for data loader.
+
+        Args:
+            data_loader_type : Type of data loader (HDFPileupDataLoader.Type.TRAIN/EVAL/TEST)
+            hdf_file : Path to HDF file with pileup encodings
+            batch_size : batch size for data loader [32]
+            shuffle : shuffle dataset [True]
+            num_workers : numbers of parallel data loader threads [4]
+            encoding_dtype : Torch data type for encoding [torch.float32]
+            label_dtype : Torch data type for label [torch.int64]
+            hdf_encoding_key : HDF5 key for encodings. [encodings]
+            hdf_label_key : HDF5 key for labels. [labels]
+
+        Returns:
+            Instance of class.
+        """
+        super().__init__()
+        self.data_loader_type = data_loader_type
+        self.hdf_file = hdf_file
+
+        class DatasetWrapper(TorchDataset):
+            """A wrapper around Torch dataset class to generate individual samples."""
+
+            def __init__(self, data_loader_type, hdf_file, encoding_dtype, label_dtype,
+                         hdf_encoding_key, hdf_label_key):
+                """Constructor for dataset wrapper.
+
+                Args:
+                    data_loader_type : Type of data loader.
+                    hdf_file : Path to HDF5 file.
+                    encoding_dtype : Torch type for encoding.
+                    label_dtype : Torch type for label.
+                    hdf_encoding_key : HDF5 key for encodings.
+                    hdf_label_key : HDF5 key for labels.
+
+                Returns:
+                    Instance of class.
+                """
+                super().__init__()
+                self.data_loader_type = data_loader_type
+                self.hdf_file = hdf_file
+                self.encoding_dtype = encoding_dtype
+                self.label_dtype = label_dtype
+                self.hdf_encoding_key = hdf_encoding_key
+                self.hdf_label_key = hdf_label_key
+
+            def __len__(self):
+                hdf = h5py.File(self.hdf_file, "r")
+                return len(hdf.get(self.hdf_encoding_key))
+
+            def __getitem__(self, idx):
+                hdf = h5py.File(self.hdf_file, "r")
+
+                if self.data_loader_type == HDFPileupDataLoader.Type.TEST:
+                    encoding = hdf.get(self.hdf_encoding_key)[idx]
+
+                    return torch.tensor(encoding, dtype=self.encoding_dtype)
+                else:
+                    encoding_data = hdf.get(self.hdf_encoding_key)
+                    label_data = hdf.get(self.hdf_label_key)
+
+                    encoding = torch.tensor(
+                        encoding_data[idx], dtype=self.encoding_dtype)
+                    label = torch.tensor(
+                        label_data[idx], dtype=self.label_dtype)
+
+                    return label, encoding
+
+        dataset = DatasetWrapper(
+            data_loader_type, self.hdf_file, encoding_dtype, label_dtype,
+            hdf_encoding_key, hdf_label_key)
+        print(len(dataset))
+        self.dataloader = TorchDataLoader(dataset,
+                                          batch_size=batch_size, shuffle=shuffle,
+                                          num_workers=num_workers)
+
+    def __len__(self):
+        """Return length of data loader."""
+        return len(self.dataloader)
+
+    @property
+    def data_iterator(self):
+        """Return Torch dataloader instance."""
+        return self.dataloader
+
+    @property
+    def dataset(self):
+        """Not used."""
+        return None
 
 
 class ReadPileupDataLoader(DataLayerNM):
