@@ -30,11 +30,11 @@ pileup_hdf5_generator.py -h
 
 Once the dataset has been generated, the next step is to plug them into the trainer.
 
-Majory of the trainer is a training pipeline programmed using the the [NeMo](https://nvidia.github.io/NeMo/) API.
+Majory of the trainer is a training pipeline programmed using the [NeMo](https://nvidia.github.io/NeMo/) API.
 The key VariantWorks API highlighted in the trainer is the `HDFPileupDataLoader` class that serves
 samples and labels to the network during training.
 
-Details of the script usage can be found in it's help message.
+Details of the script usage can be found in its help message.
 ```
 ./cnn_snp_trainer.py -h
 ```
