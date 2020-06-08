@@ -17,3 +17,4 @@
 flake8==3.8.2
 pydocstyle==5.0.2
 Sphinx==3.0.4
+sphinx-rtd-theme==0.4.3
