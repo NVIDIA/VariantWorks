@@ -83,10 +83,10 @@ def mock_small_filtered_file_input():
 
 
 class MockPyVCFReader:
+    """Return VCFReader instance with mocked file content."""
 
     class ContentType(Enum):
-        """VCF file content type for mocking
-        """
+        """VCF file content type for mocking."""
         UNFILTERED = 0
         INVALID = 1
         SMALL_FILTERED = 2
@@ -113,6 +113,16 @@ class MockPyVCFReader:
 
     @staticmethod
     def get_reader(mp, vcf_bam_list, content_type):
+        """Mock VCFReader reader content according to given content type.
+
+        Args:
+              mp: Pytest monkeypatch context
+              vcf_bam_list: List of VcfBamPath objects
+              content_type: Type of request vcf content
+
+        Returns:
+              VCF content as StringIO
+        """
         with mp.context() as m:
             m.setattr(VCFReader, "_get_file_reader",
                       MockPyVCFReader._content_type_to_mocked_reader_method[content_type])
