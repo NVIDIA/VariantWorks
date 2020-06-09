@@ -18,26 +18,25 @@
 import abc
 from enum import Enum
 import pysam
-import time
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
 from variantworks.types import Variant, VariantType, VariantZygosity
 
 
-class SampleEncoder():
-    """An abstract class defining the interface to an encoder implementation. Encoder could
-    be used for encoding inputs to network, as well as encoding target labels for prediction.
+class SampleEncoder:
+    """An abstract class defining the interface to an encoder implementation.
+
+    Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
 
     def __init__(self):
+        """Construct a class instance."""
         pass
 
     @abc.abstractmethod
     def __call__(self, *sample):
-        """Computes the encoding of a sample.
-        """
-
+        """Compute the encoding of a sample."""
         raise NotImplementedError
 
 
@@ -47,10 +46,32 @@ class PileupEncoder(SampleEncoder):
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
     the type of information that is selected to be embedded.
+
+    The variant location of interest is kept centered in the pileup, and the layers input in
+    the constructor define the channels created in the encoding. For more details on available
+    channels, please check the documentation for the Layers enum.
     """
 
     class Layer(Enum):
-        """Layers that can be added to the pileup encoding.
+        r"""Layers that can be added to the pileup encoding.
+
+        Values:
+            READ : Encode each aligned read as a row of the pileup. The bases in the
+            read are encoded using a base_encoder dict passed into the class. The reads
+            in the row are positioned according to the pileup alignment.
+
+            BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
+            qualities of each read are added to a new row, following the same positioning as for READS. The base
+            qualities are normalized to [0,1] (using max value of 93 per SAM format).
+            Missing base quality is set to 0.
+
+            MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
+            quality values are noramlize to [0,1] (assuming max value of 50).
+            Missing mapping quality is set to 0.
+
+            REFERENCE : Only the reference allele location is encoded in each row.
+
+            ALLELE : Only the alt allele location is encoded in each row.
         """
 
         READ = 0
@@ -60,7 +81,7 @@ class PileupEncoder(SampleEncoder):
         ALLELE = 4
 
     def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
-        """Constructor for class.
+        """Construct class instance.
 
         Args:
             window_size : A nucleotide context size on either side of variant position [50].
@@ -74,7 +95,6 @@ class PileupEncoder(SampleEncoder):
         Returns:
             Instance of class.
         """
-
         super().__init__()
         self.window_size = window_size
         self.max_reads = max_reads
@@ -91,20 +111,17 @@ class PileupEncoder(SampleEncoder):
 
     @property
     def width(self):
-        """Returns width of pileup."""
-
+        """Return width of pileup."""
         return 2 * self.window_size + 1
 
     @property
     def height(self):
-        """Returns height of pileup."""
-
+        """Return height of pileup."""
         return self.max_reads
 
     @property
     def depth(self):
-        """Returns number of layers in pileup."""
-
+        """Return number of layers in pileup."""
         return len(self.layers)
 
     def _fill_layer(self, layer, pileupread, left_offset, right_offset, row, pileup_pos_range, variant):
@@ -122,15 +139,28 @@ class PileupEncoder(SampleEncoder):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
         elif layer == self.Layer.BASE_QUALITY:
+            # From SAM format docs.
+            MAX_BASE_QUALITY = 93.0
             # Fetch the subsequence based on the offsets
             seq_qual = pileupread.alignment.query_qualities[query_pos -
                                                             left_offset: query_pos + right_offset]
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = seq_qual[seq_pos]
+                qual = seq_qual[seq_pos]
+                if qual == 255:
+                    qual = 0.
+                else:
+                    qual = qual / MAX_BASE_QUALITY
+                tensor[row, pileup_pos] = qual
         elif layer == self.Layer.MAPPING_QUALITY:
+            MAX_MAPPING_QUALITY = 50.0
             # Getch mapping quality of alignment
             map_qual = pileupread.alignment.mapping_quality
+            # Missing mapiping quality is 255
+            if map_qual == 255:
+                map_qual = 0.0
+            else:
+                map_qual = pileupread.alignment.mapping_quality / MAX_MAPPING_QUALITY
             for pileup_pos in range(pileup_pos_range[0], pileup_pos_range[1]):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = map_qual
@@ -142,12 +172,11 @@ class PileupEncoder(SampleEncoder):
             tensor[row, self.window_size] = self.base_encoder[variant.allele]
 
     def __call__(self, variant):
-        """Returns a torch Tensor pileup queried from a BAM file.
+        """Return a torch Tensor pileup queried from a BAM file.
 
         Args:
             variant : Variant struct holding information about variant locus.
         """
-
         # Locus information
         chrom = variant.chrom
         variant_pos = variant.pos
@@ -156,10 +185,8 @@ class PileupEncoder(SampleEncoder):
         assert(variant.type ==
                VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
 
-        start = time.time()
-
         # Create BAM object if one hasn't been opened before.
-        if (bam_file not in self.bams):
+        if bam_file not in self.bams:
             self.bams[bam_file] = pysam.AlignmentFile(bam_file, "rb")
 
         bam = self.bams[bam_file]
@@ -178,9 +205,6 @@ class PileupEncoder(SampleEncoder):
                 # Check if reference base is missing (either deleted or skipped).
                 if pileupread.is_del or pileupread.is_refskip:
                     continue
-
-                # Position of variant locus in read
-                query_pos = pileupread.query_position
 
                 # Using the variant locus as the center, find the left and right offset
                 # from that locus to use as bounds for fetching bases from reads.
@@ -203,18 +227,17 @@ class PileupEncoder(SampleEncoder):
 
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
-        #print("Total time {}".format(time.time() - start))
         return encoding
 
 
 class ZygosityLabelEncoder(SampleEncoder):
-    """A label encoder that returns an output label encoding for zygosity
-    only. Converts zygosity type to a class number.
+    """A label encoder that returns an output label encoding for zygosity only.
+
+    Converts zygosity type to a class number.
     """
 
     def __init__(self):
-        """Constructor."""
-
+        """Construct a class instance."""
         super().__init__()
         self._dict = {
             VariantZygosity.NO_VARIANT: 0,
@@ -223,12 +246,11 @@ class ZygosityLabelEncoder(SampleEncoder):
         }
 
     def __call__(self, variant):
-        """Encodes variant to class for zygosity.
+        """Encode variant to class for zygosity.
 
         Returns:
            Zygosity encoded as number.
         """
-
         assert(isinstance(variant, Variant))
         var_zyg = variant.zygosity
         assert(var_zyg in self._dict)
@@ -237,10 +259,10 @@ class ZygosityLabelEncoder(SampleEncoder):
 
 
 class ZygosityLabelDecoder(SampleEncoder):
-    """A decoder to convert a class to a zygosity enum.
-    """
+    """A decoder to convert a class to a zygosity enum."""
 
     def __init__(self):
+        """Construct a class instance."""
         super().__init__()
         self._dict = {
             0: VariantZygosity.NO_VARIANT,
@@ -249,11 +271,10 @@ class ZygosityLabelDecoder(SampleEncoder):
         }
 
     def __call__(self, class_id):
-        """Decodes class to variant zygosity enum.
+        """Decode class to variant zygosity enum.
 
         Returns:
             Variant zygosity.
         """
-
         assert(class_id.item() in self._dict)
         return self._dict[class_id.item()]

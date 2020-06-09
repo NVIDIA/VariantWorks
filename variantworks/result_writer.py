@@ -30,10 +30,12 @@ class ResultWriter(ABC):
 
     @abstractmethod
     def __init__(self):
+        """Construct a ResultWriter."""
         pass
 
     @abstractmethod
     def write_output(self):
+        """Output results."""
         pass
 
 
@@ -47,7 +49,7 @@ class VCFResultWriter(ResultWriter):
     }
 
     def __init__(self, variant_label_loader, inferred_zygosities=None, output_location=None):
-        """Constructor for VCFResultWriter class.
+        """Construct a VCFResultWriter class.
 
         Args:
             variant_label_loader : An instance of a VCF loader class.
@@ -57,7 +59,6 @@ class VCFResultWriter(ResultWriter):
         Returns:
             Instance of class.
         """
-
         # Check if the inferred zygosities passed in are the same length as label loader
         if inferred_zygosities and (len(inferred_zygosities) != len(variant_label_loader)):
             raise RuntimeError(
@@ -168,9 +169,7 @@ class VCFResultWriter(ResultWriter):
         return self.vcf_path_to_reader_writer[vcf_file_path]
 
     def write_output(self):
-        """Write final output to file.
-        """
-
+        """Write final output to file."""
         # Iterate over all variances
         for idx, variant in enumerate(self.variant_label_loader):
             file_writer = self._get_variant_file_writer(variant)

@@ -1,3 +1,21 @@
+#
+# Copyright 2020 NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""Contains mocked file object inputs for tests."""
+
 from enum import Enum
 import io
 
@@ -5,6 +23,7 @@ from variantworks.io.vcfio import VCFReader
 
 
 def mock_file_input():
+    """Return a string stream of an unfiltered vcf file content."""
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
@@ -32,8 +51,9 @@ def mock_file_input():
 
 
 def mock_invalid_file_input():
-    """Returns a string stream of a vcf file content which is supposed to raise a RuntimeError (more than one called
-    sample)
+    """Returns a string stream of a vcf file content which is supposed to raise a RuntimeError.
+
+    More than one called sample
     """
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -48,6 +68,7 @@ def mock_invalid_file_input():
 
 
 def mock_small_filtered_file_input():
+    """Return string stream of small filtered vcf content."""
     return io.StringIO("""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
