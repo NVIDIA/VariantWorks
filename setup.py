@@ -21,7 +21,7 @@
 
 import os
 
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
 
 
 def get_verified_absolute_path(path):
@@ -83,8 +83,7 @@ setup(name='variantworks',
           get_verified_absolute_path(
               os.path.join(current_dir, 'requirements.txt')))
       ],
-      packages=find_packages(where=current_dir,
-                             include=['variantworks']),
+      packages=find_packages(where=current_dir, include=["variantworks*"]),
       python_requires='>=3.7',
       long_description='Python libraries and utilities for manipulating '
                        'genomics data',
