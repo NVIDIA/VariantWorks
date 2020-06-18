@@ -61,7 +61,7 @@ def test_vcf_loader_snps(monkeypatch):
     vcf_bam_tuple = VCFReader.VcfBamPath(
         vcf="/dummy/path.gz", bam="temp.bam", is_fp=False)
     vcf_loader = MockPyVCFReader.get_vcf(monkeypatch, [vcf_bam_tuple])
-    assert(len(vcf_loader) == 13)
+    assert(len(vcf_loader) == 15)
 
 
 def test_vcf_fetch_variant(monkeypatch):

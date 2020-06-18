@@ -163,9 +163,6 @@ class VCFReader(BaseReader):
                     "Can not parse record %s in %s, all samples must be called in true positive VCF file" % (
                         record, vcf_file)
                 )
-            if not record.is_snp:
-                warnings.warn("%s is filtered - not an SNP record" % record)
-                continue
             if len(record.ALT) > 1:
                 warnings.warn(
                     "%s is filtered - multiallele recrods are not supported" % record)
