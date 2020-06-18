@@ -15,10 +15,10 @@
 #
 """Classes for reading and writing VCFs."""
 
-from dataclasses import dataclass
-import warnings
 
+from dataclasses import dataclass
 import vcf
+import warnings
 
 from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
@@ -142,6 +142,24 @@ class VCFReader(BaseReader):
                 raise RuntimeError(
                     "Could not parse variant from entry - {}".format(record))
 
+    @staticmethod
+    def _get_file_reader(vcf_file_object=None, vcf_file_path=None):
+        """Create VCF file reader from file object or file path.
+
+        Args:
+            vcf_file_object: VCF file object
+            vcf_file_path: VCF file path
+
+        Returns:
+            pyVCF Reader iterator
+        """
+        if not (vcf_file_object or vcf_file_path):
+            raise RuntimeError('You must provide at least one - file object or file path to the vcf reader')
+        if vcf_file_path:
+            # Check for compressed file
+            assert (vcf_file_path[-3:] == ".gz"), "VCF file needs to be compressed and indexed"
+        return vcf.Reader(vcf_file_object, vcf_file_path)
+
     def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
         """Parse VCF file and retain labels after they have passed filters.
 
@@ -151,9 +169,7 @@ class VCFReader(BaseReader):
             labels : List to store parsed variant records.
             is_fp : Boolean to indicate if file is for false positive variants.
         """
-        assert(
-            vcf_file[-3:] == ".gz"), "VCF file needs to be compressed and indexed"  # Check for compressed file
-        vcf_reader = vcf.Reader(filename=vcf_file)
+        vcf_reader = self._get_file_reader(vcf_file_path=vcf_file)
         if not is_fp and len(vcf_reader.samples) != 1:
             raise RuntimeError(
                 "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))

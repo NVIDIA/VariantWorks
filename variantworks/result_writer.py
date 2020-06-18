@@ -131,9 +131,15 @@ class VCFResultWriter(ResultWriter):
         return output_line
 
     @staticmethod
+    def _get_original_headers_from_vcf_reader(file_path):
+        reader = vcf.Reader(filename=str(file_path))
+        return reader._header_lines, reader._column_headers, reader.samples
+
+    @staticmethod
     def _get_modified_reader_headers(vcf_file_path, append_to_format_headers):
-        vcf_reader = vcf.Reader(filename=str(vcf_file_path))
-        modified_headers_metadata = vcf_reader._header_lines
+        vcf_headers, vcf_column_headers, vcf_reader_samples_name =\
+            VCFResultWriter._get_original_headers_from_vcf_reader(vcf_file_path)
+        modified_headers_metadata = vcf_headers
         for meta_data_line in append_to_format_headers:
             metadata_type_to_search = re.search(
                 '##(.*=<)', meta_data_line).group(1)
@@ -145,7 +151,7 @@ class VCFResultWriter(ResultWriter):
                 [meta_data_line] + \
                 modified_headers_metadata[last_format_header_line_index + 1:]
         modified_headers_metadata.append(
-            '#' + '\t'.join(vcf_reader._column_headers + vcf_reader.samples))
+            '#' + '\t'.join(vcf_column_headers + vcf_reader_samples_name))
         return '\n'.join(modified_headers_metadata) + '\n'
 
     def _get_variant_file_writer(self, variant):

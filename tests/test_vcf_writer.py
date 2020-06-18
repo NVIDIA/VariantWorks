@@ -22,45 +22,36 @@ from variantworks.io.vcfio import VCFReader
 from variantworks.types import VariantZygosity
 from variantworks.result_writer import VCFResultWriter
 
-from data.vcf_file_mock import mock_vcf_file_reader_input
+from data.vcf_file_mock import mock_small_filtered_file_input
 
 
-class MockPyVCFReader:
-    original_pyvcf_reader_init_function = vcf.Reader.__init__
-
-    @staticmethod
-    def new_vcf_reader_init(self, *args, **kargs):
-        if 'filename' not in kargs:  # Reader must be initiated using `filename`
-            raise RuntimeError('Please use `filename` to initiate vcf.Reader')
-        MockPyVCFReader.original_pyvcf_reader_init_function(
-            self, mock_vcf_file_reader_input(kargs['filename']))
-
-
-def test_vcf_outputting(monkeypatch):
+def test_vcf_outputting(get_created_vcf_tabix_files):
     """Write inference output into vcf files
     """
-    first_vcf_bam_tuple = VCFReader.VcfBamPath(
-        vcf="/dummy/path1.gz", bam="temp.bam", is_fp=False)
-    second_vcf_bam_tuple = VCFReader.VcfBamPath(
-        vcf="/dummy/path2.gz", bam="temp.bam", is_fp=False)
-    with monkeypatch.context() as mp:
-        mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        vcf_loader = VCFReader([first_vcf_bam_tuple, second_vcf_bam_tuple])
+    first_vcf_file_path, first_tabix_file_path = get_created_vcf_tabix_files(mock_small_filtered_file_input())
+    second_vcf_file_path, second_tabix_file_path = get_created_vcf_tabix_files(mock_small_filtered_file_input())
+    first_vcf_bam_tuple = VCFReader.VcfBamPath(vcf=first_vcf_file_path, bam=first_tabix_file_path, is_fp=False)
+    second_vcf_bam_tuple = VCFReader.VcfBamPath(vcf=second_vcf_file_path, bam=second_tabix_file_path, is_fp=False)
+    vcf_loader = VCFReader([first_vcf_bam_tuple, second_vcf_bam_tuple])
+
     inferred_results = [VariantZygosity.HOMOZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS,
                         VariantZygosity.HETEROZYGOUS, VariantZygosity.HOMOZYGOUS, VariantZygosity.HETEROZYGOUS]
     assert (len(inferred_results) == len(vcf_loader))
-    with monkeypatch.context() as mp:
-        mp.setattr(vcf.Reader, "__init__", MockPyVCFReader.new_vcf_reader_init)
-        result_writer = VCFResultWriter(vcf_loader, inferred_results)
-        result_writer.write_output()
+
+    result_writer = VCFResultWriter(vcf_loader, inferred_results)
+    result_writer.write_output()
+
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
+    first_output_file_name = \
+        '{}_{}.{}'.format("inferred", "".join(os.path.basename(first_vcf_file_path).split('.')[0:-2]), 'vcf')
+    second_output_file_name = \
+        '{}_{}.{}'.format("inferred", "".join(os.path.basename(second_vcf_file_path).split('.')[0:-2]), 'vcf')
     i = 0
-    for f in ['inferred_path1.vcf', 'inferred_path2.vcf']:
+    for f in [first_output_file_name, second_output_file_name]:
         vcf_reader = vcf.Reader(filename=os.path.join(
             result_writer.output_location, f))
         for record in vcf_reader:
-            assert(record.samples[0]['GT'] ==
-                   result_writer.zygosity_to_vcf_genotype[inferred_results[i]])
+            assert(record.samples[0]['GT'] == result_writer.zygosity_to_vcf_genotype[inferred_results[i]])
             i += 1
     assert (i == 6)
     # Clean up files

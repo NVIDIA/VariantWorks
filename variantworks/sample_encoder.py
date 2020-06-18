@@ -211,7 +211,9 @@ class PileupEncoder(SampleEncoder):
 
         bam = self.bams[bam_file]
 
-        # Get pileups from BAM
+        # Get pileups from BAM.
+        # Note that VCF positions are 1 based, but pysam pileup regions are 0 based.
+        # So subtract one from position.
         pileups = bam.pileup(chrom,
                              variant_pos - 1, variant_pos,
                              truncate=True,
