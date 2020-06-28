@@ -16,9 +16,11 @@
 """Classes for reading and writing VCFs."""
 
 
+from collections import defaultdict
 from dataclasses import dataclass
 import vcf
 import warnings
+import pandas as pd
 
 from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
@@ -50,6 +52,7 @@ class VCFReader(BaseReader):
             assert (elem.vcf is not None and elem.bam is not None and type(
                 elem.is_fp) is bool)
             self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
+        self._dataframe = None  # None at init time, only generate when requested.
 
     def __getitem__(self, idx):
         """Get Variant instance in location.
@@ -64,6 +67,17 @@ class VCFReader(BaseReader):
     def __len__(self):
         """Return number of Varint objects."""
         return len(self._labels)
+
+    @property
+    def df(self):
+        """Get variant list as a dataframe.
+
+        Returns:
+            Parsed variants as pandas DataFrame.
+        """
+        if not self._dataframe:
+            self._dataframe = self._create_dataframe()
+        return self._dataframe
 
     @staticmethod
     def _get_variant_zygosity(record, is_fp=False):
@@ -188,3 +202,19 @@ class VCFReader(BaseReader):
                 continue
             for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp):
                 labels.append(variant)
+
+    def _create_dataframe(self):
+        """Generate a pandas dataframe with all parsed variant entries.
+
+        Returns:
+            Dataframe with variant data.
+        """
+        df_dict = defaultdict(list)
+        for variant in self._labels:
+            df_dict["chrom"].append(variant.chrom)
+            df_dict["start_pos"].append(variant.pos)
+            df_dict["end_pos"].append(variant.pos + 1)
+            df_dict["ref"].append(variant.ref)
+            df_dict["alt"].append(variant.allele)
+            df_dict["type"].append(variant.type)
+        return pd.DataFrame(df_dict)
