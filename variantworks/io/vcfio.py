@@ -70,7 +70,19 @@ class VCFReader(BaseReader):
 
     @property
     def df(self):
-        """Get variant list as a dataframe.
+        """Get variant list as a CPU pandas dataframe.
+
+        Each row in the returned dataframe represents a variant entry.
+        For each variant entry, the following metrics are currently tracked -
+        1. chrom - Chromosome
+        2. start_pos - Start position of variant (inclusive)
+        3. end_pos - End position of variant (exclusive)
+        4. ref - Reference base(s)
+        5. alt - Alternate base(s)
+        6. variant_type - VariantType enum specifying SNP/INSERTION/DELETION
+
+        This dataframe can be easily converted to cuDF for large
+        variant processing.
 
         Returns:
             Parsed variants as pandas DataFrame.
@@ -216,5 +228,5 @@ class VCFReader(BaseReader):
             df_dict["end_pos"].append(variant.pos + 1)
             df_dict["ref"].append(variant.ref)
             df_dict["alt"].append(variant.allele)
-            df_dict["type"].append(variant.type)
+            df_dict["variant_type"].append(variant.type)
         return pd.DataFrame(df_dict)
