@@ -174,15 +174,16 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <div class="section" id="training">
 <h3>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">nemo</span>
 <span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.sample_encoders</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="c1"># Create neural factory</span>
 <span class="n">nf</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">NeuralModuleFactory</span><span class="p">(</span>
-    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">tempdir</span><span class="p">)</span>
+    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">)</span>
 
 <span class="c1"># Create pileup encoder by selecting layers to encode. More encoding layers</span>
 <span class="c1"># can be found in the documentation for PilupEncoder class.</span>
@@ -226,14 +227,27 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <span class="c1"># Logger callback</span>
 <span class="n">logger_callback</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">SimpleLossLoggerCallback</span><span class="p">(</span>
     <span class="n">tensors</span><span class="o">=</span><span class="p">[</span><span class="n">vz_loss</span><span class="p">],</span>
-    <span class="n">print_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+    <span class="n">print_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">nemo</span><span class="o">.</span><span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+<span class="p">)</span>
+
+<span class="c1"># Checkpointing models through NeMo callback</span>
+<span class="n">checkpoint_callback</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">CheckpointCallback</span><span class="p">(</span>
+    <span class="n">folder</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">,</span>
+    <span class="n">load_from_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># Checkpointing frequency in steps</span>
+    <span class="n">step_freq</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># Checkpointing frequency in epochs</span>
+    <span class="n">epoch_freq</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># Number of checkpoints to keep</span>
+    <span class="n">checkpoints_to_keep</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># If True, CheckpointCallback will raise an Error if restoring fails</span>
+    <span class="n">force_load</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
 
 <span class="c1"># Kick off training</span>
 <span class="n">nf</span><span class="o">.</span><span class="n">train</span><span class="p">([</span><span class="n">vz_loss</span><span class="p">],</span>
-         <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">logger_callback</span><span class="p">,</span>
-                    <span class="n">checkpoint_callback</span><span class="p">,</span> <span class="n">evaluator_callback</span><span class="p">],</span>
-         <span class="n">optimization_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">},</span>
+         <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">logger_callback</span><span class="p">,</span> <span class="n">checkpoint_callback</span><span class="p">],</span>
+         <span class="n">optimization_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">},</span>
          <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;adam&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -242,27 +256,28 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <h3>Inference<a class="headerlink" href="#inference" title="Permalink to this headline">¶</a></h3>
 <p>The inference pipeline works in a very similar fashion, except the final NeMo DAG looks different.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">nemo</span>
 <span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.sample_encoders</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">variantworks.result_writer</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="c1"># Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick</span>
 <span class="c1"># up a pre-trained model.</span>
 <span class="n">nf</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">NeuralModuleFactory</span><span class="p">(</span>
-    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">model_dir</span><span class="p">)</span>
-
-<span class="c1"># Neural Network</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AlexNet</span><span class="p">(</span><span class="n">num_input_channels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span>
-    <span class="n">encoding_layers</span><span class="p">),</span> <span class="n">num_output_logits</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">placement</span><span class="o">=</span><span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">neural_factory</span><span class="o">.</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">GPU</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">)</span>
 
 <span class="c1"># Dataset generation is done in a similar manner. It&#39;s important to note that the encoder used</span>
 <span class="c1"># for inference much match that for training.</span>
 <span class="n">encoding_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span> <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">BASE_QUALITY</span><span class="p">]</span>
 <span class="n">pileup_encoder</span> <span class="o">=</span> <span class="n">PileupEncoder</span><span class="p">(</span>
     <span class="n">window_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">encoding_layers</span><span class="p">)</span>
+
+<span class="c1"># Neural Network</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AlexNet</span><span class="p">(</span><span class="n">num_input_channels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span>
+    <span class="n">encoding_layers</span><span class="p">),</span> <span class="n">num_output_logits</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
 <span class="c1"># Similar to training, a dataloader needs to be setup for the relevant datasets. In the case of</span>
 <span class="c1"># inference, it doesn&#39;t matter if the files are tagged as false positive or not. Each example will be</span>
@@ -281,13 +296,14 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <span class="n">vz</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
 
 <span class="c1"># Invoke the &quot;infer&quot; action.</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">nf</span><span class="o">.</span><span class="n">infer</span><span class="p">([</span><span class="n">vz</span><span class="p">],</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="n">model_dir</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">nf</span><span class="o">.</span><span class="n">infer</span><span class="p">([</span><span class="n">vz</span><span class="p">],</span> <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Instantiate a decoder that converts the predicted output of the network to</span>
 <span class="c1"># a zygosity enum.</span>
 <span class="n">zyg_decoder</span> <span class="o">=</span> <span class="n">ZygosityLabelDecoder</span><span class="p">()</span>
 
 <span class="c1"># Decode inference results to labels</span>
+<span class="n">inferred_zygosity</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">tensor_batches</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tensor_batches</span><span class="p">:</span>
         <span class="n">predicted_classes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -295,7 +311,9 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
                              <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predicted_classes</span><span class="p">]</span>
 
 <span class="c1"># Use the VCFResultWriter to output predicted zygosities to a VCF file.</span>
-<span class="n">result_writer</span> <span class="o">=</span> <span class="n">VCFResultWriter</span><span class="p">(</span><span class="n">vcf_loader</span><span class="p">,</span> <span class="n">inferred_zygosity</span><span class="p">)</span>
+<span class="n">result_writer</span> <span class="o">=</span> <span class="n">VCFResultWriter</span><span class="p">(</span><span class="n">vcf_loader</span><span class="p">,</span>
+                                <span class="n">inferred_zygosities</span><span class="o">=</span><span class="n">inferred_zygosity</span><span class="p">,</span>
+                                <span class="n">output_location</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">)</span>
 
 <span class="n">result_writer</span><span class="o">.</span><span class="n">write_output</span><span class="p">()</span>
 </pre></div>
