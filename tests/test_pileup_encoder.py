@@ -127,3 +127,9 @@ def test_pileup_unknown_layer():
     with pytest.raises(AttributeError):
         layers = [PileupEncoder.Layer.BLAH]
         PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+
+
+def test_pileup_visualization(snp_variant):
+    encoder = PileupEncoder(
+        layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE])
+    encoder.visualize(snp_variant)

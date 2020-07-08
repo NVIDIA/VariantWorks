@@ -27,3 +27,12 @@ base_enum_encoder = {
     'N': 5,
     'n': 5,
 }
+
+base_color_decoder = {
+    0: [255, 255, 255],     # white
+    1: [0, 128, 0],         # green
+    2: [255, 0, 0],         # red
+    3: [0, 0, 255],         # blue
+    4: [245, 255, 0],       # yellow
+    5: [0, 255, 255]        # cyan
+}

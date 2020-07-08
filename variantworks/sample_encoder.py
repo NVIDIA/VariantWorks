@@ -17,10 +17,12 @@
 
 import abc
 from enum import Enum
+import numpy as np
+from PIL import Image
 import pysam
 import torch
 
-from variantworks.base_encoder import base_enum_encoder
+from variantworks.base_encoder import base_enum_encoder, base_color_decoder
 from variantworks.types import Variant, VariantType, VariantZygosity
 
 
@@ -230,6 +232,23 @@ class PileupEncoder(SampleEncoder):
         encoding = torch.stack(self.layer_tensors)
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
+
+    def visualize(self, variant):
+        """Visualize variant encoded pileup."""
+        encoded_sample = self.__call__(variant)
+        for layer, sample_dim in zip(self.layers, encoded_sample):
+            data = sample_dim.numpy().astype(np.uint8)
+            if layer in [PileupEncoder.Layer.READ,
+                         PileupEncoder.Layer.REFERENCE,
+                         PileupEncoder.Layer.ALLELE]:
+                rgb_img = np.zeros((sample_dim.shape[0], sample_dim.shape[1], 3))
+                for i in range(data.shape[0]):
+                    for j in range(data.shape[1]):
+                        rgb_img[i, j, :] = base_color_decoder[data[i, j]]
+                with np.printoptions(threshold=np.inf):
+                    print(data)
+                img = Image.fromarray(rgb_img, 'RGB')
+                img.show()
 
 
 class ZygosityLabelEncoder(SampleEncoder):
