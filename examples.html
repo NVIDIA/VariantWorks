@@ -176,10 +176,10 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">nemo</span>
-<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="n">ReadPileupDataLoader</span>
+<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="n">VCFReader</span>
+<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="n">AlexNet</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="n">PileupEncoder</span><span class="p">,</span> <span class="n">ZygosityLabelEncoder</span>
 
 <span class="c1"># Create neural factory</span>
 <span class="n">nf</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">NeuralModuleFactory</span><span class="p">(</span>
@@ -227,7 +227,7 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <span class="c1"># Logger callback</span>
 <span class="n">logger_callback</span> <span class="o">=</span> <span class="n">nemo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">SimpleLossLoggerCallback</span><span class="p">(</span>
     <span class="n">tensors</span><span class="o">=</span><span class="p">[</span><span class="n">vz_loss</span><span class="p">],</span>
-    <span class="n">print_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">nemo</span><span class="o">.</span><span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+    <span class="n">print_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">nemo</span><span class="o">.</span><span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Checkpointing models through NeMo callback</span>
@@ -258,11 +258,12 @@ trainig, model parallel training, etc.), please refer to the <a class="reference
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import nemo and variantworks modules</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">nemo</span>
-<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">variantworks.result_writer</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">variantworks.dataloader</span> <span class="kn">import</span> <span class="n">ReadPileupDataLoader</span>
+<span class="kn">from</span> <span class="nn">variantworks.io.vcfio</span> <span class="kn">import</span> <span class="n">VCFReader</span>
+<span class="kn">from</span> <span class="nn">variantworks.networks</span> <span class="kn">import</span> <span class="n">AlexNet</span>
+<span class="kn">from</span> <span class="nn">variantworks.sample_encoder</span> <span class="kn">import</span> <span class="n">PileupEncoder</span><span class="p">,</span> <span class="n">ZygosityLabelDecoder</span>
+<span class="kn">from</span> <span class="nn">variantworks.result_writer</span> <span class="kn">import</span> <span class="n">VCFResultWriter</span>
 
 <span class="c1"># Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick</span>
 <span class="c1"># up a pre-trained model.</span>

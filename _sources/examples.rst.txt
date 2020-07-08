@@ -27,10 +27,10 @@ Training
     # Import nemo and variantworks modules
     import os
     import nemo
-    from variantworks.dataloader import *
-    from variantworks.io.vcfio import *
-    from variantworks.networks import *
-    from variantworks.sample_encoder import *
+    from variantworks.dataloader import ReadPileupDataLoader
+    from variantworks.io.vcfio import VCFReader
+    from variantworks.networks import AlexNet
+    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
@@ -78,7 +78,7 @@ Training
     # Logger callback
     logger_callback = nemo.core.SimpleLossLoggerCallback(
         tensors=[vz_loss],
-        print_func=lambda x: nemo.logging.info(f'Train Loss: {str(x[0].item())}'))
+        print_func=lambda x: nemo.logging.info(f'Train Loss: {str(x[0].item())}')
     )
 
     # Checkpointing models through NeMo callback
@@ -112,11 +112,12 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     # Import nemo and variantworks modules
     import os
     import nemo
-    from variantworks.dataloader import *
-    from variantworks.io.vcfio import *
-    from variantworks.networks import *
-    from variantworks.sample_encoder import *
-    from variantworks.result_writer import *
+    import torch
+    from variantworks.dataloader import ReadPileupDataLoader
+    from variantworks.io.vcfio import VCFReader
+    from variantworks.networks import AlexNet
+    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelDecoder
+    from variantworks.result_writer import VCFResultWriter
 
     # Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick
     # up a pre-trained model.
