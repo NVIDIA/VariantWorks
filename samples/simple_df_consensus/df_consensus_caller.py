@@ -14,17 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""A sample program highlighting usage of VariantWorks I/O dataframe APIs."""
 
-import argparse
 import pandas as pd
 
 from variantworks.io.vcfio import VCFReader
 
-df_1 = "/ssd/VariantWorks/end_to_end_workflow_sample_files/tp_vcf_1m_giab.vcf.gz"
-df_2 = "/ssd/VariantWorks/end_to_end_workflow_sample_files/test_tp_vcf_100k_giab.vcf.gz"
+df_1 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Mutect/set1.mutect.filtered.vcf.gz"
+df_2 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Strelka/strelka/variants/somatic.vcf.gz"
 
-vcf_reader_mutect = VCFReader([VCFReader.VcfBamPath(vcf=df_1, bam="", is_fp=False)])
-vcf_reader_strelka = VCFReader([VCFReader.VcfBamPath(vcf=df_2, bam="", is_fp=False)])
+vcf_reader_strelka = VCFReader([VCFReader.VcfBamPath(vcf=df_2, bam="", is_fp=False, require_genotype=False)])
+vcf_reader_mutect = VCFReader([VCFReader.VcfBamPath(vcf=df_1, bam="", is_fp=False, require_genotype=False)])
 
 mutect_df = vcf_reader_mutect.df
 strelka_df = vcf_reader_strelka.df
@@ -32,5 +32,7 @@ strelka_df = vcf_reader_strelka.df
 print(len(mutect_df))
 print(len(strelka_df))
 
-intersection = pd.merge(mutect_df, strelka_df, how='inner', on=['chrom', 'start_pos', 'end_pos', 'ref', 'alt', 'variant_type'])
+intersection = pd.merge(mutect_df, strelka_df,
+                        how='inner',
+                        on=['chrom', 'start_pos', 'end_pos', 'ref', 'alt', 'variant_type'])
 print(len(intersection))

@@ -19,11 +19,11 @@
 from collections import defaultdict
 from dataclasses import dataclass
 import vcf
-import warnings
 import pandas as pd
 
 from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
+from variantworks.utils import extend_exception
 
 
 class VCFReader(BaseReader):
@@ -35,6 +35,7 @@ class VCFReader(BaseReader):
         vcf: str
         bam: str
         is_fp: bool = False
+        require_genotype: bool = True
 
     def __init__(self, vcf_bam_list):
         """Parse and extract variants from a vcf/bam tuple.
@@ -51,7 +52,7 @@ class VCFReader(BaseReader):
         for elem in vcf_bam_list:
             assert (elem.vcf is not None and elem.bam is not None and type(
                 elem.is_fp) is bool)
-            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp)
+            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp, elem.require_genotype)
         self._dataframe = None  # None at init time, only generate when requested.
 
     def __getitem__(self, idx):
@@ -92,26 +93,33 @@ class VCFReader(BaseReader):
         return self._dataframe
 
     @staticmethod
-    def _get_variant_zygosity(record, is_fp=False):
+    def _get_variant_zygosity(call, is_fp, require_genotype):
         """Determine variant type from pyvcf record.
 
         False positive variants are considered NO_VARIANT entries.
 
         Args:
-            record : a pyVCF record.
-            is_fp : is the record a false positive variant.
+            call : a pyVCF call.
+            is_fp : is the call a false positive variant.
+            require_genotype : does the sample require genotype to be called.
 
         Returns:
             A variant type
         """
         if is_fp:
             return VariantZygosity.NO_VARIANT
-        if record.num_het > 0:
+
+        if require_genotype and call.is_het is None:
+            raise RuntimeError(
+                "Can not parse call %s, all samples must be called in VCF file" % (call)
+            )
+
+        if not call.is_het:
+            return None
+        elif call.is_het > 0:
             return VariantZygosity.HETEROZYGOUS
-        elif record.num_hom_alt > 0:
+        else:
             return VariantZygosity.HOMOZYGOUS
-        raise ValueError("Unexpected variant zygosity - {}, num_het - {}, num_hom_alt - {}".format(
-            record, record.num_het, record.num_hom_alt))
 
     @staticmethod
     def _get_variant_type(record):
@@ -132,7 +140,7 @@ class VCFReader(BaseReader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
-    def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp):
+    def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp, require_genotype):
         """Create a variant record from pyVCF record.
 
         Args:
@@ -140,11 +148,11 @@ class VCFReader(BaseReader):
             vcf_file : Path to VCF file
             bam : Path to corresponding BAM file
             is_fp : Boolean indicating whether entry is a false positive variant or not.
+            require_genotype : Boolean to indicate if VCF calls require genotype information.
 
         Returns:
            Variant dataclass record.
         """
-        var_zyg = self._get_variant_zygosity(record, is_fp)
         var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
         for alt in record.ALT:
@@ -163,10 +171,11 @@ class VCFReader(BaseReader):
                               info=record.INFO, format=var_format,
                               samples=[[field_value for field_value in sample.data]
                                        for sample in record.samples],
-                              zygosity=var_zyg, type=var_type, vcf=vcf_file, bam=bam)
-            except Exception:
-                raise RuntimeError(
-                    "Could not parse variant from entry - {}".format(record))
+                              zygosity=[self._get_variant_zygosity(sample, is_fp, require_genotype)
+                                        for sample in record.samples],
+                              type=var_type, vcf=vcf_file, bam=bam)
+            except Exception as e:
+                raise extend_exception(e, "Could not parse variant from entry - {}".format(record)) from None
 
     @staticmethod
     def _get_file_reader(vcf_file_object=None, vcf_file_path=None):
@@ -186,7 +195,7 @@ class VCFReader(BaseReader):
             assert (vcf_file_path[-3:] == ".gz"), "VCF file needs to be compressed and indexed"
         return vcf.Reader(vcf_file_object, vcf_file_path)
 
-    def _parse_vcf(self, vcf_file, bam, labels, is_fp=False):
+    def _parse_vcf(self, vcf_file, bam, labels, is_fp=False, require_genotype=True):
         """Parse VCF file and retain labels after they have passed filters.
 
         Args:
@@ -194,26 +203,17 @@ class VCFReader(BaseReader):
             bam : Path to BAM file for VCF.
             labels : List to store parsed variant records.
             is_fp : Boolean to indicate if file is for false positive variants.
+            require_genotype : Boolean to indicate if VCF calls require genotype information.
         """
-        vcf_reader = self._get_file_reader(vcf_file_path=vcf_file)
-        if not is_fp and len(vcf_reader.samples) != 1:
-            raise RuntimeError(
-                "Can not parse: {}. VariantWorks currently only supports single sample VCF files".format(vcf_file))
-        for record in vcf_reader:
-            if not is_fp and record.num_called < len(vcf_reader.samples):
-                raise RuntimeError(
-                    "Can not parse record %s in %s, all samples must be called in true positive VCF file" % (
-                        record, vcf_file)
-                )
-                #if not record.is_snp:
-                #if nwarnings.warn("%s is filtered - not an SNP record" % record)
-                #if ncontinue
-            if len(record.ALT) > 1:
-                warnings.warn(
-                    "%s is filtered - multiallele recrods are not supported" % record)
-                continue
-            for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp):
-                labels.append(variant)
+        try:
+            vcf_reader = self._get_file_reader(vcf_file_path=vcf_file)
+            for record in vcf_reader:
+                for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp, require_genotype):
+                    labels.append(variant)
+        except Exception as e:
+            # raise from None is used to clear the context of the parent exception.
+            # Detail description at https://bit.ly/2CoEbHu
+            raise extend_exception(e, "VCF file {}".format(vcf_file)) from None
 
     def _create_dataframe(self):
         """Generate a pandas dataframe with all parsed variant entries.
