@@ -26,7 +26,6 @@ from variantworks.types import Variant, VariantType, VariantZygosity
 
 class SampleEncoder:
     """An abstract class defining the interface to an encoder implementation.
-
     Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
 
@@ -39,14 +38,73 @@ class SampleEncoder:
         """Compute the encoding of a sample."""
         raise NotImplementedError
 
+class SummaryEncoder(SampleEncoder):
+
+    def __call__(self, region):
+        start_pos = region.start_pos
+        end_pos = region.end_pos
+        pileup_file = region.pileup
+        pileup = pd.read_csv(pileup_file, delimiter="\t", header = None).values
+        subreads = pileup[:, 4]
+        truth_coverage = pileup[:, 7].astype("int")
+        positions = []
+        positions_insertions = []
+        symbols = ["a","c","g","t","A","C","G","T","#","*"]
+        # Calculate major and minor positions
+        for i in range(start_pos, end_pos):
+            if (self.training):
+                if (truth_coverage[i] == 0):
+                    continue
+            base_pileup = subreads[i].strip("^]").strip("$")
+            insertions, next_to_del = Utils().find_insertions(base_pileup)
+            longest_insertion = 0
+            if (len(insertions) > 0):
+                longest_insertion = len(max(insertions, key=len))
+            major_minor_pos = []
+            major_minor_pos.append((i, 0))
+            insertions_store = []
+            insertions_store.append([])
+            for j in range(longest_insertion):
+                major_minor_pos.append((i, j+1))
+                insertions_store.append(insertions)
+            positions += major_minor_pos
+            positions_insertions += (insertions_store)
+        # Using positions, calculate pileup counts
+        pileup_counts = np.zeros((len(positions), 10))
+        for i in range(len(positions)):
+            major_position = positions[i][0]
+            minor_position = positions[i][1]
+            base_pileup = subreads[major_position].strip("^]").strip("$")
+            insertions, next_to_del = Utils().find_insertions(base_pileup)
+            insertions_to_keep = []
+            for k in range(len(insertions)):
+                if (next_to_del[k] == False):
+                    insertions_to_keep.append(insertions[k])
+            for insertion in insertions:
+                base_pileup = base_pileup.replace("+" + str(len(insertion)) + insertion, "")
+            if (minor_position == 0):
+                for j in range(len(symbols)):
+                    pileup_counts[i, j] = base_pileup.count(symbols[j])
+            elif (minor_position > 0):
+                insertions_minor = [x for x in insertions_to_keep if len(x) >= minor_position]
+                for j in range(len(insertions_minor)):
+                    inserted_base = insertions_minor[j][minor_position-1]
+                    pileup_counts[i, symbols.index(inserted_base)] += 1
+        # Normalization
+        positions = np.array(positions, dtype=[('major', '<i8'), ('minor', '<i8')])
+        minor_inds = np.where(positions['minor'] > 0)
+        major_pos_at_minor_inds = positions['major'][minor_inds]
+        major_ind_at_minor_inds = np.searchsorted(positions['major'], major_pos_at_minor_inds, side='left')
+        depth = np.sum(pileup_counts, axis=1)
+        depth[minor_inds] = depth[major_ind_at_minor_inds]
+        feature_array = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
+        return (feature_array, positions)
 
 class PileupEncoder(SampleEncoder):
     """A pileup encoder for SNPs.
-
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
     the type of information that is selected to be embedded.
-
     The variant location of interest is kept centered in the pileup, and the layers input in
     the constructor define the channels created in the encoding. For more details on available
     channels, please check the documentation for the Layers enum.
@@ -54,23 +112,18 @@ class PileupEncoder(SampleEncoder):
 
     class Layer(Enum):
         r"""Layers that can be added to the pileup encoding.
-
         Values:
             READ : Encode each aligned read as a row of the pileup. The bases in the
             read are encoded using a base_encoder dict passed into the class. The reads
             in the row are positioned according to the pileup alignment.
-
             BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
             qualities of each read are added to a new row, following the same positioning as for READS. The base
             qualities are normalized to [0,1] (using max value of 93 per SAM format).
             Missing base quality is set to 0.
-
             MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
             quality values are noramlize to [0,1] (assuming max value of 50).
             Missing mapping quality is set to 0.
-
             REFERENCE : Only the reference allele location is encoded in each row.
-
             ALLELE : Only the alt allele location is encoded in each row.
         """
 
@@ -82,7 +135,6 @@ class PileupEncoder(SampleEncoder):
 
     def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
         """Construct class instance.
-
         Args:
             window_size : A nucleotide context size on either side of variant position [50].
             max_reads : Max number of reads to consider in the pileip. If reads fewer than max_reads
@@ -91,7 +143,6 @@ class PileupEncoder(SampleEncoder):
             encoding follows the ordering of layers in the list. [Layer.READ]
             base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
             [base_encoder.base_enum_encoder]
-
         Returns:
             Instance of class.
         """
@@ -173,7 +224,6 @@ class PileupEncoder(SampleEncoder):
 
     def __call__(self, variant):
         """Return a torch Tensor pileup queried from a BAM file.
-
         Args:
             variant : Variant struct holding information about variant locus.
         """
@@ -234,7 +284,6 @@ class PileupEncoder(SampleEncoder):
 
 class ZygosityLabelEncoder(SampleEncoder):
     """A label encoder that returns an output label encoding for zygosity only.
-
     Converts zygosity type to a class number.
     """
 
@@ -249,7 +298,6 @@ class ZygosityLabelEncoder(SampleEncoder):
 
     def __call__(self, variant):
         """Encode variant to class for zygosity.
-
         Returns:
            Zygosity encoded as number.
         """
@@ -274,7 +322,6 @@ class ZygosityLabelDecoder(SampleEncoder):
 
     def __call__(self, class_id):
         """Decode class to variant zygosity enum.
-
         Returns:
             Variant zygosity.
         """
