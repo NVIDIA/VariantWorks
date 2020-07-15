@@ -261,7 +261,8 @@ class PileupEncoder(SampleEncoder):
                     bbox_to_anchor=(0.8, 1.1), loc='center', borderaxespad=0, ncol=3
                 )
             if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
-                plt.imshow(sample_dim.numpy())
+                plt.imshow(sample_dim.numpy(), cmap='Purples')
+                plt.colorbar()
             if save_to_path is not None:
                 try:
                     plt.savefig(os.path.join(
