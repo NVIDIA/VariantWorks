@@ -16,13 +16,16 @@
 """Classes and functions for encoding samples."""
 
 import abc
+from datetime import datetime
 from enum import Enum
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
-from PIL import Image
+import os
 import pysam
 import torch
 
-from variantworks.base_encoder import base_enum_encoder, base_color_decoder
+from variantworks.base_encoder import base_enum_encoder, base_color_decoder, rgb_to_hex
 from variantworks.types import Variant, VariantType, VariantZygosity
 
 
@@ -200,7 +203,6 @@ class PileupEncoder(SampleEncoder):
                              variant_pos - 1, variant_pos,
                              truncate=True,
                              max_depth=self.max_reads)
-
         for col, pileup_col in enumerate(pileups):
             for row, pileupread in enumerate(pileup_col.pileups):
                 # Skip rows beyond the max depth
@@ -233,22 +235,40 @@ class PileupEncoder(SampleEncoder):
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
 
-    def visualize(self, variant):
+    def visualize(self, variant, save_to_path=None):
         """Visualize variant encoded pileup."""
         encoded_sample = self.__call__(variant)
         for layer, sample_dim in zip(self.layers, encoded_sample):
-            data = sample_dim.numpy().astype(np.uint8)
+            plt_name = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
+                       ('_id-{}'.format(variant.id) if variant.id != '.' else '') + ('_layer-{}'.format(layer.name))
+            plt.title(plt_name,
+                      loc='left',
+                      fontdict={'fontsize': 7})
+            plt.ylabel('Read number')
+            plt.xlabel("Read window size")
             if layer in [PileupEncoder.Layer.READ,
                          PileupEncoder.Layer.REFERENCE,
                          PileupEncoder.Layer.ALLELE]:
+                data = sample_dim.numpy().astype(np.uint8)
                 rgb_img = np.zeros((sample_dim.shape[0], sample_dim.shape[1], 3))
                 for i in range(data.shape[0]):
                     for j in range(data.shape[1]):
-                        rgb_img[i, j, :] = base_color_decoder[data[i, j]]
-                with np.printoptions(threshold=np.inf):
-                    print(data)
-                img = Image.fromarray(rgb_img, 'RGB')
-                img.show()
+                        rgb_img[i, j, :] = base_color_decoder[chr(data[i, j])]
+                plt.imshow(rgb_img)
+                plt.legend(
+                    handles=[mpatches.Patch(facecolor=rgb_to_hex(color), edgecolor='black', label=nucleotide)
+                             for nucleotide, color in base_color_decoder.items() if nucleotide != '\0'],
+                    bbox_to_anchor=(0.8, 1.1), loc='center', borderaxespad=0, ncol=3
+                )
+            if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
+                plt.imshow(sample_dim.numpy())
+            if save_to_path is not None:
+                try:
+                    plt.savefig(os.path.join(
+                        save_to_path, plt_name + '_{}.png'.format(datetime.today().strftime('%Y-%m-%d'))
+                    ))
+                except FileNotFoundError as e:
+                    raise e
 
 
 class ZygosityLabelEncoder(SampleEncoder):

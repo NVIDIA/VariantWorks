@@ -28,11 +28,31 @@ base_enum_encoder = {
     'n': 5,
 }
 
+
+base_char_value_encoder = {
+    'A': ord('A'),
+    'a': ord('A'),
+    'T': ord('T'),
+    't': ord('T'),
+    'C': ord('C'),
+    'c': ord('C'),
+    'G': ord('G'),
+    'g': ord('G'),
+    'N': ord('N'),
+    'n': ord('N'),
+}
+
+
+def rgb_to_hex(c):
+    """Concert rgb tuple/list into Hex."""
+    return "#{0:02x}{1:02x}{2:02x}".format(*c)
+
+
 base_color_decoder = {
-    0: [255, 255, 255],     # white
-    1: [0, 128, 0],         # green
-    2: [255, 0, 0],         # red
-    3: [0, 0, 255],         # blue
-    4: [245, 255, 0],       # yellow
-    5: [0, 255, 255]        # cyan
+    '\0': [255, 255, 255],      # white (null char for cells initiated to 'zero' )
+    'A': [0, 128, 0],           # green
+    'T': [255, 0, 0],           # red
+    'C': [0, 0, 255],           # blue
+    'G': [255, 255, 0],         # yellow
+    'N': [0, 0, 0]              # black
 }

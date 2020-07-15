@@ -16,9 +16,11 @@
 
 import os
 import pytest
+import shutil
+import tempfile
 import torch
 
-from variantworks.base_encoder import base_enum_encoder
+from variantworks.base_encoder import base_enum_encoder, base_char_value_encoder
 from variantworks.types import Variant, VariantZygosity, VariantType
 from variantworks.sample_encoder import PileupEncoder
 
@@ -28,8 +30,8 @@ from test_utils import get_data_folder
 @pytest.fixture
 def snp_variant():
     bam = os.path.join(get_data_folder(), "small_bam.bam")
-    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
-                      quality=60, filter=None, info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'],
+    variant = Variant(chrom="1", pos=240147, id="GL000235", ref='C', allele='T',
+                      quality=50, filter=None, info={'DP': 13, 'AF': 0.692308}, format=['GT', 'GQ'],
                       samples=[['1/1', '50']], zygosity=VariantZygosity.HOMOZYGOUS,
                       type=VariantType.SNP, vcf='null.vcf', bam=bam)
     return variant
@@ -130,6 +132,12 @@ def test_pileup_unknown_layer():
 
 
 def test_pileup_visualization(snp_variant):
+    output_folder = tempfile.mkdtemp(prefix='vw_test_output_')
     encoder = PileupEncoder(
-        layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE])
-    encoder.visualize(snp_variant)
+        layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.ALLELE, PileupEncoder.Layer.REFERENCE,
+                PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
+        base_encoder=base_char_value_encoder
+    )
+    encoder.visualize(snp_variant, save_to_path=output_folder)
+    assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 5
+    shutil.rmtree(output_folder)
