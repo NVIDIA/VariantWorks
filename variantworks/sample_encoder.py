@@ -267,6 +267,7 @@ class PileupEncoder(SampleEncoder):
         """Visualize variant encoded pileup."""
         encoded_sample = self.__call__(variant)
         for layer, sample_dim in zip(self.layers, encoded_sample):
+            plt.clf()
             plt_name = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
                        ('_id-{}'.format(variant.id) if variant.id != '.' else '') + ('_layer-{}'.format(layer.name))
             plt.title(plt_name,
