@@ -25,15 +25,16 @@ Training
 .. code-block:: python
 
     # Import nemo and variantworks modules
+    import os
     import nemo
-    from variantworks.dataloader import *
-    from variantworks.io.vcfio import *
-    from variantworks.networks import *
-    from variantworks.sample_encoders import *
+    from variantworks.dataloader import ReadPileupDataLoader
+    from variantworks.io.vcfio import VCFReader
+    from variantworks.networks import AlexNet
+    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=tempdir)
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir="./")
 
     # Create pileup encoder by selecting layers to encode. More encoding layers
     # can be found in the documentation for PilupEncoder class.
@@ -77,14 +78,27 @@ Training
     # Logger callback
     logger_callback = nemo.core.SimpleLossLoggerCallback(
         tensors=[vz_loss],
-        print_func=lambda x: logging.info(f'Train Loss: {str(x[0].item())}'))
+        print_func=lambda x: nemo.logging.info(f'Train Loss: {str(x[0].item())}')
+    )
+
+    # Checkpointing models through NeMo callback
+    checkpoint_callback = nemo.core.CheckpointCallback(
+        folder="./",
+        load_from_folder=None,
+        # Checkpointing frequency in steps
+        step_freq=-1,
+        # Checkpointing frequency in epochs
+        epoch_freq=1,
+        # Number of checkpoints to keep
+        checkpoints_to_keep=1,
+        # If True, CheckpointCallback will raise an Error if restoring fails
+        force_load=False
     )
 
     # Kick off training
     nf.train([vz_loss],
-             callbacks=[logger_callback,
-                        checkpoint_callback, evaluator_callback],
-             optimization_params={"num_epochs": 4, "lr": 0.001},
+             callbacks=[logger_callback, checkpoint_callback],
+             optimization_params={"num_epochs": 10, "lr": 0.001},
              optimizer="adam")
 
 
@@ -96,27 +110,29 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
 .. code-block:: python
 
     # Import nemo and variantworks modules
+    import os
     import nemo
-    from variantworks.dataloader import *
-    from variantworks.io.vcfio import *
-    from variantworks.networks import *
-    from variantworks.sample_encoders import *
-    from variantworks.result_writer import *
+    import torch
+    from variantworks.dataloader import ReadPileupDataLoader
+    from variantworks.io.vcfio import VCFReader
+    from variantworks.networks import AlexNet
+    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelDecoder
+    from variantworks.result_writer import VCFResultWriter
 
     # Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick
     # up a pre-trained model.
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
-
-    # Neural Network
-    model = AlexNet(num_input_channels=len(
-        encoding_layers), num_output_logits=3)
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir="./")
 
     # Dataset generation is done in a similar manner. It's important to note that the encoder used
     # for inference much match that for training.
     encoding_layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY]
     pileup_encoder = PileupEncoder(
         window_size=100, max_reads=100, layers=encoding_layers)
+
+    # Neural Network
+    model = AlexNet(num_input_channels=len(
+        encoding_layers), num_output_logits=3)
 
     # Similar to training, a dataloader needs to be setup for the relevant datasets. In the case of
     # inference, it doesn't matter if the files are tagged as false positive or not. Each example will be
@@ -135,13 +151,14 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     vz = model(encoding=encoding)
 
     # Invoke the "infer" action.
-    results = nf.infer([vz], checkpoint_dir=model_dir, verbose=True)
+    results = nf.infer([vz], checkpoint_dir="./", verbose=True)
 
     # Instantiate a decoder that converts the predicted output of the network to
     # a zygosity enum.
     zyg_decoder = ZygosityLabelDecoder()
 
     # Decode inference results to labels
+    inferred_zygosity = []
     for tensor_batches in results:
         for batch in tensor_batches:
             predicted_classes = torch.argmax(batch, dim=1)
@@ -149,7 +166,9 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
                                  for pred in predicted_classes]
 
     # Use the VCFResultWriter to output predicted zygosities to a VCF file.
-    result_writer = VCFResultWriter(vcf_loader, inferred_zygosity)
+    result_writer = VCFResultWriter(vcf_loader,
+                                    inferred_zygosities=inferred_zygosity,
+                                    output_location="./")
 
     result_writer.write_output()
 

@@ -21,7 +21,7 @@ import pysam
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
-from variantworks.types import Variant, VariantType, VariantZygosity
+from variantworks.types import Variant, VariantZygosity
 
 
 class SampleEncoder:
@@ -80,7 +80,7 @@ class PileupEncoder(SampleEncoder):
         REFERENCE = 3
         ALLELE = 4
 
-    def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
+    def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None, print_encoding=False):
         """Construct class instance.
 
         Args:
@@ -91,6 +91,7 @@ class PileupEncoder(SampleEncoder):
             encoding follows the ordering of layers in the list. [Layer.READ]
             base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
             [base_encoder.base_enum_encoder]
+            print_encoding : Print ASCII representation of each encoding that's converted to a tensor. [False]
 
         Returns:
             Instance of class.
@@ -108,6 +109,7 @@ class PileupEncoder(SampleEncoder):
                 (self.height, self.width), dtype=torch.float32)
             self.layer_tensors.append(tensor)
             self.layer_dict[layer] = tensor
+        self.print_encoding = print_encoding
 
     @property
     def width(self):
@@ -135,6 +137,9 @@ class PileupEncoder(SampleEncoder):
             # Fetch the subsequence based on the offsets
             seq = pileupread.alignment.query_sequence[query_pos -
                                                       left_offset: query_pos + right_offset]
+            if self.print_encoding:
+                print("{}{}{}".format("-" * pileup_pos_range[0], seq, "-" *
+                                      (2 * self.window_size + 1 - len(seq) - pileup_pos_range[0])))
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
@@ -153,7 +158,7 @@ class PileupEncoder(SampleEncoder):
                     qual = qual / MAX_BASE_QUALITY
                 tensor[row, pileup_pos] = qual
         elif layer == self.Layer.MAPPING_QUALITY:
-            MAX_MAPPING_QUALITY = 50.0
+            MAX_MAPPING_QUALITY = 100.0
             # Getch mapping quality of alignment
             map_qual = pileupread.alignment.mapping_quality
             # Missing mapiping quality is 255
@@ -165,11 +170,21 @@ class PileupEncoder(SampleEncoder):
                 # Encode base characters to enum
                 tensor[row, pileup_pos] = map_qual
         elif layer == self.Layer.REFERENCE:
+            if self.print_encoding:
+                print("{}{}{}".format("-" * self.window_size, variant.ref, "-" *
+                                      (2 * self.window_size + 1 - len(variant.ref) - self.window_size)))
             # Only encode the reference at the variant position, rest all 0
-            tensor[row, self.window_size] = self.base_encoder[variant.ref]
+            for seq_pos, pileup_pos in enumerate(
+                    range(self.window_size, min(self.window_size + len(variant.ref), 2 * self.window_size - 1))):
+                tensor[row, pileup_pos] = self.base_encoder[variant.ref[seq_pos]]
         elif layer == self.Layer.ALLELE:
+            if self.print_encoding:
+                print("{}{}{}".format("-" * self.window_size, variant.allele, "-" *
+                                      (2 * self.window_size + 1 - len(variant.allele) - self.window_size)))
             # Only encode the allele at the variant position, rest all 0
-            tensor[row, self.window_size] = self.base_encoder[variant.allele]
+            for seq_pos, pileup_pos in enumerate(
+                    range(self.window_size, min(self.window_size + len(variant.allele), 2 * self.window_size - 1))):
+                tensor[row, pileup_pos] = self.base_encoder[variant.allele[seq_pos]]
 
     def __call__(self, variant):
         """Return a torch Tensor pileup queried from a BAM file.
@@ -182,8 +197,13 @@ class PileupEncoder(SampleEncoder):
         variant_pos = variant.pos
         bam_file = variant.bam
 
-        assert(variant.type ==
-               VariantType.SNP), "Only SNP variants supported in PileupEncoder currently."
+        # Check that the ref and alt alleles all fit in the window context.
+        if len(variant.ref) > self.window_size:
+            raise RuntimeError("Ref allele {} too large for window {}. Please increase window size.".format(
+                variant.ref, self.window_size))
+        if len(variant.allele) > self.window_size:
+            raise RuntimeError("Alt allele {} too large for window {}. Please increase window size.".format(
+                variant.allele, self.window_size))
 
         # Create BAM object if one hasn't been opened before.
         if bam_file not in self.bams:
@@ -199,6 +219,10 @@ class PileupEncoder(SampleEncoder):
                              truncate=True,
                              max_depth=self.max_reads)
 
+        if self.print_encoding:
+            print("\nEncoding for {}".format(variant))
+            print("Order of rows : {}".format(self.layers))
+
         for col, pileup_col in enumerate(pileups):
             for row, pileupread in enumerate(pileup_col.pileups):
                 # Skip rows beyond the max depth
@@ -206,6 +230,9 @@ class PileupEncoder(SampleEncoder):
                     break
                 # Check if reference base is missing (either deleted or skipped).
                 if pileupread.is_del or pileupread.is_refskip:
+                    continue
+
+                if pileupread.is_head or pileupread.is_tail:
                     continue
 
                 # Using the variant locus as the center, find the left and right offset

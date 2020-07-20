@@ -28,7 +28,7 @@ def test_vcf_loader_snps(get_created_vcf_tabix_files):
     vcf_file_path, tabix_file_path = get_created_vcf_tabix_files(mock_file_input())
     vcf_bam_tuple = VCFReader.VcfBamPath(vcf=vcf_file_path, bam=tabix_file_path, is_fp=False)
     vcf_loader = VCFReader([vcf_bam_tuple])
-    assert(len(vcf_loader) == 13)
+    assert(len(vcf_loader) == 15)
 
 
 def test_vcf_fetch_variant(get_created_vcf_tabix_files):
