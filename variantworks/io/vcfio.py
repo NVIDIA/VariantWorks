@@ -17,7 +17,6 @@
 
 
 from collections import defaultdict
-from dataclasses import dataclass
 import vcf
 import pandas as pd
 
@@ -29,31 +28,32 @@ from variantworks.utils import extend_exception
 class VCFReader(BaseReader):
     """Reader for VCF files."""
 
-    @dataclass
-    class VcfBamPath:
-        """Data class encapsulating paired VCF and BAM inputs."""
-        vcf: str
-        bam: str
-        is_fp: bool = False
-        require_genotype: bool = True
-
-    def __init__(self, vcf_bam_list):
+    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tags=[]):
         """Parse and extract variants from a vcf/bam tuple.
 
+        Note -VCFReader splits multi-allelic entries into separate variant
+        entries.
+
         Args:
-            vcf_bam_list: A list of VcfBamPath namedtuple specifying VCF file and corresponding BAM file.
-                           The VCF file must be bgzip compressed and indexed.
+            vcf : Path to VCF file.
+            bams : List of BAMs corresponding to the VCF. BAM ordering should match sample
+                   ordering in VCF.
+            is_fp : Is the VCF for false positive variants.
+            require_genotype : If all samples need genotype called.
+            tags : List of strings to tag VCF data frame with.
 
         Returns:
            Instance of class.
         """
         super().__init__()
+        self._vcf = vcf
+        self._bams = bams
+        self._is_fp = is_fp
+        self._require_genotype = require_genotype
+        self._tags = tags
         self._labels = []
-        for elem in vcf_bam_list:
-            assert (elem.vcf is not None and elem.bam is not None and type(
-                elem.is_fp) is bool)
-            self._parse_vcf(elem.vcf, elem.bam, self._labels, elem.is_fp, elem.require_genotype)
-        self._dataframe = None  # None at init time, only generate when requested.
+        self._dataframe = None
+        self._parse_vcf()
 
     def __getitem__(self, idx):
         """Get Variant instance in location.
@@ -63,11 +63,32 @@ class VCFReader(BaseReader):
         Returns:
             Variant instance
         """
-        return self._labels[idx]
+        row = self._dataframe.iloc[idx]
+        samples = []
+        zygosities = []
+        for i in range(row["num_samples"]):
+            samples.append(row["sample_{}_call".format(i)])
+            zygosities.append(row["sample_{}_zyg".format(i)])
+        variant = Variant(chrom=row["chrom"],
+                          pos=row["start_pos"],
+                          id=row["id"],
+                          ref=row["ref"],
+                          allele=row["alt"],
+                          quality=row["quality"],
+                          filter=row["filter"],
+                          info=row["info"],
+                          format=row["format"],
+                          type=row["variant_type"],
+                          samples=samples,
+                          zygosity=zygosities,
+                          vcf=self._vcf,
+                          bams=self._bams)
+        return variant
 
     def __len__(self):
         """Return number of Varint objects."""
-        return len(self._labels)
+        # return len(self._labels)
+        return len(self._dataframe)
 
     @property
     def df(self):
@@ -81,6 +102,13 @@ class VCFReader(BaseReader):
         4. ref - Reference base(s)
         5. alt - Alternate base(s)
         6. variant_type - VariantType enum specifying SNP/INSERTION/DELETION
+        7. quality - Quality of variant call
+        8. filter - VCF FILTER column
+        9. info - VCF INFO column
+        10. format - VCF FORMAT column
+        11. num_samples - Number of samples
+        12. sample_{idx}_call - Call information for sample idx.
+        13. sample_{idx}_zyg - Zygosity enum for sample idx.
 
         This dataframe can be easily converted to cuDF for large
         variant processing.
@@ -88,33 +116,30 @@ class VCFReader(BaseReader):
         Returns:
             Parsed variants as pandas DataFrame.
         """
-        if not self._dataframe:
-            self._dataframe = self._create_dataframe()
+        if self._dataframe is None:
+            raise RuntimeError("VCF data frame should be available.")
         return self._dataframe
 
-    @staticmethod
-    def _get_variant_zygosity(call, is_fp, require_genotype):
+    def _get_variant_zygosity(self, call):
         """Determine variant type from pyvcf record.
 
         False positive variants are considered NO_VARIANT entries.
 
         Args:
             call : a pyVCF call.
-            is_fp : is the call a false positive variant.
-            require_genotype : does the sample require genotype to be called.
 
         Returns:
             A variant type
         """
-        if is_fp:
+        if self._is_fp:
             return VariantZygosity.NO_VARIANT
 
-        if require_genotype and call.is_het is None:
+        if self._require_genotype and call.is_het is None:
             raise RuntimeError(
                 "Can not parse call %s, all samples must be called in VCF file" % (call)
             )
 
-        if not call.is_het:
+        if call.is_het is None:
             return None
         elif call.is_het > 0:
             return VariantZygosity.HETEROZYGOUS
@@ -140,18 +165,12 @@ class VCFReader(BaseReader):
                 return VariantType.INSERTION
         raise ValueError("Unexpected variant type - {}".format(record))
 
-    def _create_variant_tuple_from_record(self, record, vcf_file, bam, is_fp, require_genotype):
+    def _add_variant_to_dict(self, df_dict, record):
         """Create a variant record from pyVCF record.
 
         Args:
+            df_dict : Python dictionary to keep parsed record data in
             record : pyVCF record
-            vcf_file : Path to VCF file
-            bam : Path to corresponding BAM file
-            is_fp : Boolean indicating whether entry is a false positive variant or not.
-            require_genotype : Boolean to indicate if VCF calls require genotype information.
-
-        Returns:
-           Variant dataclass record.
         """
         var_type = self._get_variant_type(record)
         # Split multi alleles into multiple entries
@@ -160,20 +179,31 @@ class VCFReader(BaseReader):
             try:
                 var_format = record.FORMAT.split(':')
             except AttributeError:
-                if is_fp:
+                if self._is_fp:
                     var_format = []
                 else:
                     raise RuntimeError("Could not parse format field for entry - {}".format(record))
 
             try:
-                yield Variant(chrom=record.CHROM, pos=record.POS, id=record.ID, ref=record.REF,
-                              allele=var_allele, quality=record.QUAL, filter=record.FILTER,
-                              info=record.INFO, format=var_format,
-                              samples=[[field_value for field_value in sample.data]
-                                       for sample in record.samples],
-                              zygosity=[self._get_variant_zygosity(sample, is_fp, require_genotype)
-                                        for sample in record.samples],
-                              type=var_type, vcf=vcf_file, bam=bam)
+                df_dict["chrom"].append(record.CHROM)
+                df_dict["start_pos"].append(record.POS)
+                df_dict["end_pos"].append(record.POS + 1)
+                df_dict["id"].append(record.ID)
+                df_dict["ref"].append(record.REF)
+                df_dict["alt"].append(var_allele)
+                df_dict["variant_type"].append(var_type)
+                df_dict["quality"].append(record.QUAL)
+                df_dict["filter"].append(record.FILTER)
+                df_dict["info"].append(record.INFO)
+                df_dict["format"].append(var_format)
+                df_dict["num_samples"].append(len(record.samples))
+                for i, sample in enumerate(record.samples):
+                    df_dict["sample_{}_call".format(i)].append(
+                        [field_value for field_value in sample.data]
+                    )
+                    df_dict["sample_{}_zyg".format(i)].append(
+                        self._get_variant_zygosity(sample)
+                    )
             except Exception as e:
                 raise extend_exception(e, "Could not parse variant from entry - {}".format(record)) from None
 
@@ -195,38 +225,19 @@ class VCFReader(BaseReader):
             assert (vcf_file_path[-3:] == ".gz"), "VCF file needs to be compressed and indexed"
         return vcf.Reader(vcf_file_object, vcf_file_path)
 
-    def _parse_vcf(self, vcf_file, bam, labels, is_fp=False, require_genotype=True):
-        """Parse VCF file and retain labels after they have passed filters.
-
-        Args:
-            vcf_file : Path to VCF file.
-            bam : Path to BAM file for VCF.
-            labels : List to store parsed variant records.
-            is_fp : Boolean to indicate if file is for false positive variants.
-            require_genotype : Boolean to indicate if VCF calls require genotype information.
-        """
+    def _parse_vcf(self):
+        """Parse VCF file and retain labels after they have passed filters."""
         try:
-            vcf_reader = self._get_file_reader(vcf_file_path=vcf_file)
+            vcf_reader = self._get_file_reader(vcf_file_path=self._vcf)
+            df_dict = defaultdict(list)
             for record in vcf_reader:
-                for variant in self._create_variant_tuple_from_record(record, vcf_file, bam, is_fp, require_genotype):
-                    labels.append(variant)
+                self._add_variant_to_dict(df_dict, record)
+
+            self._dataframe = pd.DataFrame(df_dict)
+            for tag in self._tags:
+                self._dataframe[tag] = 1
+
         except Exception as e:
             # raise from None is used to clear the context of the parent exception.
             # Detail description at https://bit.ly/2CoEbHu
-            raise extend_exception(e, "VCF file {}".format(vcf_file)) from None
-
-    def _create_dataframe(self):
-        """Generate a pandas dataframe with all parsed variant entries.
-
-        Returns:
-            Dataframe with variant data.
-        """
-        df_dict = defaultdict(list)
-        for variant in self._labels:
-            df_dict["chrom"].append(variant.chrom)
-            df_dict["start_pos"].append(variant.pos)
-            df_dict["end_pos"].append(variant.pos + 1)
-            df_dict["ref"].append(variant.ref)
-            df_dict["alt"].append(variant.allele)
-            df_dict["variant_type"].append(variant.type)
-        return pd.DataFrame(df_dict)
+            raise extend_exception(e, "VCF file {}".format(self._vcf)) from None

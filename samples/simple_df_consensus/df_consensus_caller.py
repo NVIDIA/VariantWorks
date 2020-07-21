@@ -16,23 +16,28 @@
 #
 """A sample program highlighting usage of VariantWorks I/O dataframe APIs."""
 
-import pandas as pd
+# import pandas as pd
 
 from variantworks.io.vcfio import VCFReader
 
-df_1 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Mutect/set1.mutect.filtered.vcf.gz"
-df_2 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Strelka/strelka/variants/somatic.vcf.gz"
+df_1 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Lancet/set1.lancet.vcf.gz"
+df_2 = "/home/jdaw/s3-parliament-somatic-variant-calling/Set1/Muse/set1.muse.vcf.gz"
 
-vcf_reader_strelka = VCFReader([VCFReader.VcfBamPath(vcf=df_2, bam="", is_fp=False, require_genotype=False)])
-vcf_reader_mutect = VCFReader([VCFReader.VcfBamPath(vcf=df_1, bam="", is_fp=False, require_genotype=False)])
+vcf_reader1 = VCFReader(vcf=df_2, bams=[], is_fp=False, require_genotype=False, tags=["muse"])
+vcf_reader2 = VCFReader(vcf=df_1, bams=[], is_fp=False, require_genotype=False, tags=["lancet"])
 
-mutect_df = vcf_reader_mutect.df
-strelka_df = vcf_reader_strelka.df
+df1 = vcf_reader1.df
+print(len(df1))
+print(df1)
+df2 = vcf_reader2.df
+print(len(df2))
+print(df2)
+for i, v in enumerate(vcf_reader1):
+    print(v)
+    if i == 10:
+        break
 
-print(len(mutect_df))
-print(len(strelka_df))
 
-intersection = pd.merge(mutect_df, strelka_df,
-                        how='inner',
-                        on=['chrom', 'start_pos', 'end_pos', 'ref', 'alt', 'variant_type'])
-print(len(intersection))
+# df["caller_count"] = df[["muse", "lancet"]].sum(axis=1)
+# count_consensus = df[df["caller_count"] > 1]
+# print(count_consensus)

@@ -31,7 +31,7 @@ def snp_variant():
     variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
                       quality=60, filter=None, info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'],
                       samples=[['1/1', '50']], zygosity=VariantZygosity.HOMOZYGOUS,
-                      type=VariantType.SNP, vcf='null.vcf', bam=bam)
+                      type=VariantType.SNP, vcf='null.vcf', bams=[bam])
     return variant
 
 
