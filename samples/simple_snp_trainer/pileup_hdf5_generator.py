@@ -52,9 +52,6 @@ def generate_hdf5(args):
 
     # Generate the variant entries using VCF reader.
     vcf_reader = VCFReader(file_list)
-    for variant in vcf_reader:
-        print(variant)
-    exit(0)
 
     # Setup encoder for samples and labels.
     sample_encoder = PileupEncoder(window_size=100, max_reads=100,
