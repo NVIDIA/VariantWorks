@@ -71,3 +71,13 @@ def test_load_vcf_content_with_wrong_format(get_created_vcf_tabix_files):
     vcf_bam_tuple = VCFReader.VcfBamPath(vcf=vcf_file_path, bam=tabix_file_path, is_fp=False)
     with pytest.raises(RuntimeError):
         VCFReader([vcf_bam_tuple])
+
+
+def test_vcf_loader_to_df(get_created_vcf_tabix_files):
+    """Get all variants from parsed file into dataframe.
+    """
+    vcf_file_path, tabix_file_path = get_created_vcf_tabix_files(mock_file_input())
+    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=vcf_file_path, bam=tabix_file_path, is_fp=False)
+    vcf_loader = VCFReader([vcf_bam_tuple])
+    df = vcf_loader.df
+    assert(len(vcf_loader) == len(df))
