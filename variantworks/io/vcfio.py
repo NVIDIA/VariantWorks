@@ -87,7 +87,6 @@ class VCFReader(BaseReader):
 
     def __len__(self):
         """Return number of Varint objects."""
-        # return len(self._labels)
         return len(self._dataframe)
 
     @property
