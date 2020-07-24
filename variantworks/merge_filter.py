@@ -36,7 +36,7 @@ def _count_overlaps(a, b, columns=[], dest="counts", join="outer", inplace=True)
 
 
 def merge_by_start_position(a, b, join="outer", inplace=True):
-    return _merge(a, b, columns=["chrom", "start_position"], join=join)
+    return _merge(a, b, columns=["chrom", "start_pos"], join=join)
 
 
 def merge_by_start_and_end_position(a, b, join="outer", sample_columns=[]):
@@ -63,6 +63,10 @@ def sum_callers(a, caller_columns):
 def minimum_caller_consensus(a, caller_columns=[], min_callers=2):
     a = sum_callers(a)
     return a.query("n_callers" >= min_callers)
+
+
+def bind_rows(*dfs):
+    return cudf.concat(dfs, axis=0, ignore_index=True)
 
 
 def mutations_per_sample(a, sample_columns=[]):
