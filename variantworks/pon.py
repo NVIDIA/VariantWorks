@@ -29,7 +29,8 @@ class PanelOfNormals:
 
     A PanelOfNormals data member must have the following columns:
     - chrom
-    - pos
+    - start_pos
+    - end_pos
     - ref
     - alt
 
@@ -50,23 +51,41 @@ class PanelOfNormals:
         """
         return
 
-    def filter_by_allele_frequency(self, a, cutoff=0.02, af_variable="AF"):
-        assert (cutoff <= 1.0 and cutoff >= 0.0)
+    def _prefix(self):
+        return ":".join(["PON", self.name])
+
+    def _tag(self, key):
+        return ":".join([_prefix(self), key])
+
+    def filter_by_allele_frequency(self, a, cutoff=0.02, dropAnnotations=True, dropNA=False, af_variable="AF"):
+        #assert (cutoff <= 1.0 and cutoff >= 0.0)
         trim_columns = set(self.data.columns).difference(set(a.columns))
         merged_dfs = mf.merge_by_alleles(a, self.data, join="left")
-        query_str = af_variable + " <= " + str(af_cutoff)
-        return merged_dfs.query(query_str).drop(list(trim_columns))
+        query_str = af_variable + " <= " + str(cutoff)
+        if not dropNA:
+            query_str += " or " + af_variable + " != " + af_variable
+        filtered = merged_dfs.query(query_str)
+        if dropAnnotations:
+            filtered = filtered.drop(labels=list(trim_columns), axis=1)
+        return filtered
 
-    def filter_by_count(self, a, cutoff=1, count_variable="count"):
+    def filter_by_count(self, a, cutoff=1, dropAnnotations=True, dropNA=False, count_variable="count"):
         trim_columns = set(self.data.columns).difference(set(a.columns))
         merged_dfs = mf.merge_by_alleles(a, self.data, join="left")
         query_str = count_variable + " <= " + str(cutoff)
-        return merged_dfs.query(query_str).drop(list(trim_columns))
+        if not dropNA:
+            query_str += " or " + count_variable + " != " + count_variable
+        filtered = merged_dfs.query(query_str)
+        if dropAnnotations:
+            filtered = filtered.drop(labels=list(trim_columns), axis=1)
+        return filtered
 
     def filter_by_presence(self, a):
         return filter_by_count(self, a, cutoff=1)
 
 
-def create_pon(pon_file, pon_name="PON"):
-
-    return
+def create_pon(df, pon_name="PON"):
+    pon = PanelOfNormals()
+    pon.name = pon_name
+    pon.data = df
+    return pon
