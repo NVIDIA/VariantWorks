@@ -60,7 +60,7 @@ Training
     data_folder = os.path.join(repo_root_dir, "tests", "data")
     bam = os.path.join(data_folder, "small_bam.bam")
     samples = os.path.join(data_folder, "candidates.vcf.gz")
-    vcf_loader = VCFReader(vcf=samples, bam=bam, is_fp=False)
+    vcf_loader = VCFReader(vcf=samples, bams=[bam], is_fp=False)
 
     # Create a data loader with custom sample and label encoder.
     dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, [vcf_loader],
@@ -141,7 +141,7 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     data_folder = os.path.join(repo_root_dir, "tests", "data")
     bam = os.path.join(data_folder, "small_bam.bam")
     labels = os.path.join(data_folder, "candidates.vcf.gz")
-    vcf_loader = VCFReader(vcf=labels, bam=bam, is_fp=False)
+    vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
     test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, [vcf_loader], batch_size=32,
                                         shuffle=False, sample_encoder=pileup_encoder)
 
@@ -194,7 +194,7 @@ or inference components.
     samples = os.path.join(data_folder, "candidates.vcf.gz")
 
     # Generate the variant entries using VCF reader.
-    vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
+    vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bams=[bam], is_fp=False)])
     print("Serializing {} entries...".format(len(vcf_reader)))
 
     # Setup encoder for samples and labels.
