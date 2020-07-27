@@ -52,7 +52,11 @@ def merge_by_germline_alleles(a, b, join="outer"):
 
 
 def merge_by_somatic_alleles(a, b, join="outer"):
-    return _merge(a, b, columns=["chrom", "start_pos", "end_pos", "ref", "alt"], sample_columns=["tumor", "normal"], join="join")
+    return _merge(a, b, columns=["chrom", "start_pos", "end_pos", "ref", "alt"], sample_columns=["tumor", "normal"], join=join)
+
+
+def merge_by_samples(a, b, sample_columns=["tumor", "normal"], join="outer"):
+    return _merge(a, b, columns=[], sample_columns=sample_columns, join=join)
 
 
 def sum_callers(a, caller_columns):
