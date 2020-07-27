@@ -144,7 +144,7 @@ if __name__ == "__main__":
     # Read in 1000 Genomes VCF
     st.start()
     one_kg = vcf_load(
-        "/aztlan/data/1000Genomes/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz", tag_columns=["AF", "EAS_AF", "AFR_AF", "EUR_AF", "AMF_AF", "SAS_AF", "AC"], regions=["22"], chunksize=100000, use_cudf=args.gpu)
+        "ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz", tag_columns=["AF", "EAS_AF", "AFR_AF", "EUR_AF", "AMF_AF", "SAS_AF", "AC"], regions=["1", "2", "3", "4", "5"], chunksize=100000, use_cudf=args.gpu)
     st.end()
     st.print_time("Load 1kg VCF")
     # Create 1KG PON
