@@ -263,13 +263,17 @@ class PileupEncoder(SampleEncoder):
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
 
-    def visualize(self, variant, save_to_path=None):
+    def visualize(self, variant, save_to_path=None, max_subplots_per_line=3):
         """Visualize variant encoded pileup."""
-        encoded_sample = self.__call__(variant)
-        for layer, sample_dim in zip(self.layers, encoded_sample):
-            plt.clf()
-            plt_name = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
-                       ('_id-{}'.format(variant.id) if variant.id != '.' else '') + ('_layer-{}'.format(layer.name))
+
+        def _get_subplots_axes():
+            cols = len(self.layers) if len(self.layers) < max_subplots_per_line else max_subplots_per_line
+            rows = (len(self.layers) + (max_subplots_per_line - 1)) // max_subplots_per_line  # the ceil value
+            return rows, cols
+
+        def _fill_subplot(idx, nrow, ncol, layer, sample_dim):
+            plt.subplot(nrow, ncol, idx)
+            plt_name = 'Layer: {}'.format(layer.name)
             plt.title(plt_name,
                       loc='left',
                       fontdict={'fontsize': 7})
@@ -287,18 +291,27 @@ class PileupEncoder(SampleEncoder):
                 plt.legend(
                     handles=[mpatches.Patch(facecolor=rgb_to_hex(color), edgecolor='black', label=nucleotide)
                              for nucleotide, color in base_color_decoder.items() if nucleotide != '\0'],
-                    bbox_to_anchor=(0.8, 1.1), loc='center', borderaxespad=0, ncol=3
+                    bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, ncol=1
                 )
             if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
                 plt.imshow(sample_dim.numpy(), cmap='Purples')
-                plt.colorbar()
-            if save_to_path is not None:
-                try:
-                    plt.savefig(os.path.join(
-                        save_to_path, plt_name + '_{}.png'.format(datetime.today().strftime('%Y-%m-%d'))
-                    ))
-                except FileNotFoundError as e:
-                    raise e
+                plt.colorbar(orientation='vertical', pad=0.1)
+
+        encoded_sample = self.__call__(variant)  # Build variant pileup encoding
+        figure = plt.figure(figsize=(20, 10))
+        figure_title = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
+                       ('_id-{}'.format(variant.id) if variant.id != '.' else '')
+        figure.suptitle(figure_title, fontweight="bold", y=1)
+        number_rows, number_column = _get_subplots_axes()
+        for index, sample_layer, encoded_sample_layer in zip(range(1, len(self.layers)+1), self.layers, encoded_sample):
+            _fill_subplot(index, number_rows, number_column, sample_layer, encoded_sample_layer)
+        if save_to_path is not None:
+            try:
+                plt.savefig(os.path.join(
+                    save_to_path, figure_title + '_{}.png'.format(datetime.today().strftime('%Y-%m-%d'))
+                ))
+            except FileNotFoundError as e:
+                raise e
 
 
 class ZygosityLabelEncoder(SampleEncoder):

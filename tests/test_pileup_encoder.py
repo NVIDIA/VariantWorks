@@ -190,6 +190,6 @@ def test_pileup_visualization(snp_variant):
                 PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
         base_encoder=base_char_value_encoder
     )
-    encoder.visualize(snp_variant, save_to_path=output_folder)
-    assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 5
+    encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
+    assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 1
     shutil.rmtree(output_folder)
