@@ -1,5 +1,6 @@
 from variantworks.io import vcfio
 from variantworks import pon
+from variantworks import annotate
 import variantworks.merge_filter as mf
 
 import cudf as cudf
@@ -84,20 +85,6 @@ def parse_args():
                         "--gpu",
                         dest="gpu", help="Use GPU-backed datastructures. [no]",
                         action="store_true")
-    # parser.add_argument("-l", "--list",
-    #                     type=str,
-    #                     help="A file containing a list of sample VCF files, one per line.", required=False)
-    # parser.add_argument("-L", "--labels",
-    #                     help="A file containing key:value labels, one per line, matched with the line of the file provided with --list.",
-    #                     required=False, dest="label_list")
-    # parser.add_argument("-T", "--tumor")
-    # parser.add_argument("-N", "--normal")
-    # parser.add_argument("-a", "--annotation",
-    #                     help="An annotation VCF to used to annotate input VCF(s).", type=str,
-    #                     required=False)
-    # parser.add_argument("-p", "--pon",
-    #                     help="A panel-of-normals VCF used to filter input VCF(s).", type=str,
-    #                     required=False)
 
     return parser.parse_args()
 
@@ -131,6 +118,8 @@ if __name__ == "__main__":
     st = SimpleTimer()
     st.start()
     sample_vcf = vcf_load("/aztlan/data/2790b964-63e3-49aa-bf8c-9a00d3448c25.consensus.20160830.somatic.snv_mnv.vcf.gz",
+                          labels={"tumor": "test-tumor",
+                                  "normal": "test-normal"},
                           tag_columns=["Callers", "t_alt_count"], use_cudf=args.gpu)
     st.end()
     st.print_time("Load sample VCF")
@@ -144,7 +133,7 @@ if __name__ == "__main__":
     # Read in 1000 Genomes VCF
     st.start()
     one_kg = vcf_load(
-        "ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz", tag_columns=["AF", "EAS_AF", "AFR_AF", "EUR_AF", "AMF_AF", "SAS_AF", "AC"], regions=["1", "2", "3", "4", "5"], chunksize=100000, use_cudf=args.gpu)
+        "ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz", tag_columns=["AF", "EAS_AF", "AFR_AF", "EUR_AF", "AMF_AF", "SAS_AF", "AC"], regions=["Y"], chunksize=100000, use_cudf=args.gpu)
     st.end()
     st.print_time("Load 1kg VCF")
     # Create 1KG PON
@@ -163,5 +152,11 @@ if __name__ == "__main__":
 
     filt_second = one_kg_pon.filter_by_allele_frequency(second_sample_vcf, 0.05)
     filt_second = one_kg_pon.filter_by_count(second_sample_vcf, 10, count_variable="AC")
+
+    # Annotate VCF with 1000 genomes PED file
+    example_pheno = annotate.PhenotypeDB()
+    example_pheno.from_tsv("samples/icgc_example_pheno.tsv")
+
+    example_pheno.annotate(sample_vcf, sample_columns=["tumor", "normal"])
 
     #filt = mf.bind_rows(filt, filt_second)

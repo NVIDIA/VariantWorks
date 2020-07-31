@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-import cudf
 import variantworks.merge_filter as mf
 
 
@@ -37,12 +36,14 @@ class PanelOfNormals:
     And should have at least one of the following:
     - AF
     - count
+    OR a custom variable name to be used for filtering.
     """
 
     def __init__(self):
         self.name = None
         self.source_file = None
         self.data = None
+        self.regions = None
 
     def _compact(self):
         """
@@ -55,10 +56,9 @@ class PanelOfNormals:
         return ":".join(["PON", self.name])
 
     def _tag(self, key):
-        return ":".join([_prefix(self), key])
+        return ":".join([self._prefix(), key])
 
     def filter_by_allele_frequency(self, a, cutoff=0.02, dropAnnotations=True, dropNA=False, af_variable="AF"):
-        #assert (cutoff <= 1.0 and cutoff >= 0.0)
         trim_columns = set(self.data.columns).difference(set(a.columns))
         merged_dfs = mf.merge_by_alleles(a, self.data, join="left")
         query_str = af_variable + " <= " + str(cutoff)
@@ -81,7 +81,7 @@ class PanelOfNormals:
         return filtered
 
     def filter_by_presence(self, a):
-        return filter_by_count(self, a, cutoff=1)
+        return self.filter_by_count(a, cutoff=1)
 
 
 def create_pon(df, pon_name="PON"):
