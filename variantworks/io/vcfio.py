@@ -32,7 +32,7 @@ from variantworks.utils import extend_exception
 class VCFReader(BaseReader):
     """Reader for VCF files."""
 
-    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=[]):
+    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=["*"]):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note -VCFReader splits multi-allelic entries into separate variant
@@ -71,10 +71,13 @@ class VCFReader(BaseReader):
         #self._parse_vcf()
 
         self._info_vcf_keys = info_keys
+        self._info_vcf_key_counts = dict()
         self._filter_vcf_keys = filter_keys
         self._format_vcf_keys = format_keys
+        self._format_vcf_key_counts = dict()
 
-        self._parse_vcf_cyvcf()
+        #self._parse_vcf_cyvcf()
+        self._parallel_parse_vcf()
 
 
     def __getitem__(self, idx):
@@ -90,34 +93,34 @@ class VCFReader(BaseReader):
         # Build sample data
         samples = []
         zygosities = []
-        format_keys = sorted(self._call_vcf_keys.keys())
+        format_keys = sorted(self._format_vcf_key_counts.keys())
         for call in self._call_names:
             call_data = []
             for k in format_keys:
-                count = self._call_vcf_keys[k]
+                count = self._format_vcf_key_counts[k]
                 if count == 1:
-                    call_data.append(row["{}_{}_{}".format(self._tag, call, k)])
+                    call_data.append(row["{}_{}".format(call, k)])
                 else:
                     for i in range(count):
-                        call_data.append(row["{}_{}_{}_{}".format(self._tag, call, k, i)])
+                        call_data.append(row["{}_{}_{}".format(call, k, i)])
             samples.append(call_data)
-            zygosities.append(row["{}_{}_zyg".format(self._tag, call)])
+            zygosities.append(row["{}_zyg".format(call)])
 
         # Build filter data
         var_filter = []
         for k in self._filter_vcf_keys:
-            if row["{}_FILTER_{}".format(self._tag, k)]:
+            if row["FILTER_{}".format(k)]:
                 var_filter.append(k)
 
         # Build info data
         info = {}
-        for k, count in self._info_vcf_keys.items():
+        for k, count in self._info_vcf_key_counts.items():
             if count == 1:
-                info[k] = row["{}_INFO_{}".format(self._tag, k)]
+                info[k] = row["INFO_{}".format(k)]
             else:
                 vals = []
                 for i in range(count):
-                    vals.append(row["{}_INFO_{}_{}".format(self._tag, k, i)])
+                    vals.append(row["INFO_{}_{}".format(k, i)])
                 info[k] = vals
 
         variant = Variant(chrom=row["chrom"],
@@ -125,7 +128,7 @@ class VCFReader(BaseReader):
                           id=row["id"],
                           ref=row["ref"],
                           allele=row["alt"],
-                          quality=row["{}_quality".format(self._tag)],
+                          quality=row["quality".format(self._tag)],
                           filter=(var_filter if var_filter else None),
                           info=info,
                           format=format_keys,
@@ -400,6 +403,9 @@ class VCFReader(BaseReader):
             return VariantType.DELETION
 
     def _detect_zyg(self, gt):
+        if self._is_fp:
+            return VariantZygosity.NO_VARIANT
+
         if gt[0] == -1 or gt[1] == -1:
             return None
         elif gt[0] == gt[1]:
@@ -532,26 +538,6 @@ class VCFReader(BaseReader):
     def _parse_vcf_cyvcf(self):
         vcf = cyvcf2.VCF(self._vcf)
 
-        # Populate column keys if all are requested
-        if "*" in self._info_vcf_keys:
-            self._info_vcf_keys = []
-            for h in vcf.header_iter():
-                if h['HeaderType'] == 'INFO':
-                    self._info_vcf_keys.append(h['ID'])
-
-        if "*" in self._filter_vcf_keys:
-            self._filter_vcf_keys = []
-            for h in vcf.header_iter():
-                if h['HeaderType'] == 'FILTER':
-                    self._filter_vcf_keys.append(h['ID'])
-
-        if "*" in self._format_vcf_keys:
-            self._format_vcf_keys = []
-            for h in vcf.header_iter():
-                if h['HeaderType'] == 'FORMAT':
-                    self._format_vcf_keys.append(h['ID'])
-
-
         # Go through variants and add to list
         df_dict = defaultdict(list)
         variant_list = []
@@ -570,5 +556,37 @@ class VCFReader(BaseReader):
 
         self._dataframe = pd.concat(df_list)
 
-    #def _parallel_parse_vcf(self):
+    def _parallel_parse_vcf(self):
+        vcf = cyvcf2.VCF(self._vcf)
 
+        # Populate column keys if all are requested
+        if "*" in self._info_vcf_keys:
+            self._info_vcf_keys = []
+            for h in vcf.header_iter():
+                if h['HeaderType'] == 'INFO':
+                    self._info_vcf_keys.append(h['ID'])
+        for k in self._info_vcf_keys:
+            header_number = vcf.get_header_type(k)['Number']
+            self._info_vcf_key_counts[k] = self._get_normalized_count(header_number, 1)
+
+
+        if "*" in self._filter_vcf_keys:
+            self._filter_vcf_keys = []
+            for h in vcf.header_iter():
+                if h['HeaderType'] == 'FILTER':
+                    self._filter_vcf_keys.append(h['ID'])
+
+        if "*" in self._format_vcf_keys:
+            self._format_vcf_keys = []
+            for h in vcf.header_iter():
+                if h['HeaderType'] == 'FORMAT':
+                    self._format_vcf_keys.append(h['ID'])
+        for k in self._format_vcf_keys:
+            header_number = vcf.get_header_type(k)['Number']
+            self._format_vcf_key_counts[k] = self._get_normalized_count(header_number, 1)
+
+
+        for sample in vcf.samples:
+            self._call_names.add(sample)
+
+        self._parse_vcf_cyvcf()
