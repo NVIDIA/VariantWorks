@@ -48,7 +48,7 @@ def mock_file_input():
 def mock_invalid_file_input():
     """Returns a string stream of a vcf file content which is supposed to raise a RuntimeError.
 
-    More than one called sample
+    Mismatched format and called columns.
     """
     return b"""##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -57,8 +57,8 @@ def mock_invalid_file_input():
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
 ##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CALLED  CALLED2
-1	240147	.	C	T	50	.	DP=13;AF=0.692308	GT:GQ	1:50    1/1:50
-1	240154	.	T	C	50	.	DP=13;AF=0.0769231	GT:GQ	1:50    0/1:50
+1	240147	.	C	T	50	.	DP=13;AF=0.692308	GT	1:50    1/1:50
+1	240154	.	T	C	50	.	DP=13;AF=0.0769231	GT	1:50    0/1:50
 """
 
 

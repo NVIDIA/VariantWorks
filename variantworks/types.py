@@ -48,9 +48,9 @@ class Variant:
     quality: int
     filter: str
     info: Dict
-    format: List[str]
+    format: List[List]
     samples: List[List]
-    zygosity: VariantZygosity
+    zygosity: List[VariantZygosity]
     type: VariantType
     vcf: str
-    bam: str
+    bams: List[str]
