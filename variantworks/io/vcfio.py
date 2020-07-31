@@ -557,7 +557,7 @@ class VCFReader(BaseReader):
 
         #self._dataframe = pd.concat(df_list)
         if df_list:
-            return pd.concat(df_list)
+            return pd.concat(df_list, ignore_index=True)
         else:
             return pd.DataFrame()
 
@@ -597,8 +597,8 @@ class VCFReader(BaseReader):
         threads = mp.cpu_count()
         pool = mp.Pool(threads)
         df_list = []
-        func = partial(self._parse_vcf_cyvcf, chunksize=10000, total_threads=threads)
+        func = partial(self._parse_vcf_cyvcf, chunksize=5000, total_threads=threads)
         for df in pool.imap(func, range(threads)):
             df_list.append(df)
         #self._parse_vcf_cyvcf(1, 10000, 3)
-        self._dataframe = pd.concat(df_list)
+        self._dataframe = pd.concat(df_list, ignore_index=True)
