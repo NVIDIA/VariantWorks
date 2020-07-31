@@ -32,7 +32,7 @@ from variantworks.utils import extend_exception
 class VCFReader(BaseReader):
     """Reader for VCF files."""
 
-    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=["*"]):
+    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=["*"], regions=None):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note -VCFReader splits multi-allelic entries into separate variant
@@ -75,6 +75,8 @@ class VCFReader(BaseReader):
         self._filter_vcf_keys = filter_keys
         self._format_vcf_keys = format_keys
         self._format_vcf_key_counts = dict()
+
+        self._regions = regions
 
         #self._parse_vcf_cyvcf()
         self._parallel_parse_vcf()
@@ -477,7 +479,7 @@ class VCFReader(BaseReader):
                             for i in range(int(header_number)):
                                 df_dict["INFO_" + info_col + "_" + str(i)].append(val[i])
                     elif header_number == ".":
-                        df_dict["INFO_" + info_col].append(",".join(val))
+                        df_dict["INFO_" + info_col].append(",".join([str(v) for v in val]))
 
                 # Process format columns
                 for format_col in self._format_vcf_keys:
@@ -527,7 +529,7 @@ class VCFReader(BaseReader):
                                     for i in range(int(header_number)):
                                         df_dict[sample_name + "_" + format_col + "_" + str(i)].append(val[i])
                             elif header_number == ".":
-                                df_dict[sample_name + "_" + format_col].append(",".join(val))
+                                df_dict[sample_name + "_" + format_col].append(",".join([str(v) for v in val]))
 
 
         df = pd.DataFrame.from_dict(df_dict)
@@ -535,26 +537,29 @@ class VCFReader(BaseReader):
         return df
 
 
-    def _parse_vcf_cyvcf(self):
+    def _parse_vcf_cyvcf(self, thread_id, chunksize, total_threads):
         vcf = cyvcf2.VCF(self._vcf)
 
         # Go through variants and add to list
         df_dict = defaultdict(list)
         variant_list = []
         df_list = []
-        pool = mp.Pool()
-        for idx, variant in enumerate(vcf):
-            variant_list.append(variant)
-            if idx % 1000 == 0:
-                df_list.append(self._create_df(vcf, variant_list))
-                variant_list = []
-                print("added", idx)
-                if idx == 50000:
-                    break
+        generator = vcf(self._regions) if self._regions else vcf
+        for idx, variant in enumerate(generator):
+            if ((idx // chunksize) % total_threads == thread_id):
+                variant_list.append(variant)
+                if idx % chunksize == 0:
+                    df_list.append(self._create_df(vcf, variant_list))
+                    variant_list = []
+                    print("added", idx)
         if variant_list:
             df_list.append(self._create_df(vcf, variant_list))
 
-        self._dataframe = pd.concat(df_list)
+        #self._dataframe = pd.concat(df_list)
+        if df_list:
+            return pd.concat(df_list)
+        else:
+            return pd.DataFrame()
 
     def _parallel_parse_vcf(self):
         vcf = cyvcf2.VCF(self._vcf)
@@ -589,4 +594,11 @@ class VCFReader(BaseReader):
         for sample in vcf.samples:
             self._call_names.add(sample)
 
-        self._parse_vcf_cyvcf()
+        threads = mp.cpu_count()
+        pool = mp.Pool(threads)
+        df_list = []
+        func = partial(self._parse_vcf_cyvcf, chunksize=10000, total_threads=threads)
+        for df in pool.imap(func, range(threads)):
+            df_list.append(df)
+        #self._parse_vcf_cyvcf(1, 10000, 3)
+        self._dataframe = pd.concat(df_list)
