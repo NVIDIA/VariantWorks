@@ -32,7 +32,7 @@ from variantworks.utils import extend_exception
 class VCFReader(BaseReader):
     """Reader for VCF files."""
 
-    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=["*"], regions=None):
+    def __init__(self, vcf, bams=[], is_fp=False, require_genotype=True, tag="caller", info_keys=[], filter_keys=[], format_keys=["*"], regions=None, num_threads=mp.cpu_count()):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note -VCFReader splits multi-allelic entries into separate variant
@@ -77,6 +77,7 @@ class VCFReader(BaseReader):
         self._format_vcf_key_counts = dict()
 
         self._regions = regions
+        self._num_threads = num_threads
 
         #self._parse_vcf_cyvcf()
         self._parallel_parse_vcf()
@@ -594,7 +595,7 @@ class VCFReader(BaseReader):
         for sample in vcf.samples:
             self._call_names.add(sample)
 
-        threads = mp.cpu_count()
+        threads = self._num_threads
         pool = mp.Pool(threads)
         df_list = []
         func = partial(self._parse_vcf_cyvcf, chunksize=5000, total_threads=threads)
