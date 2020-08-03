@@ -13,14 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Classes and function to encode bases in a read."""
 
-
-base_color_decoder = {
-    '\0': [255, 255, 255],      # white (null char for cells initiated to 'zero' )
-    'A': [0, 128, 0],           # green
-    'T': [255, 0, 0],           # red
-    'C': [0, 0, 255],           # blue
-    'G': [255, 255, 0],         # yellow
-    'N': [0, 0, 0]              # black
-}
+"""Init file for utils module."""

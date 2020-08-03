@@ -25,8 +25,9 @@ import os
 import pysam
 import torch
 
-from variantworks.base_encoder import base_color_decoder, rgb_to_hex
+from variantworks.base_encoder import base_color_decoder
 from variantworks.types import Variant, VariantZygosity
+from variantworks.utils.visualization import rgb_to_hex
 
 
 class SampleEncoder:
