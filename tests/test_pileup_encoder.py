@@ -20,9 +20,9 @@ import shutil
 import tempfile
 import torch
 
-from variantworks.base_encoder import base_enum_encoder, base_char_value_encoder
+from variantworks.base_encoder import base_char_value_encoder
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import PileupEncoder
+from variantworks.sample_encoder import BaseEnumEncoder, PileupEncoder
 
 from test_utils import get_data_folder
 
@@ -83,7 +83,7 @@ def test_snp_ref_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.ref])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.ref))
 
 
 def test_snp_allele_encoding(snp_variant):
@@ -96,7 +96,7 @@ def test_snp_allele_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.allele))
 
 
 def test_snp_encoder_base_quality(snp_variant):

@@ -25,7 +25,7 @@ import os
 import pysam
 import torch
 
-from variantworks.base_encoder import base_enum_encoder, base_color_decoder, rgb_to_hex
+from variantworks.base_encoder import base_color_decoder, rgb_to_hex
 from variantworks.types import Variant, VariantZygosity
 
 
@@ -43,6 +43,38 @@ class SampleEncoder:
     def __call__(self, *sample):
         """Compute the encoding of a sample."""
         raise NotImplementedError
+
+
+class BaseEnumEncoder(SampleEncoder):
+    """An Enum encoder that returns an output encoding for Nucleotide base.
+
+    Converts Nucleotide base char type to a class number.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._dict = {
+            'A': 1,
+            'a': 1,
+            'T': 2,
+            't': 2,
+            'C': 3,
+            'c': 3,
+            'G': 4,
+            'g': 4,
+            'N': 5,
+            'n': 5,
+        }
+
+    def __call__(self, nucleotide):
+        """Encode Nucleotide base to Enum.
+
+        Returns:
+           Nucleotide base encoded as number.
+        """
+        assert(nucleotide in self._dict)
+        return self._dict[nucleotide]
 
 
 class PileupEncoder(SampleEncoder):
@@ -94,8 +126,8 @@ class PileupEncoder(SampleEncoder):
             are available, the entries are all masked to 0. [50]
             layers : A list defining the layers to add to the encoding. The ordering of channels in the
             encoding follows the ordering of layers in the list. [Layer.READ]
-            base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
-            [base_encoder.base_enum_encoder]
+            base_encoder : A class which inherits from `SampleEncoder` defining conversion of nucleotide string chars to
+            numeric representation in its __call__ method. [BaseEnumEncoder]
             print_encoding : Print ASCII representation of each encoding that's converted to a tensor. [False]
 
         Returns:
@@ -106,7 +138,7 @@ class PileupEncoder(SampleEncoder):
         self.max_reads = max_reads
         self.layers = layers
         self.bams = dict()
-        self.base_encoder = base_encoder if base_encoder is not None else base_enum_encoder
+        self.base_encoder = base_encoder if base_encoder is not None else BaseEnumEncoder()
         self.layer_tensors = []
         self.layer_dict = {}
         for layer in layers:
@@ -147,7 +179,7 @@ class PileupEncoder(SampleEncoder):
                                       (2 * self.window_size + 1 - len(seq) - pileup_pos_range[0])))
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(seq[seq_pos])
         elif layer == self.Layer.BASE_QUALITY:
             # From SAM format docs.
             MAX_BASE_QUALITY = 93.0
@@ -181,7 +213,7 @@ class PileupEncoder(SampleEncoder):
             # Only encode the reference at the variant position, rest all 0
             for seq_pos, pileup_pos in enumerate(
                     range(self.window_size, min(self.window_size + len(variant.ref), 2 * self.window_size - 1))):
-                tensor[row, pileup_pos] = self.base_encoder[variant.ref[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(variant.ref[seq_pos])
         elif layer == self.Layer.ALLELE:
             if self.print_encoding:
                 print("{}{}{}".format("-" * self.window_size, variant.allele, "-" *
@@ -189,7 +221,7 @@ class PileupEncoder(SampleEncoder):
             # Only encode the allele at the variant position, rest all 0
             for seq_pos, pileup_pos in enumerate(
                     range(self.window_size, min(self.window_size + len(variant.allele), 2 * self.window_size - 1))):
-                tensor[row, pileup_pos] = self.base_encoder[variant.allele[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(variant.allele[seq_pos])
 
     def __call__(self, variant):
         """Return a torch Tensor pileup queried from a BAM file.
