@@ -16,20 +16,6 @@
 """Classes and function to encode bases in a read."""
 
 
-base_char_value_encoder = {
-    'A': ord('A'),
-    'a': ord('A'),
-    'T': ord('T'),
-    't': ord('T'),
-    'C': ord('C'),
-    'c': ord('C'),
-    'G': ord('G'),
-    'g': ord('G'),
-    'N': ord('N'),
-    'n': ord('N'),
-}
-
-
 def rgb_to_hex(c):
     """Concert rgb tuple/list into Hex."""
     return "#{0:02x}{1:02x}{2:02x}".format(*c)

@@ -20,9 +20,8 @@ import shutil
 import tempfile
 import torch
 
-from variantworks.base_encoder import base_char_value_encoder
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import BaseEnumEncoder, PileupEncoder
+from variantworks.sample_encoder import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
 
 from test_utils import get_data_folder
 
@@ -188,7 +187,7 @@ def test_pileup_visualization(snp_variant):
     encoder = PileupEncoder(
         layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.ALLELE, PileupEncoder.Layer.REFERENCE,
                 PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
-        base_encoder=base_char_value_encoder
+        base_encoder=BaseUnicodeEncoder()
     )
     encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
     assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 1

@@ -77,6 +77,27 @@ class BaseEnumEncoder(SampleEncoder):
         return self._dict[nucleotide]
 
 
+class BaseUnicodeEncoder(SampleEncoder):
+    """An Unicode code encoder that returns an output encoding for Nucleotide base.
+
+    Converts Nucleotide base char type to a Unicode numeric value.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._nucleotides = ['A', 'a', 'T', 't', 'C', 'c', 'G', 'g', 'N', 'n']
+
+    def __call__(self, nucleotide):
+        """Encode Nucleotide base to Unicode code.
+
+        Returns:
+           Nucleotide base encoded as Unicode code.
+        """
+        assert(nucleotide in self._nucleotides)
+        return ord(nucleotide)
+
+
 class PileupEncoder(SampleEncoder):
     """A pileup encoder for SNPs.
 
