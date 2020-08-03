@@ -1,0 +1,20 @@
+Metadata-Version: 1.2
+Name: variantworks
+Version: 0.1.0
+Summary: NVIDIA genomics python libraries and utiliites
+Home-page: https://github.com/clara-parabricks/VariantWorks
+Author: NVIDIA Corporation
+License: UNKNOWN
+Description: Python libraries and utilities for manipulating genomics data
+Platform: any
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Natural Language :: English
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Requires-Python: >=3.7
