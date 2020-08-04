@@ -25,7 +25,6 @@ import os
 import pysam
 import torch
 
-from variantworks.base_encoder import base_color_decoder
 from variantworks.types import Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
 
@@ -79,7 +78,7 @@ class BaseEnumEncoder(SampleEncoder):
 
 
 class BaseUnicodeEncoder(SampleEncoder):
-    """An Unicode code encoder that returns an output encoding for Nucleotide base.
+    """A Unicode code encoder that returns an output encoding for Nucleotide base.
 
     Converts Nucleotide base char type to a Unicode numeric value.
     """
@@ -97,6 +96,48 @@ class BaseUnicodeEncoder(SampleEncoder):
         """
         assert(nucleotide in self._nucleotides)
         return ord(nucleotide)
+
+
+class UnicodeRGBEncoder(SampleEncoder):
+    """A encoder that returns an RGB color encoding for Nucleotide base Unicode value.
+
+    Converts Nucleotide base unicode value type to a RGB color list.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._dict = {
+            ord('\0'):  [255, 255, 255],    # white (null char for cells initiated to 'zero' )
+            ord('A'):   [0, 128, 0],        # green
+            ord('a'):   [0, 128, 0],        # green
+            ord('T'):   [255, 0, 0],        # red
+            ord('t'):   [255, 0, 0],        # red
+            ord('C'):   [0, 0, 255],        # blue
+            ord('c'):   [0, 0, 255],        # blue
+            ord('G'):   [255, 255, 0],      # yellow
+            ord('g'):   [255, 255, 0],      # yellow
+            ord('N'):   [0, 0, 0],          # black
+            ord('n'):   [0, 0, 0]           # black
+        }
+
+    def __call__(self, nucleotide_unicode):
+        """Encode Nucleotide base to Unicode code.
+
+        Returns:
+           Nucleotide base encoded as Unicode code.
+        """
+        assert(nucleotide_unicode in self._dict)
+        return self._dict[nucleotide_unicode]
+
+    def get_keys(self):
+        """Get nucleotide bases unicode keys."""
+        return set(x for x in self._dict.keys() if chr(x) != '\0' and chr(x).upper() == chr(x))
+
+    @staticmethod
+    def get_key_legend_label(k):
+        """Get keys corresponding name for legend ."""
+        return chr(k)
 
 
 class PileupEncoder(SampleEncoder):
@@ -317,15 +358,27 @@ class PileupEncoder(SampleEncoder):
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
 
-    def visualize(self, variant, save_to_path=None, max_subplots_per_line=3):
-        """Visualize variant encoded pileup."""
+    def visualize(self, variant, save_to_path=None, max_subplots_per_line=3, visual_decoder=UnicodeRGBEncoder()):
+        """Visualize variant encoded pileup.
+
+        Outputs variant pileup visualization to a figure.
+
+        Args:
+            variant: Variant struct holding information about variant locus.
+            save_to_path: Path to figure output direcoty. [None]
+            max_subplots_per_line: maximal number of plots per row in the figure. [3]
+            visual_decoder: a decoder for a visualized representation of PileupEncoder.base_encoder
+        Returns:
+            None
+        """
 
         def _get_subplots_axes():
             cols = len(self.layers) if len(self.layers) < max_subplots_per_line else max_subplots_per_line
-            rows = (len(self.layers) + (max_subplots_per_line - 1)) // max_subplots_per_line  # the ceil value
+            # Calculate the ceil() value of len(self.layers) divided by max_subplots_per_line
+            rows = (len(self.layers) + (max_subplots_per_line - 1)) // max_subplots_per_line
             return rows, cols
 
-        def _fill_subplot(idx, nrow, ncol, layer, sample_dim):
+        def _create_subplot(idx, nrow, ncol, layer, sample_dim):
             plt.subplot(nrow, ncol, idx)
             plt_name = 'Layer: {}'.format(layer.name)
             plt.title(plt_name,
@@ -340,11 +393,17 @@ class PileupEncoder(SampleEncoder):
                 rgb_img = np.zeros((sample_dim.shape[0], sample_dim.shape[1], 3))
                 for i in range(data.shape[0]):
                     for j in range(data.shape[1]):
-                        rgb_img[i, j, :] = base_color_decoder[chr(data[i, j])]
+                        rgb_img[i, j, :] = visual_decoder(data[i, j])
                 plt.imshow(rgb_img)
                 plt.legend(
-                    handles=[mpatches.Patch(facecolor=rgb_to_hex(color), edgecolor='black', label=nucleotide)
-                             for nucleotide, color in base_color_decoder.items() if nucleotide != '\0'],
+                    handles=[
+                        mpatches.Patch(
+                            facecolor=rgb_to_hex(visual_decoder(nucleotide_unicode)),
+                            edgecolor='black',
+                            label=visual_decoder.get_key_legend_label(nucleotide_unicode)
+                        )
+                        for nucleotide_unicode in visual_decoder.get_keys()
+                    ],
                     bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, ncol=1
                 )
             if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
@@ -356,9 +415,10 @@ class PileupEncoder(SampleEncoder):
         figure_title = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
                        ('_id-{}'.format(variant.id) if variant.id != '.' else '')
         figure.suptitle(figure_title, fontweight="bold", y=1)
+        # Determine the number of rows and cols in multiple subplots figure
         number_rows, number_column = _get_subplots_axes()
         for index, sample_layer, encoded_sample_layer in zip(range(1, len(self.layers)+1), self.layers, encoded_sample):
-            _fill_subplot(index, number_rows, number_column, sample_layer, encoded_sample_layer)
+            _create_subplot(index, number_rows, number_column, sample_layer, encoded_sample_layer)
         if save_to_path is not None:
             try:
                 plt.savefig(os.path.join(
