@@ -44,7 +44,13 @@ class VCFReader(BaseReader):
                    ordering in VCF.
             is_fp : Is the VCF for false positive variants.
             require_genotype : If all samples need genotype called.
-            tag : Tag VCF data frame with.
+            tag : Tag VCF data frame with. ["caller" by default]
+            info_keys : List of INFO columns to parse. For all columns, pass "*". [Empty by default].
+            filter_keys : List of FILTER columns to parse. For all columns, pass "*". [Empty be default].
+            format_keys : List of FORMAT columns to parse. For all columns, pass "*". ["*" by default].
+            regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi). Format = "chr:start-end,...". [None by default]
+            num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]
+            chunksize : Number of VCF rows to parse in a single threads. [5000 by default].
 
         Returns:
            Instance of class.
@@ -70,17 +76,17 @@ class VCFReader(BaseReader):
 
         #self._parse_vcf()
 
+        self._regions = regions
+        self._num_threads = num_threads
+        self._chunksize = chunksize
+
+        # Keep track of metadata per column
         self._info_vcf_keys = info_keys
         self._info_vcf_key_counts = dict()
         self._filter_vcf_keys = filter_keys
         self._format_vcf_keys = format_keys
         self._format_vcf_key_counts = dict()
 
-        self._regions = regions
-        self._num_threads = num_threads
-        self._chunksize = chunksize
-
-        #self._parse_vcf_cyvcf()
         self._parallel_parse_vcf()
 
 
@@ -94,7 +100,7 @@ class VCFReader(BaseReader):
         """
         row = self._dataframe.iloc[idx]
 
-        # Build sample data
+        # Build sample data by iterating through FORMAT columns.
         samples = []
         zygosities = []
         format_keys = sorted(self._format_vcf_key_counts.keys())
@@ -108,7 +114,7 @@ class VCFReader(BaseReader):
                     for i in range(count):
                         call_data.append(row["{}_{}_{}".format(call, k, i)])
             samples.append(call_data)
-            zygosities.append(row["{}_zyg".format(call)])
+            zygosities.append(VariantZygosity(row["{}_zyg".format(call)]))
 
         # Build filter data
         var_filter = []
@@ -136,7 +142,7 @@ class VCFReader(BaseReader):
                           filter=(var_filter if var_filter else None),
                           info=info,
                           format=format_keys,
-                          type=row["variant_type"],
+                          type=VariantType(row["variant_type"]),
                           samples=samples,
                           zygosity=zygosities,
                           vcf=self._vcf,
@@ -160,12 +166,10 @@ class VCFReader(BaseReader):
         5. alt - Alternate base(s)
         6. variant_type - VariantType enum specifying SNP/INSERTION/DELETION
         7. quality - Quality of variant call
-        8. filter - VCF FILTER column
-        9. info - VCF INFO column
-        10. format - VCF FORMAT column
-        11. num_samples - Number of samples
-        12. sample_{idx}_call - Call information for sample idx.
-        13. sample_{idx}_zyg - Zygosity enum for sample idx.
+        8. filter - VCF FILTER column [if requested]
+        9. info - VCF INFO column [if requested]
+        10. format - VCF FORMAT column [if requested]
+        11. sample_{idx}_zyg - VariantZygosity enum for sample idx.
 
         This dataframe can be easily converted to cuDF for large
         variant processing.
@@ -411,7 +415,7 @@ class VCFReader(BaseReader):
             return VariantZygosity.NO_VARIANT
 
         if gt[0] == -1 or gt[1] == -1:
-            return None
+            return VariantZygosity.NONE
         elif gt[0] == gt[1]:
             if gt[0] == 0:
                 return VariantZygosity.NO_VARIANT
@@ -420,15 +424,29 @@ class VCFReader(BaseReader):
         else:
             return VariantZygosity.HETEROZYGOUS
 
-    def _get_normalized_count(self, header_number, num_alts):
+    def _get_normalized_count(self, header_number, num_alts, num_samples):
         if header_number == "A":
             return num_alts
         elif header_number == "R":
             return (num_alts + 1)
+        elif header_number == "G":
+            return num_samples
         elif header_number.isdigit():
             return int(header_number)
         elif header_number == ".":
             return 1
+
+    def _get_python_type(self, header_type):
+        if header_type == "String":
+            return lambda x : None if x is None else str(x)
+        elif header_type == "Integer":
+            return lambda x : None if x is None else int(x)
+        elif header_type == "Float":
+            return lambda x : None if x is None else float(x)
+        elif header_type == "Flag":
+            return lambda x : False if x is None else True
+        else:
+            raise RuntimeError("Unknown VCF header type:", header_type)
 
     def _create_df(self, vcf, variant_list):
         df_dict = defaultdict(list)
@@ -445,7 +463,7 @@ class VCFReader(BaseReader):
                 df_dict["id"].append(variant.ID)
                 df_dict["ref"].append(variant.REF)
                 df_dict["alt"].append(alt)
-                df_dict["variant_type"].append(self._detect_variant_type(variant.REF, alt))
+                df_dict["variant_type"].append(int(self._detect_variant_type(variant.REF, alt)))
                 df_dict["quality"].append(variant.QUAL)
 
                 # Process variant filter
@@ -458,6 +476,7 @@ class VCFReader(BaseReader):
                 for info_col in self._info_vcf_keys:
                     # Get header type
                     header_number = vcf.get_header_type(info_col)['Number']
+                    header_python_type = self._get_python_type(vcf.get_header_type(info_col)['Type'])
 
                     if info_col in variant.INFO:
                         val = variant.INFO[info_col]
@@ -465,21 +484,21 @@ class VCFReader(BaseReader):
                         if not isinstance(val, tuple):
                             val = tuple((val,))
                     else:
-                        val = [None] * self._get_normalized_count(header_number, len(alts))
+                        val = [None] * self._get_normalized_count(header_number, len(alts), len(samples))
 
                     #print(info_col, val)
                     if header_number == "A":
                         df_dict["INFO_" + info_col].append(val[alt_idx])
                     elif header_number == "R":
-                        df_dict["INFO_" + info_col + "_REF"].append(val[0])
-                        df_dict["INFO_" + info_col + "_ALT"].append(val[alt_idx + 1])
+                        df_dict["INFO_" + info_col + "_REF"].append(header_python_type(val[0]))
+                        df_dict["INFO_" + info_col + "_ALT"].append(header_python_type(val[alt_idx + 1]))
                     elif header_number.isdigit():
                         header_number = int(header_number)
                         if header_number == 1:
-                            df_dict["INFO_" + info_col].append(val[0])
+                            df_dict["INFO_" + info_col].append(header_python_type(val[0]))
                         else:
                             for i in range(int(header_number)):
-                                df_dict["INFO_" + info_col + "_" + str(i)].append(val[i])
+                                df_dict["INFO_" + info_col + "_" + str(i)].append(header_python_type(val[i]))
                     elif header_number == ".":
                         df_dict["INFO_" + info_col].append(",".join([str(v) for v in val]))
 
@@ -503,33 +522,34 @@ class VCFReader(BaseReader):
                             gt[1] = fix_gt(gt[1], alt_id)
                             if gt[0] == -1 or gt[1] == -1:
                                 gt[0] = gt[1] = -1
-                            df_dict["{}_zyg".format(sample_name)].append(self._detect_zyg(gt))
+                            df_dict["{}_zyg".format(sample_name)].append(int(self._detect_zyg(gt)))
                             df_dict["{}_GT".format(sample_name)].append("{}/{}".format(gt[0], gt[1]))
                         else:
                             # Get header type
                             header_number = vcf.get_header_type(format_col)['Number']
+                            header_python_type = self._get_python_type(vcf.get_header_type(format_col)['Type'])
 
                             val = variant.format(format_col)
                             if val is not None:
                                 val = val[sample_idx]
                             else:
-                                val = [None] * self._get_normalized_count(header_number, len(alts))
+                                val = [None] * self._get_normalized_count(header_number, len(alts), len(samples))
 
 
                             #print(format_col, val)
                             if header_number == "A":
-                                df_dict[sample_name + "_" + format_col].append(val[alt_idx])
+                                df_dict[sample_name + "_" + format_col].append(header_python_type(val[alt_idx]))
                             elif header_number == "R":
-                                df_dict[sample_name + "_" + format_col + "_REF"].append(val[0])
-                                df_dict[sample_name + "_" + format_col + "_ALT"].append(val[alt_idx + 1])
+                                df_dict[sample_name + "_" + format_col + "_REF"].append(header_python_type(val[0]))
+                                df_dict[sample_name + "_" + format_col + "_ALT"].append(header_python_type(val[alt_idx + 1]))
                             elif header_number.isdigit():
                                 header_number = int(header_number)
                                 if header_number == 1:
-                                    df_dict[sample_name + "_" + format_col].append(val[0])
+                                    df_dict[sample_name + "_" + format_col].append(header_python_type(val[0]))
                                 else:
                                     #print(header_number, format_col, val)
                                     for i in range(int(header_number)):
-                                        df_dict[sample_name + "_" + format_col + "_" + str(i)].append(val[i])
+                                        df_dict[sample_name + "_" + format_col + "_" + str(i)].append(header_python_type(val[i]))
                             elif header_number == ".":
                                 df_dict[sample_name + "_" + format_col].append(",".join([str(v) for v in val]))
 
@@ -553,7 +573,7 @@ class VCFReader(BaseReader):
                 if idx % chunksize == 0:
                     df_list.append(self._create_df(vcf, variant_list))
                     variant_list = []
-                    print("added", idx)
+                    #print("added", idx)
         if variant_list:
             df_list.append(self._create_df(vcf, variant_list))
 
@@ -574,7 +594,7 @@ class VCFReader(BaseReader):
                     self._info_vcf_keys.append(h['ID'])
         for k in self._info_vcf_keys:
             header_number = vcf.get_header_type(k)['Number']
-            self._info_vcf_key_counts[k] = self._get_normalized_count(header_number, 1)
+            self._info_vcf_key_counts[k] = self._get_normalized_count(header_number, 1, len(vcf.samples))
 
 
         if "*" in self._filter_vcf_keys:
@@ -590,7 +610,7 @@ class VCFReader(BaseReader):
                     self._format_vcf_keys.append(h['ID'])
         for k in self._format_vcf_keys:
             header_number = vcf.get_header_type(k)['Number']
-            self._format_vcf_key_counts[k] = self._get_normalized_count(header_number, 1)
+            self._format_vcf_key_counts[k] = self._get_normalized_count(header_number, 1, len(vcf.samples))
 
 
         for sample in vcf.samples:
