@@ -143,7 +143,7 @@ class VCFReader(BaseReader):
                           id=row["id"],
                           ref=row["ref"],
                           allele=row["alt"],
-                          quality=row["quality"],
+                          quality=row["{}_quality".format(self._tag)],
                           filter=(var_filter if var_filter else None),
                           info=info,
                           format=format_keys,
@@ -170,11 +170,11 @@ class VCFReader(BaseReader):
         4. ref - Reference base(s)
         5. alt - Alternate base(s)
         6. variant_type - VariantType enum specifying SNP/INSERTION/DELETION as an int
-        7. quality - Quality of variant call
+        7. {tag}_quality - Quality of variant call
         8. filter - VCF FILTER column [if requested]
         9. info - VCF INFO column [if requested]
         10. format - VCF FORMAT column [if requested]
-        11. sample_{idx}_zyg - VariantZygosity enum for sample idx as an int
+        11. {sample_name}_zyg - VariantZygosity enum for sample idx as an int
 
         This dataframe can be easily converted to cuDF for large scale
         variant processing.
@@ -313,7 +313,8 @@ class VCFReader(BaseReader):
                 df_dict["ref"].append(variant.REF)
                 df_dict["alt"].append(alt)
                 df_dict["variant_type"].append(int(self._detect_variant_type(variant.REF, alt)))
-                df_dict["quality"].append(variant.QUAL)
+                df_dict["{}_quality".format(self._tag)].append(variant.QUAL)
+                df_dict[self._tag].append(1)
 
                 # Process variant filter columns. If filter is present in entry, store True else False.
                 variant_filter = "PASS" if variant.FILTER is None else variant.FILTER

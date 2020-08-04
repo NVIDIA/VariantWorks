@@ -30,7 +30,13 @@ tests_data_folder = os.path.join(repo_root_folder, "tests", "data")
 test_vcf_file = os.path.join(tests_data_folder, "candidates_multisample.vcf.gz")
 
 t = time.time()
-reader = VCFReader(test_vcf_file, bams=[], info_keys=["*"], filter_keys=[], format_keys=["GT"], num_threads=4)
+reader = VCFReader(test_vcf_file,
+                   bams=[],
+                   tag="test",
+                   info_keys=["*"],
+                   filter_keys=[],
+                   format_keys=["GT"],
+                   num_threads=4)
 read_time = time.time() - t
 print(reader.df)
 

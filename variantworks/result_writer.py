@@ -71,19 +71,24 @@ class VCFResultWriter(ResultWriter):
 
     def _update_format(self, variant, idx):
         # We don't support multisample - only set the inferred GT value for the first sample
-        if (len(variant.samples) != 1):
-            raise RuntimeError("{} only support single sample VCF.".format(self.__class__.__name__))
-        try:
-            gt_format_index = variant.format.index('GT')
-        except ValueError:
-            variant.format.append('GT')
-            gt_format_index = 0
-        variant.samples[0][gt_format_index] = VCFResultWriter.zygosity_to_vcf_genotype[self.inferred_zygosities[idx]]
+        if self.inferred_zygosities:
+            if (len(variant.samples) != 1):
+                raise RuntimeError("{} only support single sample VCF.".format(self.__class__.__name__))
+            try:
+                gt_format_index = variant.format.index('GT')
+            except ValueError:
+                variant.format.append('GT')
+                gt_format_index = 0
+            variant.samples[0][gt_format_index] = \
+                VCFResultWriter.zygosity_to_vcf_genotype[self.inferred_zygosities[idx]]
 
     @staticmethod
     def _serialize_record_info(info_dict):
         ret_list = list()
         for k, v in info_dict.items():
+            print(k, v, type(v))
+            if v is None:
+                continue
             if type(v) is list:
                 ret_list.append("{}={}".format(
                     k, ','.join(map(lambda x: str(x), v))))
