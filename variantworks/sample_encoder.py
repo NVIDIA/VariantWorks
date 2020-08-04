@@ -362,6 +362,8 @@ class PileupEncoder(SampleEncoder):
         """Visualize variant encoded pileup.
 
         Outputs variant pileup visualization to a figure.
+        Execute `tensorboard --logdir='<save_to_path>' --port=6006` in the background to view the images over
+        TensorBoard.
 
         Args:
             variant: Variant struct holding information about variant locus.
@@ -369,7 +371,8 @@ class PileupEncoder(SampleEncoder):
             max_subplots_per_line: maximal number of plots per row in the figure. [3]
             visual_decoder: a decoder for a visualized representation of PileupEncoder.base_encoder
         Returns:
-            None
+            figure_title: figure title
+            figure: matplotlib.pyplot.figure object
         """
 
         def _get_subplots_axes():
@@ -408,7 +411,7 @@ class PileupEncoder(SampleEncoder):
                 )
             if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
                 plt.imshow(sample_dim.numpy(), cmap='Purples')
-                plt.colorbar(orientation='vertical', pad=0.1)
+                plt.colorbar(orientation='vertical', pad=0.02)
 
         encoded_sample = self.__call__(variant)  # Build variant pileup encoding
         figure = plt.figure(figsize=(20, 10))
@@ -426,6 +429,7 @@ class PileupEncoder(SampleEncoder):
                 ))
             except FileNotFoundError as e:
                 raise e
+        return figure_title, figure
 
 
 class ZygosityLabelEncoder(SampleEncoder):

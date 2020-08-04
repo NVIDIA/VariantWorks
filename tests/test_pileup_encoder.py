@@ -15,10 +15,12 @@
 #
 
 import os
+
 import pytest
 import shutil
 import tempfile
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from variantworks.types import Variant, VariantZygosity, VariantType
 from variantworks.sample_encoder import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
@@ -189,6 +191,10 @@ def test_pileup_visualization(snp_variant):
                 PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
         base_encoder=BaseUnicodeEncoder()
     )
-    encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
+    fig_title, fig = encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
     assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 1
+
+    writer = SummaryWriter(log_dir=output_folder)
+    writer.add_figure(fig_title, fig)
+
     shutil.rmtree(output_folder)
