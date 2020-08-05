@@ -15,6 +15,7 @@
 #
 
 bgzip==0.3.3
+cyvcf2==0.20.1
 h5py==2.10.0
 nemo-toolkit==0.10.1
 numpy==1.18.3
