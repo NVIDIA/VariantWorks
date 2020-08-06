@@ -32,11 +32,14 @@ test_vcf_file = os.path.join(tests_data_folder, "candidates_multisample.vcf.gz")
 t = time.time()
 reader = VCFReader(test_vcf_file,
                    bams=[],
-                   tag="test",
-                   info_keys=["*"],
+                   tags={"custom_tag": 1},
+                   info_keys=["AF"],
                    filter_keys=[],
-                   format_keys=["GT"],
-                   num_threads=4)
+                   format_keys=[],
+                   num_threads=4,
+                   regions=[],
+                   require_genotype=True,
+                   sort=True)
 read_time = time.time() - t
 print(reader.df)
 

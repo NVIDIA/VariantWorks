@@ -36,13 +36,14 @@ class VCFReader(BaseReader):
                  bams=[],
                  is_fp=False,
                  require_genotype=True,
-                 tag="caller",
+                 tags={},
                  info_keys=[],
                  filter_keys=[],
                  format_keys=["*"],
-                 regions=None,
+                 regions=[],
                  num_threads=mp.cpu_count(),
-                 chunksize=5000):
+                 chunksize=5000,
+                 sort=False):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note VCFReader splits multi-allelic entries into separate variant
@@ -55,14 +56,16 @@ class VCFReader(BaseReader):
                    ordering in VCF.
             is_fp : Is the VCF for false positive variants.
             require_genotype : If all samples need genotype called.
-            tag : Tag VCF data frame with. ["caller" by default]
+            tags : A dictionary with custom tags for VCF dataframe.
+                   Format = {"tag1" : 1, "tag2" : False}. [{} by default]
             info_keys : List of INFO columns to parse. For all columns, pass "*". [Empty by default].
             filter_keys : List of FILTER columns to parse. For all columns, pass "*". [Empty be default].
-            format_keys : List of FORMAT columns to parse. For all columns, pass "*". ["*" by default].
+            format_keys : List of FORMAT columns to parse. For all columns, pass "*". [Empty by default].
             regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi).
-                      Format = "chr:start-end,...". [None by default]
+                      Format = ["chr:start-end", "chr2:s-e",...]. [None by default]
             num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]
             chunksize : Number of VCF rows to parse in a single threads. [5000 by default].
+            sort : Order DataFrame by chr and start position.
 
         Returns:
            Instance of class.
@@ -72,10 +75,11 @@ class VCFReader(BaseReader):
         self._bams = bams
         self._is_fp = is_fp
         self._require_genotype = require_genotype
-        self._tag = tag
-        self._regions = regions
+        self._tags = tags
+        self._regions = regions if regions else [None]
         self._num_threads = num_threads
         self._chunksize = chunksize
+        self._sort = sort
 
         self._dataframe = None
         self._sample_names = set()
@@ -131,11 +135,11 @@ class VCFReader(BaseReader):
         info = {}
         for k, count in self._info_vcf_key_counts.items():
             if count == 1:
-                info[k] = row["INFO_{}".format(k)]
+                info[k] = row["{}".format(k)]
             else:
                 vals = []
                 for i in range(count):
-                    vals.append(row["INFO_{}_{}".format(k, i)])
+                    vals.append(row["{}_{}".format(k, i)])
                 info[k] = vals
 
         variant = Variant(chrom=row["chrom"],
@@ -143,7 +147,7 @@ class VCFReader(BaseReader):
                           id=row["id"],
                           ref=row["ref"],
                           allele=row["alt"],
-                          quality=row["{}_quality".format(self._tag)],
+                          quality=row["quality"],
                           filter=(var_filter if var_filter else None),
                           info=info,
                           format=format_keys,
@@ -281,7 +285,7 @@ class VCFReader(BaseReader):
         else:
             extend_exception(RuntimeError, "Unknown VCF header type:", header_type)
 
-    def _create_df(self, vcf, variant_list):
+    def _create_df(self, vcf, variant_list, num_variants):
         """Create dataframe from list of cyvcf2.Variant objects.
 
         Process each cyvcf2.Variant object in the variant list and generate a dict
@@ -292,6 +296,8 @@ class VCFReader(BaseReader):
         Args:
             vcf : cyvcf2 object for VCF
             variant_list : List of cyvcf2.Variant objects to convert to dataframe
+            num_variants : Number of variants in list. This is needed because variant_list
+                           is pre-allocated for perf reasons and some elements may be None
 
         Returns:
             DataFrame for entries in variant_list
@@ -301,7 +307,8 @@ class VCFReader(BaseReader):
         samples = vcf.samples
 
         # Iterate over all variants in variant list.
-        for variant in variant_list:
+        for var_idx in range(num_variants):
+            variant = variant_list[var_idx]
             # Iterate over each allele in variant to split up multi alleles.
             alts = variant.ALT
             for alt_idx, alt in enumerate(alts):
@@ -313,8 +320,7 @@ class VCFReader(BaseReader):
                 df_dict["ref"].append(variant.REF)
                 df_dict["alt"].append(alt)
                 df_dict["variant_type"].append(int(self._detect_variant_type(variant.REF, alt)))
-                df_dict["{}_quality".format(self._tag)].append(variant.QUAL)
-                df_dict[self._tag].append(1)
+                df_dict["quality"].append(variant.QUAL)
 
                 # Process variant filter columns. If filter is present in entry, store True else False.
                 variant_filter = "PASS" if variant.FILTER is None else variant.FILTER
@@ -338,7 +344,7 @@ class VCFReader(BaseReader):
                     else:
                         val = [None] * self._get_normalized_count(header_number, len(alts), len(samples))
 
-                    df_key = "INFO_" + info_col
+                    df_key = info_col
 
                     if header_number == "A":
                         df_dict[df_key].append(val[alt_idx])
@@ -420,6 +426,11 @@ class VCFReader(BaseReader):
 
         # Convert local dictionary of k/v to DataFrame.
         df = pd.DataFrame.from_dict(df_dict)
+
+        # Add custom tags to DataFrame
+        for col, val in self._tags.items():
+            df[col] = val
+
         return df
 
     def _parse_vcf_cyvcf(self, thread_id):
@@ -437,23 +448,40 @@ class VCFReader(BaseReader):
         Returns:
             DataFrame with all variants in the range of the parser.
         """
-        vcf = cyvcf2.VCF(self._vcf)
-
-        # Go through variants and add to list
-        variant_list = []
         df_list = []
-        generator = vcf(self._regions) if self._regions else vcf
-        # Loop through all variants in cyvcf2 object.
-        for idx, variant in enumerate(generator):
-            # Check if a variant maps to this thread.
-            if ((idx // self._chunksize) % self._num_threads == thread_id):
-                variant_list.append(variant)
-                if idx % self._chunksize == 0:
-                    df_list.append(self._create_df(vcf, variant_list))
-                    variant_list = []
-                    print("Processed", idx, "variants")
-        if variant_list:
-            df_list.append(self._create_df(vcf, variant_list))
+
+        # Global is to track which variants are to be processed
+        # by current thread id across all regions
+        global_variant_idx = 0
+
+        # Go through all regions assigned to reader
+        for region in self._regions:
+            # Go through variants and add to list
+            vcf = cyvcf2.VCF(self._vcf)
+            generator = vcf(region) if region else vcf
+
+            # Pre-allocate variant list to chunk size to prevent list extension
+            variant_list = [None] * self._chunksize
+
+            # Local idx is to track number of variants currently in the
+            # variant list
+            local_variant_idx = 0
+
+            # Loop through all variants in cyvcf2 object.
+            for variant in generator:
+                # Check if a variant maps to this thread.
+                if ((global_variant_idx // self._chunksize) % self._num_threads == thread_id):
+                    variant_list[local_variant_idx] = variant
+                    local_variant_idx += 1
+                    if global_variant_idx % self._chunksize == 0:
+                        df_list.append(self._create_df(vcf, variant_list, local_variant_idx))
+                        variant_list = [None] * self._chunksize  # Reset list
+                        local_variant_idx = 0
+                        print("Processed", global_variant_idx, "variants")
+                global_variant_idx += 1
+
+            if variant_list:
+                df_list.append(self._create_df(vcf, variant_list, local_variant_idx))
 
         if df_list:
             return pd.concat(df_list, ignore_index=True)
@@ -494,6 +522,15 @@ class VCFReader(BaseReader):
             for h in vcf.header_iter():
                 if h['HeaderType'] == 'FORMAT':
                     self._format_vcf_keys.append(h['ID'])
+
+        # Make sure format columns have "GT" if genotype requested
+        if self._require_genotype and "GT" not in self._format_vcf_keys:
+            for h in vcf.header_iter():
+                if h['HeaderType'] == 'FORMAT' and h['ID'] == "GT":
+                    self._format_vcf_keys.append(h['ID'])
+            if "GT" not in self._format_vcf_keys:
+                raise RuntimeError("Required genotype key GT not available in VCF file.")
+
         for k in self._format_vcf_keys:
             header_number = vcf.get_header_type(k)['Number']
             self._format_vcf_key_counts[k] = self._get_normalized_count(header_number, 1, len(vcf.samples))
@@ -512,3 +549,7 @@ class VCFReader(BaseReader):
         # Generate final DataFrame from intermediate DataFrames computed by
         # individual threads.
         self._dataframe = pd.concat(df_list, ignore_index=True)
+
+        # Sort dataframe by chromosome and start_position if requested
+        if self._sort:
+            self._dataframe.sort_values(["chrom", "start_pos"], axis='index', inplace=True, ignore_index=True)
