@@ -17,16 +17,18 @@
 
 import abc
 from enum import Enum
+import numpy as np
+import pandas as pd
 import pysam
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
 from variantworks.types import Variant, VariantType, VariantZygosity
-import numpy as np
-import pandas as pd
+
 
 class SampleEncoder:
     """An abstract class defining the interface to an encoder implementation.
+
     Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
     """
 
@@ -39,14 +41,46 @@ class SampleEncoder:
         """Compute the encoding of a sample."""
         raise NotImplementedError
 
+
 class SummaryEncoder(SampleEncoder):
+    """A summary count encoder for pileups.
 
-    def __init__(self, training=False):
-        self.training = training
+    For a given pileup of reads (e.g. output from samtools mpileup), the encoder generates
+    tensor for each pileup column. The encoder counts the number of DNA bases (A, G, G, T, deletion)
+    for each pileup column on both the forward and reverse strands. Insertions are handled by encoding
+    new pileup columns. Therefore, the output of the encoder is a tensor of shape (num_pileup_col, 10).
+    The output of this encoder can be used to train a sequence aware model such such as an RNN.
+    """
 
-    def find_insertions(self, base_pileup):
+    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True):
+        """Constructor for the class.
+
+        Args:
+            exclude_no_coverage_positions : Flag to determine if pileup columns with 0
+                                            coverage should be dropped.
+            normalize_counts : Flag to determine if summary counts in encoding should
+                               be normalized.
+
+        Returns:
+            Instance of class.
         """
-        Finds all of the insertions in a given base's pileup string
+        self._exclude_no_coverage_positions = exclude_no_coverage_positions
+        self._normalize_counts = normalize_counts
+
+        # Supported alphabet when building summary encoder.
+        self.symbols = ["a",
+                        "c",
+                        "g",
+                        "t",
+                        "A",
+                        "C",
+                        "G",
+                        "T",
+                        "#",
+                        "*"]
+
+    def _find_insertions(self, base_pileup):
+        """Finds all of the insertions in a given base's pileup string.
 
         Args:
             base_pileup: Single base's pileup string output from samtools mpileup
@@ -81,28 +115,43 @@ class SummaryEncoder(SampleEncoder):
         return insertions, next_to_del
 
     def __call__(self, region):
+        """Generate a torch tensor with summary encoding.
+
+        Args:
+            region : Region dataclass specifying region within a pileup to generate
+                     an encoding for.
+        """
         start_pos = region.start_pos
         end_pos = region.end_pos
         pileup_file = region.pileup
-        pileup = pd.read_csv(pileup_file, delimiter="\t", header = None).values
-        if (len(pileup) >= end_pos):
+
+        # Load pileup file into a dataframe
+        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
+
+        if (len(pileup) < end_pos):
             end_pos = len(pileup)
+
         subreads = pileup[:, 4]
         truth_coverage = pileup[:, 7].astype("int")
         positions = []
         positions_insertions = []
-        symbols = ["a","c","g","t","A","C","G","T","#","*"]
+
         # Calculate major and minor positions
         for i in range(start_pos, end_pos):
-            if (self.training):
-                if (truth_coverage[i] == 0):
-                    continue
+            if self._exclude_no_coverage_positions and truth_coverage[i] == 0:
+                continue
+
             base_pileup = subreads[i].strip("^]").strip("$")
-            insertions, next_to_del = self.find_insertions(base_pileup)
-            longest_insertion = 0
-            if (len(insertions) > 0):
-                longest_insertion = len(max(insertions, key=len))
-            major_minor_pos = []
+
+            # Get all insertions in pileup
+            insertions, next_to_del = self._find_insertions(base_pileup)
+
+            # Find length of maximum insertion
+            longest_insertion = len(max(insertions, key=len)) if insertions else 0
+
+            # Keep track of major and minor positions in the pileup and the insertions
+            # in the pileup.
+            major_minor_pos = []  # Major position for ref base pos in pileup, minor for additional inserted bases
             major_minor_pos.append((i, 0))
             insertions_store = []
             insertions_store.append([])
@@ -111,39 +160,59 @@ class SummaryEncoder(SampleEncoder):
                 insertions_store.append(insertions)
             positions += major_minor_pos
             positions_insertions += (insertions_store)
+
         # Using positions, calculate pileup counts
         pileup_counts = np.zeros((len(positions), 10))
         for i in range(len(positions)):
             major_position = positions[i][0]
             minor_position = positions[i][1]
             base_pileup = subreads[major_position].strip("^]").strip("$")
-            insertions, next_to_del = self.find_insertions(base_pileup)
+            insertions, next_to_del = self._find_insertions(base_pileup)
             insertions_to_keep = []
+
+            # Remove all insertions which are next to delete positions in pileup
             for k in range(len(insertions)):
-                if (next_to_del[k] == False):
+                if next_to_del[k] is False:
                     insertions_to_keep.append(insertions[k])
+
+            # Replace all occurrences of insertions from the pileup string
             for insertion in insertions:
                 base_pileup = base_pileup.replace("+" + str(len(insertion)) + insertion, "")
-            if (minor_position == 0):
-                for j in range(len(symbols)):
-                    pileup_counts[i, j] = base_pileup.count(symbols[j])
+
+            if (minor_position == 0):  # No insertions for this position
+                for j in range(len(self.symbols)):
+                    pileup_counts[i, j] = base_pileup.count(self.symbols[j])
             elif (minor_position > 0):
+                # Remove all insertions which are smaller than minor position being considered
+                # so we only count inserted bases at positions longer than the minor position
                 insertions_minor = [x for x in insertions_to_keep if len(x) >= minor_position]
                 for j in range(len(insertions_minor)):
                     inserted_base = insertions_minor[j][minor_position-1]
-                    pileup_counts[i, symbols.index(inserted_base)] += 1
-        # Normalization
+                    pileup_counts[i, self.symbols.index(inserted_base)] += 1
+
         positions = np.array(positions, dtype=[('major', '<i8'), ('minor', '<i8')])
-        minor_inds = np.where(positions['minor'] > 0)
-        major_pos_at_minor_inds = positions['major'][minor_inds]
-        major_ind_at_minor_inds = np.searchsorted(positions['major'], major_pos_at_minor_inds, side='left')
-        depth = np.sum(pileup_counts, axis=1)
-        depth[minor_inds] = depth[major_ind_at_minor_inds]
-        feature_array = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
-        return (feature_array, positions)
+
+        if self._normalize_counts:
+            # Fetch all tensor positions wherebases were inserted
+            minor_inds = np.where(positions['minor'] > 0)
+            # Find corresponding reference base positions in tensor
+            major_pos_at_minor_inds = positions['major'][minor_inds]
+            # Find the index of major positions for the reference base positions
+            major_ind_at_minor_inds = np.searchsorted(positions['major'], major_pos_at_minor_inds, side='left')
+            # Calculate depth across all pileup columns
+            depth = np.sum(pileup_counts, axis=1)
+            # Replace the depth of minor columns with the depths of major columns for those minor columns
+            depth[minor_inds] = depth[major_ind_at_minor_inds]
+            # Normalize each column
+            feature_array = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
+            return feature_array, positions
+        else:
+            return pileup_counts, positions
+
 
 class PileupEncoder(SampleEncoder):
-    """A pileup encoder for SNPs.
+    """A read pileup encoder for BAMs.
+
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
     the type of information that is selected to be embedded.
@@ -154,6 +223,7 @@ class PileupEncoder(SampleEncoder):
 
     class Layer(Enum):
         r"""Layers that can be added to the pileup encoding.
+
         Values:
             READ : Encode each aligned read as a row of the pileup. The bases in the
             read are encoded using a base_encoder dict passed into the class. The reads
@@ -177,6 +247,7 @@ class PileupEncoder(SampleEncoder):
 
     def __init__(self, window_size=50, max_reads=50, layers=[Layer.READ], base_encoder=None):
         """Construct class instance.
+
         Args:
             window_size : A nucleotide context size on either side of variant position [50].
             max_reads : Max number of reads to consider in the pileip. If reads fewer than max_reads
@@ -185,6 +256,7 @@ class PileupEncoder(SampleEncoder):
             encoding follows the ordering of layers in the list. [Layer.READ]
             base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
             [base_encoder.base_enum_encoder]
+
         Returns:
             Instance of class.
         """
@@ -266,6 +338,7 @@ class PileupEncoder(SampleEncoder):
 
     def __call__(self, variant):
         """Return a torch Tensor pileup queried from a BAM file.
+
         Args:
             variant : Variant struct holding information about variant locus.
         """
@@ -326,6 +399,7 @@ class PileupEncoder(SampleEncoder):
 
 class ZygosityLabelEncoder(SampleEncoder):
     """A label encoder that returns an output label encoding for zygosity only.
+
     Converts zygosity type to a class number.
     """
 
@@ -340,6 +414,7 @@ class ZygosityLabelEncoder(SampleEncoder):
 
     def __call__(self, variant):
         """Encode variant to class for zygosity.
+
         Returns:
            Zygosity encoded as number.
         """
@@ -364,6 +439,7 @@ class ZygosityLabelDecoder(SampleEncoder):
 
     def __call__(self, class_id):
         """Decode class to variant zygosity enum.
+
         Returns:
             Variant zygosity.
         """
