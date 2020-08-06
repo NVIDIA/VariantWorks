@@ -58,6 +58,6 @@ class BaseReader(ABC):
         return BaseReaderIterator(self)
 
     @abstractmethod
-    def df(self):
+    def dataframe(self):
         """Return parsed file as dataframe."""
         return NotImplementedError

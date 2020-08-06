@@ -27,11 +27,11 @@ from test_utils import get_data_folder
 
 @pytest.fixture
 def snp_variant():
-    bam = os.path.join(get_data_folder(), "some_indels.bam")
-    variant = Variant(chrom="1", pos=10106775, id="rs12406448", ref='T', allele='C',
-                      quality=50, filter=[], info={}, format=['GT', 'PS', 'DP', 'ADALL', 'AD', 'GQ'],
-                      samples=[['0/1', None, 638, [149, 142], [175, 174], 1079]], zygosity=VariantZygosity.HETEROZYGOUS,
-                      type=VariantType.SNP, vcf='null.vcf', bam=bam)
+    bam = os.path.join(get_data_folder(), "small_bam.bam")
+    variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
+                      quality=60, filter=None, info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'],
+                      samples=[['1/1', '50']], zygosity=[VariantZygosity.HOMOZYGOUS],
+                      type=VariantType.SNP, vcf='null.vcf', bams=[bam])
     return variant
 
 
@@ -40,8 +40,8 @@ def insertion_variant():
     bam = os.path.join(get_data_folder(), "some_indels.bam")
     variant = Variant(chrom="1", pos=10122622, id="rs57037935", ref='T', allele='TG',
                       quality=50, filter=[], info={}, format=['GT', 'PS', 'DP', 'ADALL', 'AD', 'GQ'],
-                      samples=[['1/1', None, 546, [0, 246], [25, 25], 330]], zygosity=VariantZygosity.HOMOZYGOUS,
-                      type=VariantType.INSERTION, vcf='null.vcf', bam=bam)
+                      samples=[['1/1', None, 546, [0, 246], [25, 25], 330]], zygosity=[VariantZygosity.HOMOZYGOUS],
+                      type=VariantType.INSERTION, vcf='null.vcf', bams=[bam])
     return variant
 
 
@@ -50,8 +50,8 @@ def deletion_variant():
     bam = os.path.join(get_data_folder(), "some_indels.bam")
     variant = Variant(chrom="1", pos=10163457, id=None, ref='CTTTA', allele='C',
                       quality=50, filter=[], info={}, format=['GT', 'PS', 'DP', 'ADALL', 'AD', 'GQ'],
-                      samples=[['1/0', None, 177, [0, 0, 0], [0, 0, 0], 160]], zygosity=VariantZygosity.HETEROZYGOUS,
-                      type=VariantType.DELETION, vcf='null.vcf', bam=bam)
+                      samples=[['1/0', None, 177, [0, 0, 0], [0, 0, 0], 160]], zygosity=[VariantZygosity.HETEROZYGOUS],
+                      type=VariantType.DELETION, vcf='null.vcf', bams=[bam])
     return variant
 
 

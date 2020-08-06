@@ -192,10 +192,14 @@ class PileupEncoder(SampleEncoder):
         Args:
             variant : Variant struct holding information about variant locus.
         """
+        # This encoding supports only single sample encoding.
+        if len(variant.samples) != 1:
+            raise RuntimeError("{} only supports single sample VCFs.".format(self.__class__.__name__))
+
         # Locus information
         chrom = variant.chrom
         variant_pos = variant.pos
-        bam_file = variant.bam
+        bam_file = variant.bams[0]
 
         # Check that the ref and alt alleles all fit in the window context.
         if len(variant.ref) > self.window_size:
@@ -280,8 +284,12 @@ class ZygosityLabelEncoder(SampleEncoder):
         Returns:
            Zygosity encoded as number.
         """
+        # This encoding supports only single sample encoding.
+        if len(variant.samples) != 1:
+            raise RuntimeError("{} only supports single sample VCFs.".format(self.__class__.__name__))
+
         assert(isinstance(variant, Variant))
-        var_zyg = variant.zygosity
+        var_zyg = variant.zygosity[0]
         assert(var_zyg in self._dict)
 
         return torch.tensor(self._dict[var_zyg])
