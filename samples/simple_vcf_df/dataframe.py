@@ -41,6 +41,6 @@ reader = VCFReader(test_vcf_file,
                    require_genotype=True,
                    sort=True)
 read_time = time.time() - t
-print(reader.df)
+print(reader.dataframe)
 
 print("Elapsed time for reading VCF (seconds): ", read_time)

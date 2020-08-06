@@ -163,7 +163,7 @@ class VCFReader(BaseReader):
         return len(self._dataframe)
 
     @property
-    def df(self):
+    def dataframe(self):
         """Get variant list as a CPU pandas dataframe.
 
         Each row in the returned dataframe represents a variant entry.

@@ -65,5 +65,5 @@ def test_vcf_loader_to_df(get_created_vcf_tabix_files):
     """
     vcf_file_path, tabix_file_path = get_created_vcf_tabix_files(mock_file_input())
     vcf_loader = VCFReader(vcf=vcf_file_path, bams=[], is_fp=False)
-    df = vcf_loader.df
+    df = vcf_loader.dataframe
     assert(len(vcf_loader) == len(df))
