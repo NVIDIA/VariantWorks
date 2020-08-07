@@ -20,6 +20,8 @@ set -e
 
 # Logger function for build status output
 START_TIME=$(date +%s)
+
+cd "${WORKSPACE}"
 . ci/utilities/logger.sh
 
 ################################################################################
@@ -30,10 +32,8 @@ PATH=/conda/bin:$PATH
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
-
-cd "${WORKSPACE}"
-
-source ./ci/utilities/prepare_env.sh "${WORKSPACE}"
+export CONDA_ENV_NAME="gdf"
+source ./ci/utilities/prepare_env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 ################################################################################
 # SDK style check
