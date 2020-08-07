@@ -18,14 +18,14 @@ Encoders
 Encoders are classes that generate an encoding for the neural network. The classes can be used to
 not only generate encodings, but also augment and transform them.
 
-All encoders need to inherit from the base class :class:`SampleEncoder<variantworks.sample_encoder.SampleEncoder>`
+All encoders need to inherit from the base class :class:`Encoder<variantworks.encoders.Encoder>`
 and implement the abstract method `__call__`, which triggers the encoding generation.
 
 .. image:: encoder.png
 
 Currently available encoders -
 
-* :class:`PileupEncoder<variantworks.sample_encoder.PileupEncoder>` - Encoding read pileups as multi dimensional images.
+* :class:`PileupEncoder<variantworks.encoders.PileupEncoder>` - Encoding read pileups as multi dimensional images.
   **Only SNP encoding is available right now.***
 
 I/O

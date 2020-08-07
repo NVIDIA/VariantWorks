@@ -18,7 +18,7 @@ import os
 import torch
 
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import ZygosityLabelEncoder
+from variantworks.encoders import ZygosityLabelEncoder
 
 from test_utils import get_data_folder
 

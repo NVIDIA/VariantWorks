@@ -26,7 +26,7 @@ import torch
 from variantworks.dataloader import ReadPileupDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
-from variantworks.sample_encoder import ZygosityLabelDecoder
+from variantworks.encoders import ZygosityLabelDecoder
 
 from test_utils import get_data_folder
 

@@ -25,7 +25,7 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType
 import torch
 
-from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 
 

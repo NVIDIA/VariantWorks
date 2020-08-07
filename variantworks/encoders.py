@@ -29,7 +29,7 @@ from variantworks.types import Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
 
 
-class SampleEncoder:
+class Encoder:
     """An abstract class defining the interface to an encoder implementation.
 
     Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
@@ -45,7 +45,7 @@ class SampleEncoder:
         raise NotImplementedError
 
 
-class BaseEnumEncoder(SampleEncoder):
+class BaseEnumEncoder(Encoder):
     """An Enum encoder that returns an output encoding for Nucleotide base.
 
     Converts Nucleotide base char type to a class number.
@@ -77,7 +77,7 @@ class BaseEnumEncoder(SampleEncoder):
         return self._dict[nucleotide]
 
 
-class BaseUnicodeEncoder(SampleEncoder):
+class BaseUnicodeEncoder(Encoder):
     """A Unicode code encoder that returns an output encoding for Nucleotide base.
 
     Converts Nucleotide base char type to a Unicode numeric value.
@@ -98,7 +98,7 @@ class BaseUnicodeEncoder(SampleEncoder):
         return ord(nucleotide)
 
 
-class UnicodeRGBEncoder(SampleEncoder):
+class UnicodeRGBEncoder(Encoder):
     """A encoder that returns an RGB color encoding for Nucleotide base Unicode value.
 
     Converts Nucleotide base unicode value type to a RGB color list.
@@ -140,7 +140,7 @@ class UnicodeRGBEncoder(SampleEncoder):
         return chr(k)
 
 
-class PileupEncoder(SampleEncoder):
+class PileupEncoder(Encoder):
     """A pileup encoder for SNPs.
 
     For a given SNP position and nucleotide context, the encoder generates a pileup
@@ -189,7 +189,7 @@ class PileupEncoder(SampleEncoder):
             are available, the entries are all masked to 0. [50]
             layers : A list defining the layers to add to the encoding. The ordering of channels in the
             encoding follows the ordering of layers in the list. [Layer.READ]
-            base_encoder : A class which inherits from `SampleEncoder` defining conversion of nucleotide string chars to
+            base_encoder : A class which inherits from `Encoder` defining conversion of nucleotide string chars to
             numeric representation in its __call__ method. [BaseEnumEncoder]
             print_encoding : Print ASCII representation of each encoding that's converted to a tensor. [False]
 
@@ -432,7 +432,7 @@ class PileupEncoder(SampleEncoder):
         return figure_title, figure
 
 
-class ZygosityLabelEncoder(SampleEncoder):
+class ZygosityLabelEncoder(Encoder):
     """A label encoder that returns an output label encoding for zygosity only.
 
     Converts zygosity type to a class number.
@@ -460,7 +460,7 @@ class ZygosityLabelEncoder(SampleEncoder):
         return torch.tensor(self._dict[var_zyg])
 
 
-class ZygosityLabelDecoder(SampleEncoder):
+class ZygosityLabelDecoder(Encoder):
     """A decoder to convert a class to a zygosity enum."""
 
     def __init__(self):

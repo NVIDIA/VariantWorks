@@ -23,7 +23,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
+from variantworks.encoders import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
 
 from test_utils import get_data_folder
 

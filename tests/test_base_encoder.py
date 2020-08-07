@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from variantworks.sample_encoder import BaseEnumEncoder
+from variantworks.encoders import BaseEnumEncoder
 
 
 def test_base_encoder():

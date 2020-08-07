@@ -1,7 +1,7 @@
 Encoders
 --------
 
-.. automodule:: variantworks.sample_encoder
+.. automodule:: variantworks.encoders
    :members:
    :undoc-members:
    :show-inheritance:
