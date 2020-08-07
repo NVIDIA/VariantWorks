@@ -23,7 +23,7 @@ import pysam
 import torch
 
 from variantworks.base_encoder import base_enum_encoder
-from variantworks.types import Variant, VariantType, VariantZygosity
+from variantworks.types import FileRegion, Variant, VariantType, VariantZygosity
 
 
 class SampleEncoder:
@@ -121,9 +121,10 @@ class SummaryEncoder(SampleEncoder):
             region : Region dataclass specifying region within a pileup to generate
                      an encoding for.
         """
+        assert(isinstance(region, FileRegion))
         start_pos = region.start_pos
         end_pos = region.end_pos
-        pileup_file = region.pileup
+        pileup_file = region.file_path
 
         # Load pileup file into a dataframe
         pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values

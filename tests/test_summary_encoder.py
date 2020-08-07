@@ -16,20 +16,23 @@
 
 import os
 import numpy as np
+import pytest
 
+from variantworks.types import FileRegion
 from variantworks.sample_encoder import SummaryEncoder
 from test_utils import get_data_folder
 
 
-class TestRegion(object):
-    def __init__(self):
-        self.start_pos = 0
-        self.end_pos = 14460
-        self.pileup = os.path.join(get_data_folder(), "subreads_and_truth.pileup")
+@pytest.fixture
+def pileup_region():
+    region = FileRegion(start_pos=0,
+                        end_pos=14460,
+                        file_path=os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
+    return region
 
 
-def test_counts_correctness():
-    region = TestRegion()
+def test_counts_correctness(pileup_region):
+    region = pileup_region
     encoder = SummaryEncoder(exclude_no_coverage_positions=False, normalize_counts=True)
     pileup_counts, positions = encoder(region)
     correct_counts = np.load(os.path.join(get_data_folder(), "sample_counts.npy"))
@@ -37,8 +40,8 @@ def test_counts_correctness():
     assert(np.allclose(pileup_counts, correct_counts))
 
 
-def test_positions_correctness():
-    region = TestRegion()
+def test_positions_correctness(pileup_region):
+    region = pileup_region
     encoder = SummaryEncoder(exclude_no_coverage_positions=False)
     pileup_counts, positions = encoder(region)
     correct_positions = np.load(os.path.join(get_data_folder(), "sample_positions.npy"))
