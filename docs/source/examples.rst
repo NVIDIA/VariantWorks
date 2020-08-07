@@ -30,7 +30,7 @@ Training
     from variantworks.dataloader import ReadPileupDataLoader
     from variantworks.io.vcfio import VCFReader
     from variantworks.networks import AlexNet
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
@@ -116,7 +116,7 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     from variantworks.dataloader import ReadPileupDataLoader
     from variantworks.io.vcfio import VCFReader
     from variantworks.networks import AlexNet
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelDecoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelDecoder
     from variantworks.result_writer import VCFResultWriter
 
     # Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick
@@ -185,7 +185,7 @@ or inference components.
 
     import h5py
     import numpy as np
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
     from variantworks.io.vcfio import VCFReader
 
     # Get BAM and VCF files for the raw sample data.

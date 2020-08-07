@@ -24,7 +24,7 @@ import multiprocessing as mp
 import h5py
 import numpy as np
 
-from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
 from variantworks.io.vcfio import VCFReader
 
 

@@ -15,12 +15,15 @@
 #
 
 import os
-import pytest
-import torch
 
-from variantworks.base_encoder import base_enum_encoder
+import pytest
+import shutil
+import tempfile
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import PileupEncoder
+from variantworks.encoders import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
 
 from test_utils import get_data_folder
 
@@ -81,7 +84,7 @@ def test_snp_ref_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.ref])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.ref))
 
 
 def test_snp_allele_encoding(snp_variant):
@@ -94,7 +97,7 @@ def test_snp_allele_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.allele))
 
 
 def test_snp_encoder_base_quality(snp_variant):
@@ -179,3 +182,21 @@ def test_pileup_unknown_layer():
     with pytest.raises(AttributeError):
         layers = [PileupEncoder.Layer.BLAH]
         PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+
+
+def test_pileup_visualization(snp_variant):
+    output_folder = tempfile.mkdtemp(prefix='vw_test_output_')
+    encoder = PileupEncoder(
+        layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.ALLELE, PileupEncoder.Layer.REFERENCE,
+                PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
+        base_encoder=BaseUnicodeEncoder()
+    )
+    fig_title, fig = encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
+    assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 1
+
+    writer = SummaryWriter(log_dir=output_folder)
+    writer.add_figure(fig_title, fig)
+    writer.flush()
+    writer.close()
+
+    shutil.rmtree(output_folder)
