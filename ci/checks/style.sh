@@ -47,5 +47,5 @@ logger "Run Python formatting check..."
 python -m pip install -r ./python-style-requirements.txt
 source ./style_check
 
-logger "Run C++ documentation generation..."
+logger "Run documentation generation..."
 ./docs/generate-html-docs.sh
