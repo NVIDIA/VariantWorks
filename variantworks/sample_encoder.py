@@ -217,6 +217,7 @@ class PileupEncoder(SampleEncoder):
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
     the type of information that is selected to be embedded.
+
     The variant location of interest is kept centered in the pileup, and the layers input in
     the constructor define the channels created in the encoding. For more details on available
     channels, please check the documentation for the Layers enum.
@@ -229,14 +230,18 @@ class PileupEncoder(SampleEncoder):
             READ : Encode each aligned read as a row of the pileup. The bases in the
             read are encoded using a base_encoder dict passed into the class. The reads
             in the row are positioned according to the pileup alignment.
+
             BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base
             qualities of each read are added to a new row, following the same positioning as for READS. The base
             qualities are normalized to [0,1] (using max value of 93 per SAM format).
             Missing base quality is set to 0.
+
             MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping
             quality values are noramlize to [0,1] (assuming max value of 50).
             Missing mapping quality is set to 0.
+
             REFERENCE : Only the reference allele location is encoded in each row.
+
             ALLELE : Only the alt allele location is encoded in each row.
         """
 
