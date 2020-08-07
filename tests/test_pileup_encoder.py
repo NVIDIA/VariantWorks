@@ -196,5 +196,7 @@ def test_pileup_visualization(snp_variant):
 
     writer = SummaryWriter(log_dir=output_folder)
     writer.add_figure(fig_title, fig)
+    writer.flush()
+    writer.close()
 
     shutil.rmtree(output_folder)
