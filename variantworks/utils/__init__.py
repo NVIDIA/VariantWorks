@@ -14,11 +14,4 @@
 # limitations under the License.
 #
 
-from variantworks.encoders import BaseEnumEncoder
-
-
-def test_base_encoder():
-    seq = "ATCGNTCGA"
-    encoded_seq = [str(BaseEnumEncoder()(n)) for n in seq]
-    encoded_seq = "".join(encoded_seq)
-    assert encoded_seq == "123452341"
+"""Init file for utils module."""

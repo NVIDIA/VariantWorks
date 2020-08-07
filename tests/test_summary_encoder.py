@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from variantworks.types import FileRegion
-from variantworks.sample_encoder import SummaryEncoder
+from variantworks.encoders import SummaryEncoder
 from test_utils import get_data_folder
 
 

@@ -16,17 +16,21 @@
 """Classes and functions for encoding samples."""
 
 import abc
+from datetime import datetime
 from enum import Enum
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
+import os
 import pandas as pd
 import pysam
 import torch
 
-from variantworks.base_encoder import base_enum_encoder
 from variantworks.types import FileRegion, Variant, VariantZygosity
+from variantworks.utils.visualization import rgb_to_hex
 
 
-class SampleEncoder:
+class Encoder:
     """An abstract class defining the interface to an encoder implementation.
 
     Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.
@@ -42,7 +46,7 @@ class SampleEncoder:
         raise NotImplementedError
 
 
-class SummaryEncoder(SampleEncoder):
+class SummaryEncoder(Encoder):
     """A summary count encoder for pileups.
 
     For a given pileup of reads (e.g. output from samtools mpileup), the encoder generates
@@ -213,8 +217,103 @@ class SummaryEncoder(SampleEncoder):
             return pileup_counts
 
 
-class PileupEncoder(SampleEncoder):
-    """A read pileup encoder for BAMs.
+class BaseEnumEncoder(Encoder):
+    """An Enum encoder that returns an output encoding for Nucleotide base.
+
+    Converts Nucleotide base char type to a class number.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._dict = {
+            'A': 1,
+            'a': 1,
+            'T': 2,
+            't': 2,
+            'C': 3,
+            'c': 3,
+            'G': 4,
+            'g': 4,
+            'N': 5,
+            'n': 5,
+        }
+
+    def __call__(self, nucleotide):
+        """Encode Nucleotide base to Enum.
+
+        Returns:
+           Nucleotide base encoded as number.
+        """
+        assert(nucleotide in self._dict)
+        return self._dict[nucleotide]
+
+
+class BaseUnicodeEncoder(Encoder):
+    """A Unicode code encoder that returns an output encoding for Nucleotide base.
+
+    Converts Nucleotide base char type to a Unicode numeric value.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._nucleotides = ['A', 'a', 'T', 't', 'C', 'c', 'G', 'g', 'N', 'n']
+
+    def __call__(self, nucleotide):
+        """Encode Nucleotide base to Unicode code.
+
+        Returns:
+           Nucleotide base encoded as Unicode code.
+        """
+        assert(nucleotide in self._nucleotides)
+        return ord(nucleotide)
+
+
+class UnicodeRGBEncoder(Encoder):
+    """A encoder that returns an RGB color encoding for Nucleotide base Unicode value.
+
+    Converts Nucleotide base unicode value type to a RGB color list.
+    """
+
+    def __init__(self):
+        """Construct a class instance."""
+        super().__init__()
+        self._dict = {
+            ord('\0'):  [255, 255, 255],    # white (null char for cells initiated to 'zero' )
+            ord('A'):   [0, 128, 0],        # green
+            ord('a'):   [0, 128, 0],        # green
+            ord('T'):   [255, 0, 0],        # red
+            ord('t'):   [255, 0, 0],        # red
+            ord('C'):   [0, 0, 255],        # blue
+            ord('c'):   [0, 0, 255],        # blue
+            ord('G'):   [255, 255, 0],      # yellow
+            ord('g'):   [255, 255, 0],      # yellow
+            ord('N'):   [0, 0, 0],          # black
+            ord('n'):   [0, 0, 0]           # black
+        }
+
+    def __call__(self, nucleotide_unicode):
+        """Encode Nucleotide base to Unicode code.
+
+        Returns:
+           Nucleotide base encoded as Unicode code.
+        """
+        assert(nucleotide_unicode in self._dict)
+        return self._dict[nucleotide_unicode]
+
+    def get_keys(self):
+        """Get nucleotide bases unicode keys."""
+        return set(x for x in self._dict.keys() if chr(x) != '\0' and chr(x).upper() == chr(x))
+
+    @staticmethod
+    def get_key_legend_label(k):
+        """Get keys corresponding name for legend ."""
+        return chr(k)
+
+
+class PileupEncoder(Encoder):
+    """A pileup encoder for BAMs.
 
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
@@ -262,8 +361,8 @@ class PileupEncoder(SampleEncoder):
             are available, the entries are all masked to 0. [50]
             layers : A list defining the layers to add to the encoding. The ordering of channels in the
             encoding follows the ordering of layers in the list. [Layer.READ]
-            base_encoder : A dict defining conversion of nucleotide string chars to numeric representation.
-            [base_encoder.base_enum_encoder]
+            base_encoder : A class which inherits from `Encoder` defining conversion of nucleotide string chars to
+            numeric representation in its __call__ method. [BaseEnumEncoder]
             print_encoding : Print ASCII representation of each encoding that's converted to a tensor. [False]
 
         Returns:
@@ -274,7 +373,7 @@ class PileupEncoder(SampleEncoder):
         self.max_reads = max_reads
         self.layers = layers
         self.bams = dict()
-        self.base_encoder = base_encoder if base_encoder is not None else base_enum_encoder
+        self.base_encoder = base_encoder if base_encoder is not None else BaseEnumEncoder()
         self.layer_tensors = []
         self.layer_dict = {}
         for layer in layers:
@@ -315,7 +414,7 @@ class PileupEncoder(SampleEncoder):
                                       (2 * self.window_size + 1 - len(seq) - pileup_pos_range[0])))
             for seq_pos, pileup_pos in enumerate(range(pileup_pos_range[0], pileup_pos_range[1])):
                 # Encode base characters to enum
-                tensor[row, pileup_pos] = self.base_encoder[seq[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(seq[seq_pos])
         elif layer == self.Layer.BASE_QUALITY:
             # From SAM format docs.
             MAX_BASE_QUALITY = 93.0
@@ -349,7 +448,7 @@ class PileupEncoder(SampleEncoder):
             # Only encode the reference at the variant position, rest all 0
             for seq_pos, pileup_pos in enumerate(
                     range(self.window_size, min(self.window_size + len(variant.ref), 2 * self.window_size - 1))):
-                tensor[row, pileup_pos] = self.base_encoder[variant.ref[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(variant.ref[seq_pos])
         elif layer == self.Layer.ALLELE:
             if self.print_encoding:
                 print("{}{}{}".format("-" * self.window_size, variant.allele, "-" *
@@ -357,7 +456,7 @@ class PileupEncoder(SampleEncoder):
             # Only encode the allele at the variant position, rest all 0
             for seq_pos, pileup_pos in enumerate(
                     range(self.window_size, min(self.window_size + len(variant.allele), 2 * self.window_size - 1))):
-                tensor[row, pileup_pos] = self.base_encoder[variant.allele[seq_pos]]
+                tensor[row, pileup_pos] = self.base_encoder(variant.allele[seq_pos])
 
     def __call__(self, variant):
         """Return a torch Tensor pileup queried from a BAM file.
@@ -435,8 +534,81 @@ class PileupEncoder(SampleEncoder):
         [tensor.zero_() for tensor in self.layer_tensors]
         return encoding
 
+    def visualize(self, variant, save_to_path=None, max_subplots_per_line=3, visual_decoder=UnicodeRGBEncoder()):
+        """Visualize variant encoded pileup.
 
-class ZygosityLabelEncoder(SampleEncoder):
+        Outputs variant pileup visualization to a figure.
+        Execute `tensorboard --logdir='<save_to_path>' --port=6006` in the background to view the images over
+        TensorBoard.
+
+        Args:
+            variant: Variant struct holding information about variant locus.
+            save_to_path: Path to figure output direcoty. [None]
+            max_subplots_per_line: maximal number of plots per row in the figure. [3]
+            visual_decoder: a decoder for a visualized representation of PileupEncoder.base_encoder
+        Returns:
+            figure_title: figure title
+            figure: matplotlib.pyplot.figure object
+        """
+
+        def _get_subplots_axes():
+            cols = len(self.layers) if len(self.layers) < max_subplots_per_line else max_subplots_per_line
+            # Calculate the ceil() value of len(self.layers) divided by max_subplots_per_line
+            rows = (len(self.layers) + (max_subplots_per_line - 1)) // max_subplots_per_line
+            return rows, cols
+
+        def _create_subplot(idx, nrow, ncol, layer, sample_dim):
+            plt.subplot(nrow, ncol, idx)
+            plt_name = 'Layer: {}'.format(layer.name)
+            plt.title(plt_name,
+                      loc='left',
+                      fontdict={'fontsize': 7})
+            plt.ylabel('Read number')
+            plt.xlabel("Read window size")
+            if layer in [PileupEncoder.Layer.READ,
+                         PileupEncoder.Layer.REFERENCE,
+                         PileupEncoder.Layer.ALLELE]:
+                data = sample_dim.numpy().astype(np.uint8)
+                rgb_img = np.zeros((sample_dim.shape[0], sample_dim.shape[1], 3))
+                for i in range(data.shape[0]):
+                    for j in range(data.shape[1]):
+                        rgb_img[i, j, :] = visual_decoder(data[i, j])
+                plt.imshow(rgb_img)
+                plt.legend(
+                    handles=[
+                        mpatches.Patch(
+                            facecolor=rgb_to_hex(visual_decoder(nucleotide_unicode)),
+                            edgecolor='black',
+                            label=visual_decoder.get_key_legend_label(nucleotide_unicode)
+                        )
+                        for nucleotide_unicode in visual_decoder.get_keys()
+                    ],
+                    bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, ncol=1
+                )
+            if layer in [PileupEncoder.Layer.MAPPING_QUALITY, PileupEncoder.Layer.BASE_QUALITY]:
+                plt.imshow(sample_dim.numpy(), cmap='Purples')
+                plt.colorbar(orientation='vertical', pad=0.02)
+
+        encoded_sample = self.__call__(variant)  # Build variant pileup encoding
+        figure = plt.figure(figsize=(20, 10))
+        figure_title = 'chrom-{}_pos-{}'.format(variant.chrom, variant.pos) + \
+                       ('_id-{}'.format(variant.id) if variant.id != '.' else '')
+        figure.suptitle(figure_title, fontweight="bold", y=1)
+        # Determine the number of rows and cols in multiple subplots figure
+        number_rows, number_column = _get_subplots_axes()
+        for index, sample_layer, encoded_sample_layer in zip(range(1, len(self.layers)+1), self.layers, encoded_sample):
+            _create_subplot(index, number_rows, number_column, sample_layer, encoded_sample_layer)
+        if save_to_path is not None:
+            try:
+                plt.savefig(os.path.join(
+                    save_to_path, figure_title + '_{}.png'.format(datetime.today().strftime('%Y-%m-%d'))
+                ))
+            except FileNotFoundError as e:
+                raise e
+        return figure_title, figure
+
+
+class ZygosityLabelEncoder(Encoder):
     """A label encoder that returns an output label encoding for zygosity only.
 
     Converts zygosity type to a class number.
@@ -468,7 +640,7 @@ class ZygosityLabelEncoder(SampleEncoder):
         return torch.tensor(self._dict[var_zyg])
 
 
-class ZygosityLabelDecoder(SampleEncoder):
+class ZygosityLabelDecoder(Encoder):
     """A decoder to convert a class to a zygosity enum."""
 
     def __init__(self):

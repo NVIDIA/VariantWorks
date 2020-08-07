@@ -13,17 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Classes and function to encode bases in a read."""
 
-base_enum_encoder = {
-    'A': 1,
-    'a': 1,
-    'T': 2,
-    't': 2,
-    'C': 3,
-    'c': 3,
-    'G': 4,
-    'g': 4,
-    'N': 5,
-    'n': 5,
-}
+"""Visualization Utilities."""
+
+
+def rgb_to_hex(c):
+    """Concert rgb tuple/list into Hex."""
+    return "#{0:02x}{1:02x}{2:02x}".format(*c)
