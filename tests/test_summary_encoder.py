@@ -35,18 +35,19 @@ def test_counts_correctness():
 
 
 @pytest.mark.parametrize(
-    "start_pos,end_pos,pileup_file",
+    "start_pos,end_pos,shape,pileup_file",
     [
-        (0, 1, os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
-        (1, 4, os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
-        (14459, 14460, os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
+        (0, 1, (1, 10), os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
+        (1, 4, (3, 10), os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
+        (14459, 14460, (1, 10), os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
+        (5, 6, (2, 10), os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
     ],
 )
-def test_encoder_region_bounds(start_pos, end_pos, pileup_file):
+def test_encoder_region_bounds(start_pos, end_pos, shape, pileup_file):
     encoder = SummaryEncoder(exclude_no_coverage_positions=False, normalize_counts=True)
     # Loop through multiple ranges from checked in test file
     region = FileRegion(start_pos=start_pos,
                         end_pos=end_pos,
                         file_path=pileup_file)
     pileup_counts = encoder(region)
-    assert(pileup_counts.shape == ((end_pos - start_pos), 10)), "Pileup shape inconsistent with input."
+    assert(pileup_counts.shape == shape), "Pileup shape inconsistent with input."

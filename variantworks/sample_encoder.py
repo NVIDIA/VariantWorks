@@ -50,6 +50,9 @@ class SummaryEncoder(SampleEncoder):
     for each pileup column on both the forward and reverse strands. Insertions are handled by encoding
     new pileup columns. Therefore, the output of the encoder is a tensor of shape (num_pileup_col, 10).
     The output of this encoder can be used to train a sequence aware model such such as an RNN.
+
+    This encoding is inspired by a featurizer used in Medaka
+    (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)
     """
 
     def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True):
@@ -137,7 +140,7 @@ class SummaryEncoder(SampleEncoder):
         positions = []
         positions_insertions = []
 
-        # Calculate major and minor positions
+        # Calculate ref and insert positions
         for i in range(start_pos, end_pos):
             if self._exclude_no_coverage_positions and truth_coverage[i] == 0:
                 continue
@@ -150,24 +153,24 @@ class SummaryEncoder(SampleEncoder):
             # Find length of maximum insertion
             longest_insertion = len(max(insertions, key=len)) if insertions else 0
 
-            # Keep track of major and minor positions in the pileup and the insertions
+            # Keep track of ref and insert positions in the pileup and the insertions
             # in the pileup.
-            major_minor_pos = []  # Major position for ref base pos in pileup, minor for additional inserted bases
-            major_minor_pos.append((i, 0))
+            ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
+            ref_insert_pos.append((i, 0))
             insertions_store = []
             insertions_store.append([])
             for j in range(longest_insertion):
-                major_minor_pos.append((i, j+1))
+                ref_insert_pos.append((i, j+1))
                 insertions_store.append(insertions)
-            positions += major_minor_pos
+            positions += ref_insert_pos
             positions_insertions += (insertions_store)
 
         # Using positions, calculate pileup counts
         pileup_counts = torch.zeros((len(positions), 10))
         for i in range(len(positions)):
-            major_position = positions[i][0]
-            minor_position = positions[i][1]
-            base_pileup = subreads[major_position].strip("^]").strip("$")
+            ref_position = positions[i][0]
+            insert_position = positions[i][1]
+            base_pileup = subreads[ref_position].strip("^]").strip("$")
             insertions, next_to_del = self._find_insertions(base_pileup)
             insertions_to_keep = []
 
@@ -180,33 +183,32 @@ class SummaryEncoder(SampleEncoder):
             for insertion in insertions:
                 base_pileup = base_pileup.replace("+" + str(len(insertion)) + insertion, "")
 
-            if (minor_position == 0):  # No insertions for this position
+            if (insert_position == 0):  # No insertions for this position
                 for j in range(len(self.symbols)):
                     pileup_counts[i, j] = base_pileup.count(self.symbols[j])
-            elif (minor_position > 0):
+            elif (insert_position > 0):
                 # Remove all insertions which are smaller than minor position being considered
                 # so we only count inserted bases at positions longer than the minor position
-                insertions_minor = [x for x in insertions_to_keep if len(x) >= minor_position]
+                insertions_minor = [x for x in insertions_to_keep if len(x) >= insert_position]
                 for j in range(len(insertions_minor)):
-                    inserted_base = insertions_minor[j][minor_position-1]
+                    inserted_base = insertions_minor[j][insert_position-1]
                     pileup_counts[i, self.symbols.index(inserted_base)] += 1
 
-        positions = np.array(positions, dtype=[('major', '<i8'), ('minor', '<i8')])
-
         if self._normalize_counts:
-            # Fetch all tensor positions wherebases were inserted
-            minor_inds = np.where(positions['minor'] > 0)
-            # Find corresponding reference base positions in tensor
-            major_pos_at_minor_inds = positions['major'][minor_inds]
-            # Find the index of major positions for the reference base positions
-            major_ind_at_minor_inds = np.searchsorted(positions['major'], major_pos_at_minor_inds, side='left')
             # Calculate depth across all pileup columns
             depth = torch.sum(pileup_counts, axis=1)
-            # Replace the depth of minor columns with the depths of major columns for those minor columns
-            depth[minor_inds] = depth[major_ind_at_minor_inds]
+            # Update depths of insert columns with the corresponding ref columns
+            prev_ref_pos = None
+            cur_ref_depth = 0
+            for idx in range(len(positions)):
+                if positions[idx][0] != prev_ref_pos:
+                    prev_ref_pos = positions[idx][0]
+                    cur_ref_depth = depth[idx]
+                else:
+                    depth[idx] = cur_ref_depth
             # Normalize each column
-            feature_array = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
-            return feature_array
+            pileup_counts = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
+            return pileup_counts
         else:
             return pileup_counts
 
