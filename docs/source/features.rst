@@ -27,6 +27,7 @@ Currently available encoders -
 
 * :class:`PileupEncoder<variantworks.encoders.PileupEncoder>` - Encoding read pileups as multi dimensional images.
   **Only SNP encoding is available right now.***
+* :class:`BaseEnumEncoder<variantworks.encoders.BaseEnumEncoder>` - An Enum encoder which converts nucleotide base char type to a class number
 
 I/O
 ---
