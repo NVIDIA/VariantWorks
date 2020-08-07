@@ -25,7 +25,7 @@ from functools import partial
 
 from variantworks.io.baseio import BaseReader
 from variantworks.types import VariantZygosity, VariantType, Variant
-from variantworks.utils import extend_exception
+from variantworks.utils.exceptions import extend_exception
 
 
 class VCFReader(BaseReader):
