@@ -48,4 +48,5 @@ python -m pip install -r ./python-style-requirements.txt
 source ./style_check
 
 logger "Run documentation generation..."
+python -m pip install -r ./requirements.txt  # Needed for sphinx autodoc
 ./docs/generate-html-docs.sh
