@@ -92,6 +92,8 @@ class VCFReader(BaseReader):
         self._format_vcf_keys = format_keys
         self._format_vcf_key_counts = dict()
 
+        self._header_number = {}
+
         # Parse the VCF
         self._parallel_parse_vcf()
 
@@ -261,29 +263,6 @@ class VCFReader(BaseReader):
         elif header_number == ".":
             return 1
 
-    def _get_header_type_lambda(self, header_type):
-        """Determine data type of header values.
-
-        Based on data type mentioned in VCF header, generate lambda
-        to convert str to relevant type.
-
-        Args:
-            header_type : VCF header type
-
-        Returns:
-            Lambda function for converting string to VCF type
-        """
-        if header_type == "String":
-            return lambda x: str(x) if x else None
-        elif header_type == "Integer":
-            return lambda x: int(x) if x else None
-        elif header_type == "Float":
-            return lambda x: float(x) if x else None
-        elif header_type == "Flag":
-            return lambda x: True if x else False
-        else:
-            extend_exception(RuntimeError, "Unknown VCF header type:", header_type)
-
     def _create_df(self, vcf, variant_list, num_variants):
         """Create dataframe from list of cyvcf2.Variant objects.
 
@@ -332,8 +311,7 @@ class VCFReader(BaseReader):
                 # right variant row.
                 for info_col in self._info_vcf_keys:
                     # Get header type
-                    header_number = vcf.get_header_type(info_col)['Number']
-                    header_python_type = self._get_header_type_lambda(vcf.get_header_type(info_col)['Type'])
+                    header_number = self._header_number[info_col]
 
                     if variant.INFO.get(info_col) is not None:
                         val = variant.INFO[info_col]
@@ -341,22 +319,22 @@ class VCFReader(BaseReader):
                         if not isinstance(val, tuple):
                             val = tuple((val,))
                     else:
-                        val = [None] * self._get_normalized_count(header_number, len(alts), len(samples))
+                        val = [float("NaN")] * self._get_normalized_count(header_number, len(alts), len(samples))
 
                     df_key = info_col
 
                     if header_number == "A":
                         df_dict[df_key].append(val[alt_idx])
                     elif header_number == "R":
-                        df_dict[df_key + "_REF"].append(header_python_type(val[0]))
-                        df_dict[df_key + "_ALT"].append(header_python_type(val[alt_idx + 1]))
+                        df_dict[df_key + "_REF"].append(val[0])
+                        df_dict[df_key + "_ALT"].append(val[alt_idx + 1])
                     elif header_number.isdigit():
                         header_number = int(header_number)
                         if header_number <= 1:
-                            df_dict[df_key].append(header_python_type(val[0]))
+                            df_dict[df_key].append(val[0])
                         else:
                             for i in range(int(header_number)):
-                                df_dict[df_key + "_" + str(i)].append(header_python_type(val[i]))
+                                df_dict[df_key + "_" + str(i)].append(val[i])
                     elif header_number == ".":
                         df_dict[df_key].append(",".join([str(v) for v in val]))
 
@@ -397,8 +375,7 @@ class VCFReader(BaseReader):
                             df_dict["{}_GT".format(sample_name)].append("{}/{}".format(gt[0], gt[1]))
                         else:
                             # Get header type
-                            header_number = vcf.get_header_type(format_col)['Number']
-                            header_python_type = self._get_header_type_lambda(vcf.get_header_type(format_col)['Type'])
+                            header_number = self._header_number[format_col]
 
                             val = variant.format(format_col)
                             if val is not None:
@@ -409,22 +386,23 @@ class VCFReader(BaseReader):
                             df_key = sample_name + "_" + format_col
 
                             if header_number == "A":
-                                df_dict[df_key].append(header_python_type(val[alt_idx]))
+                                df_dict[df_key].append(val[alt_idx])
                             elif header_number == "R":
-                                df_dict[df_key + "_REF"].append(header_python_type(val[0]))
-                                df_dict[df_key + "_ALT"].append(header_python_type(val[alt_idx + 1]))
+                                df_dict[df_key + "_REF"].append(val[0])
+                                df_dict[df_key + "_ALT"].append(val[alt_idx + 1])
                             elif header_number.isdigit():
                                 header_number = int(header_number)
                                 if header_number <= 1:
-                                    df_dict[df_key].append(header_python_type(val[0]))
+                                    df_dict[df_key].append(val[0])
                                 else:
                                     for i in range(int(header_number)):
-                                        df_dict[df_key + "_" + str(i)].append(header_python_type(val[i]))
+                                        df_dict[df_key + "_" + str(i)].append(val[i])
                             elif header_number == ".":
                                 df_dict[df_key].append(",".join([str(v) for v in val]))
 
         # Convert local dictionary of k/v to DataFrame.
         df = pd.DataFrame.from_dict(df_dict)
+        df = df.infer_objects()
 
         # Add custom tags to DataFrame
         for col, val in self._tags.items():
@@ -445,7 +423,7 @@ class VCFReader(BaseReader):
            thread_id : Thead ID of VCF processing thread.
 
         Returns:
-            DataFrame with all variants in the range of the parser.
+           List of DataFrames for chunks assigned to thread.
         """
         df_list = []
 
@@ -476,16 +454,12 @@ class VCFReader(BaseReader):
                         df_list.append(self._create_df(vcf, variant_list, local_variant_idx))
                         variant_list = [None] * self._chunksize  # Reset list
                         local_variant_idx = 0
-                        print("Processed", global_variant_idx, "variants")
                 global_variant_idx += 1
 
             if variant_list:
                 df_list.append(self._create_df(vcf, variant_list, local_variant_idx))
 
-        if df_list:
-            return pd.concat(df_list, ignore_index=True)
-        else:
-            return pd.DataFrame()
+        return df_list
 
     def _parallel_parse_vcf(self):
         """Parse VCF file in multi threaded fashion.
@@ -509,6 +483,7 @@ class VCFReader(BaseReader):
         for k in self._info_vcf_keys:
             header_number = vcf.get_header_type(k)['Number']
             self._info_vcf_key_counts[k] = self._get_normalized_count(header_number, 1, len(vcf.samples))
+            self._header_number[k] = header_number
 
         if "*" in self._filter_vcf_keys:
             self._filter_vcf_keys = []
@@ -533,6 +508,7 @@ class VCFReader(BaseReader):
         for k in self._format_vcf_keys:
             header_number = vcf.get_header_type(k)['Number']
             self._format_vcf_key_counts[k] = self._get_normalized_count(header_number, 1, len(vcf.samples))
+            self._header_number[k] = header_number
 
         # Store name of samples in VCF.
         for sample in vcf.samples:
@@ -540,10 +516,12 @@ class VCFReader(BaseReader):
 
         # Create a pool of threads and distribute parsing to multiple threads.
         pool = mp.Pool(self._num_threads)
-        df_list = []
+        df_lists = []
         func = partial(self._parse_vcf_cyvcf)
         for df in pool.imap(func, range(self._num_threads)):
-            df_list.append(df)
+            df_lists.append(df)
+
+        df_list = [item for sublist in df_lists for item in sublist]
 
         # Generate final DataFrame from intermediate DataFrames computed by
         # individual threads.
