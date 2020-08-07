@@ -20,6 +20,8 @@ set -e
 
 # Logger function for build status output
 START_TIME=$(date +%s)
+
+cd "${WORKSPACE}"
 . ci/utilities/logger.sh
 
 ################################################################################
@@ -30,10 +32,8 @@ PATH=/conda/bin:$PATH
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
-
-cd "${WORKSPACE}"
-
-source ./ci/utilities/prepare_env.sh "${WORKSPACE}"
+export CONDA_ENV_NAME="gdf"
+source ./ci/utilities/prepare_env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
 
 ################################################################################
 # SDK style check
@@ -47,5 +47,6 @@ logger "Run Python formatting check..."
 python -m pip install -r ./python-style-requirements.txt
 source ./style_check
 
-logger "Run C++ documentation generation..."
+logger "Run documentation generation..."
+python -m pip install -r ./requirements.txt  # Needed for sphinx autodoc
 ./docs/generate-html-docs.sh

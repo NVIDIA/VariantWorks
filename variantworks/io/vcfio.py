@@ -52,17 +52,16 @@ class VCFReader(BaseReader):
 
         Args:
             vcf : Path to VCF file.
-            bams : List of BAMs corresponding to the VCF. BAM ordering should match sample
-                   ordering in VCF.
+            bams : List of BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.
             is_fp : Is the VCF for false positive variants.
             require_genotype : If all samples need genotype called.
-            tags : A dictionary with custom tags for VCF dataframe.
-                   Format = {"tag1" : 1, "tag2" : False}. [{} by default]
+            tags : A dictionary with custom tags for VCF dataframe.\
+                Format = {"tag1" : 1, "tag2" : False}. [{} by default]
             info_keys : List of INFO columns to parse. For all columns, pass "*". [Empty by default].
             filter_keys : List of FILTER columns to parse. For all columns, pass "*". [Empty be default].
             format_keys : List of FORMAT columns to parse. For all columns, pass "*". [Empty by default].
-            regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi).
-                      Format = ["chr:start-end", "chr2:s-e",...]. [None by default]
+            regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi).\
+                Format = ["chr:start-end", "chr2:s-e",...]. [None by default]
             num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]
             chunksize : Number of VCF rows to parse in a single threads. [5000 by default].
             sort : Order DataFrame by chr and start position.
