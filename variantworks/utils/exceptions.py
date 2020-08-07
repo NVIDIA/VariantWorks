@@ -13,15 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Custom Exceptions."""
 
-bgzip==0.3.3
-cyvcf2==0.20.1
-h5py==2.10.0
-nemo-toolkit==0.10.1
-numpy==1.18.3
-matplotlib==3.2.2
-pandas==1.0.1
-pysam==0.15.4
-pytest==4.4.1
-pytest-depends==1.0.1
-PyVCF==0.6.8
+
+def extend_exception(e, msg):
+    """Extend an exception with new message.
+
+    Args:
+        e : Original exception
+        msg : New message to be added to exception
+    """
+    return type(e)("{}\n{}".format(str(e), msg)).with_traceback(e.__traceback__)
