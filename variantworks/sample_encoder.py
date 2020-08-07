@@ -163,7 +163,7 @@ class SummaryEncoder(SampleEncoder):
             positions_insertions += (insertions_store)
 
         # Using positions, calculate pileup counts
-        pileup_counts = np.zeros((len(positions), 10))
+        pileup_counts = torch.zeros((len(positions), 10))
         for i in range(len(positions)):
             major_position = positions[i][0]
             minor_position = positions[i][1]
@@ -201,14 +201,14 @@ class SummaryEncoder(SampleEncoder):
             # Find the index of major positions for the reference base positions
             major_ind_at_minor_inds = np.searchsorted(positions['major'], major_pos_at_minor_inds, side='left')
             # Calculate depth across all pileup columns
-            depth = np.sum(pileup_counts, axis=1)
+            depth = torch.sum(pileup_counts, axis=1)
             # Replace the depth of minor columns with the depths of major columns for those minor columns
             depth[minor_inds] = depth[major_ind_at_minor_inds]
             # Normalize each column
             feature_array = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
-            return feature_array, positions
+            return feature_array
         else:
-            return pileup_counts, positions
+            return pileup_counts
 
 
 class PileupEncoder(SampleEncoder):

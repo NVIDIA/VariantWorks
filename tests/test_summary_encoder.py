@@ -23,32 +23,30 @@ from variantworks.sample_encoder import SummaryEncoder
 from test_utils import get_data_folder
 
 
-@pytest.fixture
-def pileup_region():
+def test_counts_correctness():
     region = FileRegion(start_pos=0,
                         end_pos=14460,
                         file_path=os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
-    return region
-
-
-def test_counts_correctness(pileup_region):
-    region = pileup_region
     encoder = SummaryEncoder(exclude_no_coverage_positions=False, normalize_counts=True)
-    pileup_counts, positions = encoder(region)
+    pileup_counts = encoder(region)
     correct_counts = np.load(os.path.join(get_data_folder(), "sample_counts.npy"))
     assert(pileup_counts.shape == correct_counts.shape)
     assert(np.allclose(pileup_counts, correct_counts))
 
 
-def test_positions_correctness(pileup_region):
-    region = pileup_region
-    encoder = SummaryEncoder(exclude_no_coverage_positions=False)
-    pileup_counts, positions = encoder(region)
-    correct_positions = np.load(os.path.join(get_data_folder(), "sample_positions.npy"))
-    assert(positions.shape == correct_positions.shape)
-    all_equal = True
-    for i in range(len(positions)):
-        if (positions[i] != correct_positions[i]):
-            all_equal = False
-            break
-    assert(all_equal)
+@pytest.mark.parametrize(
+    "start_pos,end_pos,pileup_file",
+    [
+        (0, 1, os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
+        (1, 4, os.path.join(get_data_folder(), "subreads_and_truth.pileup")),
+        (14459, 14460, os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
+    ],
+)
+def test_encoder_region_bounds(start_pos, end_pos, pileup_file):
+    encoder = SummaryEncoder(exclude_no_coverage_positions=False, normalize_counts=True)
+    # Loop through multiple ranges from checked in test file
+    region = FileRegion(start_pos=start_pos,
+                        end_pos=end_pos,
+                        file_path=pileup_file)
+    pileup_counts = encoder(region)
+    assert(pileup_counts.shape == ((end_pos - start_pos), 10)), "Pileup shape inconsistent with input."
