@@ -22,10 +22,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 import os
+import pandas as pd
 import pysam
 import torch
 
-from variantworks.types import Variant, VariantZygosity
+from variantworks.types import FileRegion, Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
 
 
@@ -43,6 +44,177 @@ class Encoder:
     def __call__(self, *sample):
         """Compute the encoding of a sample."""
         raise NotImplementedError
+
+
+class SummaryEncoder(Encoder):
+    """A summary count encoder for pileups.
+
+    For a given pileup of reads (e.g. output from samtools mpileup), the encoder generates
+    tensor for each pileup column. The encoder counts the number of DNA bases (A, G, G, T, deletion)
+    for each pileup column on both the forward and reverse strands. Insertions are handled by encoding
+    new pileup columns. Therefore, the output of the encoder is a tensor of shape (num_pileup_col, 10).
+    The output of this encoder can be used to train a sequence aware model such such as an RNN.
+
+    This encoding is inspired by a featurizer used in Medaka
+    (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)
+    """
+
+    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True):
+        """Constructor for the class.
+
+        Args:
+            exclude_no_coverage_positions : Flag to determine if pileup columns with 0
+                                            coverage should be dropped.
+            normalize_counts : Flag to determine if summary counts in encoding should
+                               be normalized.
+
+        Returns:
+            Instance of class.
+        """
+        self._exclude_no_coverage_positions = exclude_no_coverage_positions
+        self._normalize_counts = normalize_counts
+
+        # Supported alphabet when building summary encoder.
+        self.symbols = ["a",
+                        "c",
+                        "g",
+                        "t",
+                        "A",
+                        "C",
+                        "G",
+                        "T",
+                        "#",
+                        "*"]
+
+    def _find_insertions(self, base_pileup):
+        """Finds all of the insertions in a given base's pileup string.
+
+        Args:
+            base_pileup: Single base's pileup string output from samtools mpileup
+
+        Returns:
+            insertions: list of all insertions in pileup string
+            next_to_del: whether insertion is next to deletion symbol (should be ignored)
+
+        """
+        insertions = []
+        idx = 0
+        next_to_del = []
+        while (idx < len(base_pileup)):
+            if (base_pileup[idx] == "+"):
+                end_of_number = False
+                start_index = idx+1
+                while not end_of_number:
+                    if (base_pileup[start_index].isdigit()):
+                        start_index += 1
+                    else:
+                        end_of_number = True
+                insertion_length = int(base_pileup[idx:start_index])
+                inserted_bases = base_pileup[idx+(start_index-idx):idx+(start_index-idx)+insertion_length]
+                insertions.append(inserted_bases)
+                if (base_pileup[idx-1] == "*" or base_pileup[idx-1] == "#"):
+                    next_to_del.append(True)
+                else:
+                    next_to_del.append(False)
+                idx += (start_index-idx) + 1 + insertion_length
+            else:
+                idx += 1
+        return insertions, next_to_del
+
+    def __call__(self, region):
+        """Generate a torch tensor with summary encoding.
+
+        Args:
+            region : Region dataclass specifying region within a pileup to generate
+                     an encoding for.
+        """
+        assert(isinstance(region, FileRegion))
+        start_pos = region.start_pos
+        end_pos = region.end_pos
+        pileup_file = region.file_path
+
+        # Load pileup file into a dataframe
+        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
+
+        if (len(pileup) < end_pos):
+            end_pos = len(pileup)
+
+        subreads = pileup[:, 4]
+        truth_coverage = pileup[:, 7].astype("int")
+        positions = []
+        positions_insertions = []
+
+        # Calculate ref and insert positions
+        for i in range(start_pos, end_pos):
+            if self._exclude_no_coverage_positions and truth_coverage[i] == 0:
+                continue
+
+            base_pileup = subreads[i].strip("^]").strip("$")
+
+            # Get all insertions in pileup
+            insertions, next_to_del = self._find_insertions(base_pileup)
+
+            # Find length of maximum insertion
+            longest_insertion = len(max(insertions, key=len)) if insertions else 0
+
+            # Keep track of ref and insert positions in the pileup and the insertions
+            # in the pileup.
+            ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
+            ref_insert_pos.append((i, 0))
+            insertions_store = []
+            insertions_store.append([])
+            for j in range(longest_insertion):
+                ref_insert_pos.append((i, j+1))
+                insertions_store.append(insertions)
+            positions += ref_insert_pos
+            positions_insertions += (insertions_store)
+
+        # Using positions, calculate pileup counts
+        pileup_counts = torch.zeros((len(positions), 10))
+        for i in range(len(positions)):
+            ref_position = positions[i][0]
+            insert_position = positions[i][1]
+            base_pileup = subreads[ref_position].strip("^]").strip("$")
+            insertions, next_to_del = self._find_insertions(base_pileup)
+            insertions_to_keep = []
+
+            # Remove all insertions which are next to delete positions in pileup
+            for k in range(len(insertions)):
+                if next_to_del[k] is False:
+                    insertions_to_keep.append(insertions[k])
+
+            # Replace all occurrences of insertions from the pileup string
+            for insertion in insertions:
+                base_pileup = base_pileup.replace("+" + str(len(insertion)) + insertion, "")
+
+            if (insert_position == 0):  # No insertions for this position
+                for j in range(len(self.symbols)):
+                    pileup_counts[i, j] = base_pileup.count(self.symbols[j])
+            elif (insert_position > 0):
+                # Remove all insertions which are smaller than minor position being considered
+                # so we only count inserted bases at positions longer than the minor position
+                insertions_minor = [x for x in insertions_to_keep if len(x) >= insert_position]
+                for j in range(len(insertions_minor)):
+                    inserted_base = insertions_minor[j][insert_position-1]
+                    pileup_counts[i, self.symbols.index(inserted_base)] += 1
+
+        if self._normalize_counts:
+            # Calculate depth across all pileup columns
+            depth = torch.sum(pileup_counts, axis=1)
+            # Update depths of insert columns with the corresponding ref columns
+            prev_ref_pos = None
+            cur_ref_depth = 0
+            for idx in range(len(positions)):
+                if positions[idx][0] != prev_ref_pos:
+                    prev_ref_pos = positions[idx][0]
+                    cur_ref_depth = depth[idx]
+                else:
+                    depth[idx] = cur_ref_depth
+            # Normalize each column
+            pileup_counts = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
+            return pileup_counts
+        else:
+            return pileup_counts
 
 
 class BaseEnumEncoder(Encoder):
@@ -141,7 +313,7 @@ class UnicodeRGBEncoder(Encoder):
 
 
 class PileupEncoder(Encoder):
-    """A pileup encoder for SNPs.
+    """A pileup encoder for BAMs.
 
     For a given SNP position and nucleotide context, the encoder generates a pileup
     tensor around the variant position. The pileup can have configurable depth based on
