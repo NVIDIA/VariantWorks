@@ -1,15 +1,11 @@
 Encoders
 --------
 
-.. automodule:: variantworks.sample_encoder
+.. automodule:: variantworks.encoders
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: variantworks.base_encoder
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Dataloaders
 -----------

@@ -30,7 +30,7 @@ Training
     from variantworks.dataloader import ReadPileupDataLoader
     from variantworks.io.vcfio import VCFReader
     from variantworks.networks import AlexNet
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
@@ -60,10 +60,10 @@ Training
     data_folder = os.path.join(repo_root_dir, "tests", "data")
     bam = os.path.join(data_folder, "small_bam.bam")
     samples = os.path.join(data_folder, "candidates.vcf.gz")
-    vcf_loader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
+    vcf_loader = VCFReader(vcf=samples, bams=[bam], is_fp=False)
 
     # Create a data loader with custom sample and label encoder.
-    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
+    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, [vcf_loader],
                                          batch_size=32, shuffle=True,
                                          sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
 
@@ -116,7 +116,7 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     from variantworks.dataloader import ReadPileupDataLoader
     from variantworks.io.vcfio import VCFReader
     from variantworks.networks import AlexNet
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelDecoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelDecoder
     from variantworks.result_writer import VCFResultWriter
 
     # Create neural factory. In this case, the checkpoint_dir has to be set for NeMo to pick
@@ -141,9 +141,8 @@ The inference pipeline works in a very similar fashion, except the final NeMo DA
     data_folder = os.path.join(repo_root_dir, "tests", "data")
     bam = os.path.join(data_folder, "small_bam.bam")
     labels = os.path.join(data_folder, "candidates.vcf.gz")
-    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFReader([vcf_bam_tuple])
-    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
+    vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
+    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, [vcf_loader], batch_size=32,
                                         shuffle=False, sample_encoder=pileup_encoder)
 
     # Create inference DAG
@@ -186,7 +185,7 @@ or inference components.
 
     import h5py
     import numpy as np
-    from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+    from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
     from variantworks.io.vcfio import VCFReader
 
     # Get BAM and VCF files for the raw sample data.
@@ -195,7 +194,7 @@ or inference components.
     samples = os.path.join(data_folder, "candidates.vcf.gz")
 
     # Generate the variant entries using VCF reader.
-    vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bam=bam, is_fp=False)])
+    vcf_reader = VCFReader([VCFReader.VcfBamPath(vcf=samples, bams=[bam], is_fp=False)])
     print("Serializing {} entries...".format(len(vcf_reader)))
 
     # Setup encoder for samples and labels.

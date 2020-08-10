@@ -173,13 +173,14 @@ supported.</p>
 <h2>Encoders<a class="headerlink" href="#encoders" title="Permalink to this headline">¶</a></h2>
 <p>Encoders are classes that generate an encoding for the neural network. The classes can be used to
 not only generate encodings, but also augment and transform them.</p>
-<p>All encoders need to inherit from the base class <a class="reference internal" href="apidocs/variantworks.html#variantworks.sample_encoder.SampleEncoder" title="variantworks.sample_encoder.SampleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SampleEncoder</span></code></a>
+<p>All encoders need to inherit from the base class <a class="reference internal" href="apidocs/variantworks.html#variantworks.encoders.Encoder" title="variantworks.encoders.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">Encoder</span></code></a>
 and implement the abstract method <cite>__call__</cite>, which triggers the encoding generation.</p>
 <img alt="_images/encoder.png" src="_images/encoder.png" />
 <p>Currently available encoders -</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.sample_encoder.PileupEncoder" title="variantworks.sample_encoder.PileupEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">PileupEncoder</span></code></a> - Encoding read pileups as multi dimensional images.
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.encoders.PileupEncoder" title="variantworks.encoders.PileupEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">PileupEncoder</span></code></a> - Encoding read pileups as multi dimensional images.
 <strong>Only SNP encoding is available right now.*</strong></p></li>
+<li><p><a class="reference internal" href="apidocs/variantworks.html#variantworks.encoders.BaseEnumEncoder" title="variantworks.encoders.BaseEnumEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEnumEncoder</span></code></a> - An Enum encoder which converts nucleotide base char type to a class number</p></li>
 </ul>
 </div>
 <div class="section" id="i-o">
