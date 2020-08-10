@@ -56,3 +56,12 @@ class Variant:
     type: VariantType
     vcf: str
     bams: List[str]
+
+
+@dataclass
+class FileRegion:
+    """A dataclass encapsulating a region of positions within a file."""
+
+    start_pos: int
+    end_pos: int
+    file_path: str
