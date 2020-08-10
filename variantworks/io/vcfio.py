@@ -404,6 +404,12 @@ class VCFReader(BaseReader):
         df = pd.DataFrame.from_dict(df_dict)
         df = df.infer_objects()
 
+        # Manually set strict data types of specific fields
+        if not df.empty:
+            df["chrom"].astype('object')
+            df["start_pos"].astype('int64')
+            df["end_pos"].astype('int64')
+
         # Add custom tags to DataFrame
         for col, val in self._tags.items():
             df[col] = val
