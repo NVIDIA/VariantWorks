@@ -26,9 +26,8 @@ from test_utils import get_data_folder
 @pytest.mark.parametrize(
     'base_string,expected_output',
     [
-        ('AAA+1TCA+1TAAaaaaaaaAaa', [['T', 'T'], [False, False]]),
-        ('A+1T+1TAa+1Ga', [['T', 'T', 'G'], [False, False, False]]),
         ('A+1Ta*+1TAa+1Ga', [['T', 'T', 'G'], [False, True, False]]),
+        ('G+1CG+1CG+1CGGG-1NTagg+2gag-1ng-1nggGggGG#', [['C', 'C', 'C', 'ga'], [False, False, False, False]]),
     ],
 )
 def test_find_insertion(base_string, expected_output):

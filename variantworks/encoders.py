@@ -114,7 +114,7 @@ class SummaryEncoder(Encoder):
                 inserted_bases = base_pileup[insertion_bases_start_idx:insertion_bases_start_idx+insertion_length]
                 insertions.append(inserted_bases)
                 next_to_del.append(True if base_pileup[idx - 1] in '*#' else False)
-                idx = insertion_bases_start_idx + insertion_length
+                idx = insertion_bases_start_idx + insertion_length + 1  # skip the consecutive base after insertion
             else:
                 idx += 1
         return insertions, next_to_del
