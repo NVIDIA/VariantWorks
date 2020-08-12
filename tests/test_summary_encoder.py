@@ -23,6 +23,18 @@ from variantworks.encoders import SummaryEncoder
 from test_utils import get_data_folder
 
 
+@pytest.mark.parametrize(
+    'base_string,expected_output',
+    [
+        ('A+1Ta*+1TAa+1Ga', [['T', 'T', 'G'], [False, True, False]]),
+        ('G+1CG+1CG+1CGGG-1NTagg+2gag-1ng-1nggGggGG#', [['C', 'C', 'C', 'ga'], [False, False, False, False]]),
+    ],
+)
+def test_find_insertion(base_string, expected_output):
+    output = SummaryEncoder._find_insertions(base_string)
+    assert all([x == y for x, y in zip(output, expected_output)])
+
+
 def test_counts_correctness():
     region = FileRegion(start_pos=0,
                         end_pos=14460,

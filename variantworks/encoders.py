@@ -86,7 +86,8 @@ class SummaryEncoder(Encoder):
                         "#",
                         "*"]
 
-    def _find_insertions(self, base_pileup):
+    @staticmethod
+    def _find_insertions(base_pileup):
         """Finds all of the insertions in a given base's pileup string.
 
         Args:
@@ -100,23 +101,20 @@ class SummaryEncoder(Encoder):
         insertions = []
         idx = 0
         next_to_del = []
-        while (idx < len(base_pileup)):
-            if (base_pileup[idx] == "+"):
+        while idx < len(base_pileup):
+            if base_pileup[idx] == "+":
                 end_of_number = False
-                start_index = idx+1
+                insertion_bases_start_idx = idx+1
                 while not end_of_number:
-                    if (base_pileup[start_index].isdigit()):
-                        start_index += 1
+                    if base_pileup[insertion_bases_start_idx].isdigit():
+                        insertion_bases_start_idx += 1
                     else:
                         end_of_number = True
-                insertion_length = int(base_pileup[idx:start_index])
-                inserted_bases = base_pileup[idx+(start_index-idx):idx+(start_index-idx)+insertion_length]
+                insertion_length = int(base_pileup[idx:insertion_bases_start_idx])
+                inserted_bases = base_pileup[insertion_bases_start_idx:insertion_bases_start_idx+insertion_length]
                 insertions.append(inserted_bases)
-                if (base_pileup[idx-1] == "*" or base_pileup[idx-1] == "#"):
-                    next_to_del.append(True)
-                else:
-                    next_to_del.append(False)
-                idx += (start_index-idx) + 1 + insertion_length
+                next_to_del.append(True if base_pileup[idx - 1] in '*#' else False)
+                idx = insertion_bases_start_idx + insertion_length + 1  # skip the consecutive base after insertion
             else:
                 idx += 1
         return insertions, next_to_del
@@ -159,10 +157,8 @@ class SummaryEncoder(Encoder):
 
             # Keep track of ref and insert positions in the pileup and the insertions
             # in the pileup.
-            ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
-            ref_insert_pos.append((i, 0))
-            insertions_store = []
-            insertions_store.append([])
+            ref_insert_pos = [(i, 0)]  # ref position for ref base pos in pileup, insert for additional inserted bases
+            insertions_store = [[]]
             for j in range(longest_insertion):
                 ref_insert_pos.append((i, j+1))
                 insertions_store.append(insertions)
