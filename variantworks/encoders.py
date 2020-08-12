@@ -107,7 +107,7 @@ class SummaryEncoder(Encoder):
 
         subreads = pileup[:, 4]
         truth_coverage = pileup[:, 7].astype("int")
-        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage, 
+        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage,
                                         self._exclude_no_coverage_positions)
 
         # Using positions, calculate pileup counts
@@ -193,7 +193,7 @@ class HaploidLabelEncoder(Encoder):
 
         subreads = pileup[:, 4]
         truth_coverage = pileup[:, 7].astype("int")
-        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage, 
+        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage,
                                         self._exclude_no_coverage_positions)
 
         # Using positions, calculate pileup counts

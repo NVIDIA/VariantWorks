@@ -16,11 +16,11 @@
 
 import os
 import numpy as np
-import pytest
 
 from variantworks.types import FileRegion
 from variantworks.encoders import HaploidLabelEncoder
 from test_utils import get_data_folder
+
 
 def test_labels_correctness():
     region = FileRegion(start_pos=0,
