@@ -28,6 +28,7 @@ import torch
 
 from variantworks.types import FileRegion, Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
+from variantworks.utils.encoder import find_insertions, normalize_counts, calculate_positions
 
 
 class Encoder:
@@ -86,41 +87,6 @@ class SummaryEncoder(Encoder):
                         "#",
                         "*"]
 
-    def _find_insertions(self, base_pileup):
-        """Finds all of the insertions in a given base's pileup string.
-
-        Args:
-            base_pileup: Single base's pileup string output from samtools mpileup
-
-        Returns:
-            insertions: list of all insertions in pileup string
-            next_to_del: whether insertion is next to deletion symbol (should be ignored)
-
-        """
-        insertions = []
-        idx = 0
-        next_to_del = []
-        while (idx < len(base_pileup)):
-            if (base_pileup[idx] == "+"):
-                end_of_number = False
-                start_index = idx+1
-                while not end_of_number:
-                    if (base_pileup[start_index].isdigit()):
-                        start_index += 1
-                    else:
-                        end_of_number = True
-                insertion_length = int(base_pileup[idx:start_index])
-                inserted_bases = base_pileup[idx+(start_index-idx):idx+(start_index-idx)+insertion_length]
-                insertions.append(inserted_bases)
-                if (base_pileup[idx-1] == "*" or base_pileup[idx-1] == "#"):
-                    next_to_del.append(True)
-                else:
-                    next_to_del.append(False)
-                idx += (start_index-idx) + 1 + insertion_length
-            else:
-                idx += 1
-        return insertions, next_to_del
-
     def __call__(self, region):
         """Generate a torch tensor with summary encoding.
 
@@ -141,33 +107,8 @@ class SummaryEncoder(Encoder):
 
         subreads = pileup[:, 4]
         truth_coverage = pileup[:, 7].astype("int")
-        positions = []
-        positions_insertions = []
-
-        # Calculate ref and insert positions
-        for i in range(start_pos, end_pos):
-            if self._exclude_no_coverage_positions and truth_coverage[i] == 0:
-                continue
-
-            base_pileup = subreads[i].strip("^]").strip("$")
-
-            # Get all insertions in pileup
-            insertions, next_to_del = self._find_insertions(base_pileup)
-
-            # Find length of maximum insertion
-            longest_insertion = len(max(insertions, key=len)) if insertions else 0
-
-            # Keep track of ref and insert positions in the pileup and the insertions
-            # in the pileup.
-            ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
-            ref_insert_pos.append((i, 0))
-            insertions_store = []
-            insertions_store.append([])
-            for j in range(longest_insertion):
-                ref_insert_pos.append((i, j+1))
-                insertions_store.append(insertions)
-            positions += ref_insert_pos
-            positions_insertions += (insertions_store)
+        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage, 
+                                        self._exclude_no_coverage_positions)
 
         # Using positions, calculate pileup counts
         pileup_counts = torch.zeros((len(positions), 10))
@@ -175,7 +116,7 @@ class SummaryEncoder(Encoder):
             ref_position = positions[i][0]
             insert_position = positions[i][1]
             base_pileup = subreads[ref_position].strip("^]").strip("$")
-            insertions, next_to_del = self._find_insertions(base_pileup)
+            insertions, next_to_del = find_insertions(base_pileup)
             insertions_to_keep = []
 
             # Remove all insertions which are next to delete positions in pileup
@@ -199,20 +140,7 @@ class SummaryEncoder(Encoder):
                     pileup_counts[i, self.symbols.index(inserted_base)] += 1
 
         if self._normalize_counts:
-            # Calculate depth across all pileup columns
-            depth = torch.sum(pileup_counts, axis=1)
-            # Update depths of insert columns with the corresponding ref columns
-            prev_ref_pos = None
-            cur_ref_depth = 0
-            for idx in range(len(positions)):
-                if positions[idx][0] != prev_ref_pos:
-                    prev_ref_pos = positions[idx][0]
-                    cur_ref_depth = depth[idx]
-                else:
-                    depth[idx] = cur_ref_depth
-            # Normalize each column
-            pileup_counts = pileup_counts / np.maximum(1, depth).reshape((-1, 1))
-            return pileup_counts
+            return normalize_counts(pileup_counts, positions)
         else:
             return pileup_counts
 
@@ -245,41 +173,6 @@ class HaploidLabelEncoder(Encoder):
                         "G",
                         "T"]
 
-    def _find_insertions(self, base_pileup):
-        """Finds all of the insertions in a given base's pileup string.
-
-        Args:
-            base_pileup: Single base's pileup string output from samtools mpileup
-
-        Returns:
-            insertions: list of all insertions in pileup string
-            next_to_del: whether insertion is next to deletion symbol (should be ignored)
-
-        """
-        insertions = []
-        idx = 0
-        next_to_del = []
-        while (idx < len(base_pileup)):
-            if (base_pileup[idx] == "+"):
-                end_of_number = False
-                start_index = idx+1
-                while not end_of_number:
-                    if (base_pileup[start_index].isdigit()):
-                        start_index += 1
-                    else:
-                        end_of_number = True
-                insertion_length = int(base_pileup[idx:start_index])
-                inserted_bases = base_pileup[idx+(start_index-idx):idx+(start_index-idx)+insertion_length]
-                insertions.append(inserted_bases)
-                if (base_pileup[idx-1] == "*" or base_pileup[idx-1] == "#"):
-                    next_to_del.append(True)
-                else:
-                    next_to_del.append(False)
-                idx += (start_index-idx) + 1 + insertion_length
-            else:
-                idx += 1
-        return insertions, next_to_del
-
     def __call__(self, region):
         """Generate a torch tensor with summary encoding.
 
@@ -300,37 +193,11 @@ class HaploidLabelEncoder(Encoder):
 
         subreads = pileup[:, 4]
         truth_coverage = pileup[:, 7].astype("int")
-        positions = []
-        positions_insertions = []
-
-        # Calculate ref and insert positions
-        for i in range(start_pos, end_pos):
-            if self._exclude_no_coverage_positions and truth_coverage[i] == 0:
-                continue
-
-            base_pileup = subreads[i].strip("^]").strip("$")
-
-            # Get all insertions in pileup
-            insertions, next_to_del = self._find_insertions(base_pileup)
-
-            # Find length of maximum insertion
-            longest_insertion = len(max(insertions, key=len)) if insertions else 0
-
-            # Keep track of ref and insert positions in the pileup and the insertions
-            # in the pileup.
-            ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
-            ref_insert_pos.append((i, 0))
-            insertions_store = []
-            insertions_store.append([])
-            for j in range(longest_insertion):
-                ref_insert_pos.append((i, j+1))
-                insertions_store.append(insertions)
-            positions += ref_insert_pos
-            positions_insertions += (insertions_store)
+        positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage, 
+                                        self._exclude_no_coverage_positions)
 
         # Using positions, calculate pileup counts
         truth = pileup[:, 8]
-        truth_coverage = pileup[:, 7].astype("int")
         labels = np.zeros((len(positions),))  # gap, A, C, G, T (sparse format)
         for i in range(len(positions)):
             reference_pos = positions[i][0]
