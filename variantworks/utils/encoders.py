@@ -33,23 +33,20 @@ def find_insertions(base_pileup):
     insertions = []
     idx = 0
     next_to_del = []
-    while (idx < len(base_pileup)):
-        if (base_pileup[idx] == "+"):
+    while idx < len(base_pileup):
+        if base_pileup[idx] == "+":
             end_of_number = False
-            start_index = idx+1
+            insertion_bases_start_idx = idx+1
             while not end_of_number:
-                if (base_pileup[start_index].isdigit()):
-                    start_index += 1
+                if base_pileup[insertion_bases_start_idx].isdigit():
+                    insertion_bases_start_idx += 1
                 else:
                     end_of_number = True
-            insertion_length = int(base_pileup[idx:start_index])
-            inserted_bases = base_pileup[idx+(start_index-idx):idx+(start_index-idx)+insertion_length]
+            insertion_length = int(base_pileup[idx:insertion_bases_start_idx])
+            inserted_bases = base_pileup[insertion_bases_start_idx:insertion_bases_start_idx+insertion_length]
             insertions.append(inserted_bases)
-            if (base_pileup[idx-1] == "*" or base_pileup[idx-1] == "#"):
-                next_to_del.append(True)
-            else:
-                next_to_del.append(False)
-            idx += (start_index-idx) + 1 + insertion_length
+            next_to_del.append(True if base_pileup[idx - 1] in '*#' else False)
+            idx = insertion_bases_start_idx + insertion_length + 1  # skip the consecutive base after insertion
         else:
             idx += 1
     return insertions, next_to_del
