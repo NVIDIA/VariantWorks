@@ -28,7 +28,7 @@ import torch
 
 from variantworks.types import FileRegion, Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
-from variantworks.utils.encoder import find_insertions, normalize_counts, calculate_positions
+from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions
 
 
 class Encoder:
