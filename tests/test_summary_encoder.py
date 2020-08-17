@@ -20,6 +20,7 @@ import pytest
 
 from variantworks.types import FileRegion
 from variantworks.encoders import SummaryEncoder
+from variantworks.utils.encoders import find_insertions
 from test_utils import get_data_folder
 
 
@@ -31,7 +32,7 @@ from test_utils import get_data_folder
     ],
 )
 def test_find_insertion(base_string, expected_output):
-    output = SummaryEncoder._find_insertions(base_string)
+    output = find_insertions(base_string)
     assert all([x == y for x, y in zip(output, expected_output)])
 
 
