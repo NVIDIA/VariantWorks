@@ -21,6 +21,7 @@ import pandas as pd
 import time
 
 from variantworks.io.vcfio import VCFReader
+from variantworks.result_writer import VCFResultWriter
 
 pd.set_option('max_columns', 100)
 
@@ -33,14 +34,19 @@ t = time.time()
 reader = VCFReader(test_vcf_file,
                    bams=[],
                    tags={"custom_tag": 1},
-                   info_keys=["AF"],
-                   filter_keys=[],
-                   format_keys=[],
-                   num_threads=4,
+                   info_keys=["*"],
+                   filter_keys=["*"],
+                   format_keys=["GT"],
+                   num_threads=24,
                    regions=[],
-                   require_genotype=True,
+                   require_genotype=False,
                    sort=True)
 read_time = time.time() - t
 print(reader.dataframe)
-
 print("Elapsed time for reading VCF (seconds): ", read_time)
+
+t = time.time()
+writer = VCFResultWriter(reader, output_location="./")
+writer.write_output()
+write_time = time.time() - t
+print("Elapsed time for writing VCF (seconds): ", write_time)
