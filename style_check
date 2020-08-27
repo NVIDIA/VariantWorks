@@ -24,6 +24,6 @@ echo "Run Python formatting check..."
 flake8 "$VW_DIR"
 
 echo "Run Python docstring conventions check..."
-pydocstyle --convention=google "$VW_DIR" -v --match-dir='^(?!docs|ci).*'
+pydocstyle --convention=google "$VW_DIR" -v --match-dir='^(?!ci).*' --match='(?!(test_|conf.py)).*\.py'
 
 echo "Style check passed!"
