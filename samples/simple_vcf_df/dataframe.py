@@ -18,7 +18,6 @@
 
 import os
 import pandas as pd
-import time
 
 from variantworks.io.vcfio import VCFReader, VCFWriter
 
