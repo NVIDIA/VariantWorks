@@ -649,6 +649,7 @@ class VCFWriter(BaseWriter):
             sample_names : List with names of samples in dataframe. Required to
                            distinguish between info and sample format columns. If not
                            provided, all non-filter columns are stored as INFO.
+            num_threads : Number of parallel threads to use for VCFWriter.
 
         Returns:
             Instance of object.
