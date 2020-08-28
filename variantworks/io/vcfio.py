@@ -112,7 +112,7 @@ class VCFReader(BaseReader):
                  num_threads=mp.cpu_count(),
                  chunksize=5000,
                  sort=False,
-                 unbounded_val_max_col=3):
+                 unbounded_val_max_cols=3):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note VCFReader splits multi-allelic entries into separate variant
@@ -134,7 +134,7 @@ class VCFReader(BaseReader):
             num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]
             chunksize : Number of VCF rows to parse in a single threads. [5000 by default].
             sort : Order DataFrame by chr and start position.
-            unbounded_val_max_col : Number of values to assume for unbounded VCF keys. [3 by default]
+            unbounded_val_max_cols : Number of values to assume for unbounded VCF keys. [3 by default, minimum 2]
 
         Returns:
            Instance of class.
@@ -149,7 +149,7 @@ class VCFReader(BaseReader):
         self._num_threads = num_threads
         self._chunksize = chunksize
         self._sort = sort
-        self._unbounded_val_max_col = unbounded_val_max_col
+        self._unbounded_val_max_cols = max(2, unbounded_val_max_cols)
 
         self._dataframe = None
         self._sample_names = list()
@@ -295,7 +295,7 @@ class VCFReader(BaseReader):
             # Number = 0 implies one entry of boolean. So force min number to be 1.
             return max(1, int(header_number))
         elif header_number == ".":
-            return self._unbounded_val_max_col
+            return self._unbounded_val_max_cols
 
     def _get_python_header_type(self, header_type):
         """Convert VCF header type to python type.
@@ -866,7 +866,7 @@ class VCFWriter(BaseWriter):
                 VariantZygosity.HOMOZYGOUS: "1/1",
                 VariantZygosity.HETEROZYGOUS: "0/1",
                 }
-        if gt_idx:
+        if gt_idx is not None:
             sample[gt_idx] = zyg_to_gt[sample[gt_idx]]
         ret_list = list()
         for field_value in sample:

@@ -38,7 +38,8 @@ reader = VCFReader(test_vcf_file,
                    num_threads=4,
                    regions=[],
                    require_genotype=False,
-                   sort=True)
+                   sort=True,
+                   unbounded_val_max_cols=2)
 print(reader.dataframe)
 
 writer = VCFWriter(reader.dataframe, os.path.join(cwd, "test_out.vcf"), sample_names=reader.samples, num_threads=4)
