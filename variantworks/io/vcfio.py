@@ -212,8 +212,8 @@ class VCFReader(BaseReader):
         7. quality - Quality of variant call
         8. filter - VCF FILTER column [if requested]
         9. info - VCF INFO column [if requested]
-        10. format - VCF FORMAT column [if requested]. GT is converted to an int
-                     representation of VariantZygosity enum.
+        10. format - VCF FORMAT column [if requested]. GT is converted to an int \
+                representation of VariantZygosity enum.
 
         This dataframe can be easily converted to cuDF for large scale
         variant processing.
