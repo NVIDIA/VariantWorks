@@ -17,11 +17,10 @@
 import numpy as np
 import pytest
 
-from variantworks.utils.stitcher import Stitcher
+from variantworks.utils.stitcher import overlap_indices, decode_consensus
 
 
 def test_decode_consensus():
-    stitcher = Stitcher(None, np.array([[]]))
     probs_to_decode = np.array(
         [[1.11062377e-06, 9.99998808e-01, 9.45534850e-08, 5.90062443e-10, 2.44629739e-08],
          [1.52412838e-08, 2.44717496e-10, 1.00000000e+00, 6.66738956e-11, 1.94615679e-09],
@@ -34,7 +33,7 @@ def test_decode_consensus():
          [1.85279381e-09, 4.08135250e-13, 4.57124269e-11, 9.99999881e-01, 4.97050274e-12],
          [9.99999881e-01, 6.09803052e-08, 8.86788643e-10, 4.56723086e-08, 1.30385489e-08]], dtype=float
     )
-    decoder = stitcher._decode_consensus(probs_to_decode)
+    decoder = decode_consensus(probs_to_decode, label_symbols=["*", "A", "C", "G", "T"])
     assert decoder == 'ACCTCACG'
 
 
@@ -53,6 +52,5 @@ def test_decode_consensus():
     ],
 )
 def test_overlap_stitch(pos_chunk1, pos_chunk2, ouput):
-    sticher = Stitcher(None, np.array([[]]))
-    first_end_index, second_start_index = sticher._overlap_indices(pos_chunk1, pos_chunk2)
+    first_end_index, second_start_index = overlap_indices(pos_chunk1, pos_chunk2)
     assert first_end_index == ouput[0] and second_start_index == ouput[1]
