@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 
-from variantworks.utils.stitcher import overlap_indices, decode_consensus
+from variantworks.utils.stitcher import overlap_indices, decode_consensus, stitch
 
 
 def test_decode_consensus():
@@ -38,7 +38,7 @@ def test_decode_consensus():
 
 
 @pytest.mark.parametrize(
-    "pos_chunk1,pos_chunk2,ouput",
+    "pos_chunk1,pos_chunk2,output",
     [
         (np.array(
             [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0),
@@ -51,6 +51,46 @@ def test_decode_consensus():
          (11, 2))
     ],
 )
-def test_overlap_stitch(pos_chunk1, pos_chunk2, ouput):
+def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
     first_end_index, second_start_index = overlap_indices(pos_chunk1, pos_chunk2)
-    assert first_end_index == ouput[0] and second_start_index == ouput[1]
+    assert first_end_index == output[0] and second_start_index == output[1]
+
+
+# Test 3 chunks of length 6 with overlap = 2
+@pytest.mark.parametrize(
+    "probs,positions,label_symbols,chunk_len,expected_output",
+    [
+        (np.array([
+             [[1.09477956e-08, 1.00000000e+00, 5.52753621e-10, 2.30751862e-10,  4.01220918e-10],
+              [7.66537767e-09, 4.54994592e-12, 4.86722260e-11, 1.00000000e+00,  1.23715330e-10],
+              [8.02772432e-11, 5.73730646e-12, 1.00000000e+00, 5.13983604e-13,  1.73759864e-14],
+              [7.33906136e-09, 1.00000000e+00, 3.07665049e-09, 8.15870538e-10,  1.75069598e-10],
+              [6.39799893e-08, 1.48147379e-08, 1.48587995e-08, 9.99999881e-01, 2.30921460e-09],
+              [6.21890495e-09, 3.26714868e-08, 6.37951345e-08, 9.99999881e-01, 1.45624020e-08]],
+             [[1.27002045e-06, 1.05614718e-10, 7.13807957e-10, 9.99998569e-01,  1.05759014e-07],
+              [8.24138358e-09, 1.74944434e-10, 6.70461686e-10, 1.00000000e+00,  3.03972780e-09],
+              [4.20199342e-07, 1.22673005e-09, 9.78943371e-10, 5.50214452e-09,  9.99999523e-01],
+              [4.69269878e-07, 2.79435799e-08, 9.99999523e-01, 1.78214741e-08,  6.20921647e-10],
+              [6.08718665e-06, 9.99993801e-01, 8.25351236e-08, 8.10780687e-09, 2.69226899e-08],
+              [2.13696563e-08, 9.99999285e-01, 3.68703439e-07, 1.91942135e-07, 1.13494544e-07]],
+             [[2.4675433e-07, 9.9999976e-01, 1.1541250e-08, 6.2487366e-09, 4.9959055e-09],
+              [7.5940561e-09, 1.0000000e+00, 5.2648463e-09, 1.7200236e-10, 1.0723046e-09],
+              [6.7918995e-09, 3.8870717e-12, 1.2175504e-10, 5.3161930e-11, 1.0000000e+00],
+              [8.6349354e-09, 1.3653510e-10, 1.0000000e+00, 2.6004756e-11, 1.2342026e-10],
+              [4.6234220e-08, 9.9999988e-01, 9.0397293e-08, 8.5086944e-11, 1.7032700e-09],
+              [1.4115821e-07, 1.5209878e-07, 1.0382157e-08, 2.9765086e-08, 9.9999964e-01]]
+         ]),
+         [
+            np.array([(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)],
+                     dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')]),
+            np.array([(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0)],
+                     dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')]),
+            np.array([(8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0)],
+                     dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
+         ],
+         ["*", "A", "C", "G", "T"], 6, "".join(['AGCAG', 'GTCA', 'ATCAT']))
+    ],
+)
+def test_stitch(probs, positions, label_symbols, chunk_len, expected_output):
+    output = stitch(probs, positions, label_symbols, chunk_len)
+    assert expected_output == output
