@@ -25,3 +25,10 @@ python -m pip install -e .
 
 logger "Run Tests..."
 python -m pytest -s tests/
+
+logger "Run Documentation Snippets..."
+# Reverse alphabetical order, so the training snippet will be executed before inference
+for f in $(find docs/source/snippets/*.py | sort -r); do
+  logger "Executing \"${f}\""
+  python "${f}"
+done
