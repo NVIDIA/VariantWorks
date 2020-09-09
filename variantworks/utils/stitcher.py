@@ -63,28 +63,30 @@ def overlap_indices(first_positions_chunk, second_positions_chunk):
     raise ValueError("Can not Stitch {} {}".format(first_positions_chunk, second_positions_chunk))
 
 
-def stitch(probs, positions, label_symbols, chunk_len=1000):
+def stitch(probs, positions, label_symbols):
     """Stitch predictions on chunks into a contiguous sequence.
 
     taking into account window size and overlap
     Returns:
         seq: Stitched consensus sequence
     """
-    if hasattr(label_symbols, "__getitem__"):
-        raise TypeError("label_symbols does not ")
-    seq_parts = []
-    start_1 = 0
+    if not hasattr(label_symbols, "__getitem__"):
+        raise TypeError("A getter method for label_symbols is not implemented")
+    sequece_parts = []
+    first_start_idx = 0
     for i in range(1, len(positions), 1):
         probabilities_chunk = probs[i - 1]
         first_positions_chunk = positions[i - 1]
         second_positions_chunk = positions[i]
         # end1 and start2 are the new breaking points between two consecutive overlaps
         # found by the overlap_indices function.
-        end_1, start_2 = overlap_indices(first_positions_chunk, second_positions_chunk)
-        new_seq = decode_consensus(probabilities_chunk[start_1:end_1], label_symbols)
-        seq_parts.append(new_seq)
+        first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
+        # Decoding chunk in i-1 position and adding to sequence
+        prev_chunk_seq = decode_consensus(probabilities_chunk[first_start_idx:first_end_idx], label_symbols)
+        sequece_parts.append(prev_chunk_seq)
+        # Handling last sequence
         if i == len(positions) - 1:
-            new_seq = decode_consensus(probs[i][chunk_len - end_1:], label_symbols)
-            seq_parts.append(new_seq)
-        start_1 = start_2
-    return "".join(seq_parts)
+            current_chunk_seq = decode_consensus(probs[i][second_start_idx:], label_symbols)
+            sequece_parts.append(current_chunk_seq)
+        first_start_idx = second_start_idx
+    return "".join(sequece_parts)

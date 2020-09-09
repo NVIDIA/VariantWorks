@@ -58,7 +58,7 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
 
 # Test 3 chunks of length 6 with overlap = 2
 @pytest.mark.parametrize(
-    "probs,positions,label_symbols,chunk_len,expected_output",
+    "probs,positions,label_symbols,expected_output",
     [
         (np.array([
              [[1.09477956e-08, 1.00000000e+00, 5.52753621e-10, 2.30751862e-10,  4.01220918e-10],
@@ -88,9 +88,9 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
             np.array([(8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0)],
                      dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
          ],
-         ["*", "A", "C", "G", "T"], 6, "".join(['AGCAG', 'GTCA', 'ATCAT']))
+         ["*", "A", "C", "G", "T"], "".join(['AGCAG', 'GTCA', 'ATCAT']))
     ],
 )
-def test_stitch(probs, positions, label_symbols, chunk_len, expected_output):
-    output = stitch(probs, positions, label_symbols, chunk_len)
+def test_stitch(probs, positions, label_symbols, expected_output):
+    output = stitch(probs, positions, label_symbols)
     assert expected_output == output
