@@ -33,7 +33,7 @@ def test_decode_consensus():
          [1.85279381e-09, 4.08135250e-13, 4.57124269e-11, 9.99999881e-01, 4.97050274e-12],
          [9.99999881e-01, 6.09803052e-08, 8.86788643e-10, 4.56723086e-08, 1.30385489e-08]], dtype=float
     )
-    decoder = decode_consensus(probs_to_decode, label_symbols=["*", "A", "C", "G", "T"])
+    decoder = decode_consensus(probs_to_decode)
     assert decoder == 'ACCTCACG'
 
 
@@ -58,7 +58,7 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
 
 # Test 3 chunks of length 6 with overlap = 2
 @pytest.mark.parametrize(
-    "probs,positions,label_symbols,expected_output",
+    "probs,positions,decode_consensus_function,expected_output",
     [
         (np.array([
              [[1.09477956e-08, 1.00000000e+00, 5.52753621e-10, 2.30751862e-10,  4.01220918e-10],
@@ -88,9 +88,9 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
             np.array([(8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0)],
                      dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
          ],
-         ["*", "A", "C", "G", "T"], "".join(['AGCAG', 'GTCA', 'ATCAT']))
+         decode_consensus, "".join(['AGCAG', 'GTCA', 'ATCAT']))
     ],
 )
-def test_stitch(probs, positions, label_symbols, expected_output):
-    output = stitch(probs, positions, label_symbols, decode_consensus)
+def test_stitch(probs, positions, decode_consensus_function, expected_output):
+    output = stitch(probs, positions, decode_consensus_function)
     assert expected_output == output
