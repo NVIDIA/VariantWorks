@@ -92,5 +92,5 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
     ],
 )
 def test_stitch(probs, positions, label_symbols, expected_output):
-    output = stitch(probs, positions, label_symbols)
+    output = stitch(probs, positions, label_symbols, decode_consensus)
     assert expected_output == output

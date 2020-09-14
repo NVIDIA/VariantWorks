@@ -22,7 +22,7 @@ import numpy as np
 
 
 def decode_consensus(probs, label_symbols):
-    """Decode probabilities into sequence.
+    """Decode probabilities into sequence by choosing the Nucleotide base with the highest probability.
 
     Returns:
         seq: sequence output from probabilities
@@ -63,10 +63,15 @@ def overlap_indices(first_positions_chunk, second_positions_chunk):
     raise ValueError("Can not Stitch {} {}".format(first_positions_chunk, second_positions_chunk))
 
 
-def stitch(probs, positions, label_symbols):
+def stitch(probs, positions, label_symbols, decode_consensus_func):
     """Stitch predictions on chunks into a contiguous sequence.
 
-    taking into account window size and overlap
+    Args:
+        probs: 3D array of predicted probabilities. no. of chunks X  no. of positions in chunk X no. of bases.
+        positions: Corresponding list of position array for each chunk in probs.
+        label_symbols: Nucleotide base label.
+        decode_consensus_func: A function which decodes each chunk from probs into label_symbols.
+
     Returns:
         seq: Stitched consensus sequence
     """
@@ -82,11 +87,11 @@ def stitch(probs, positions, label_symbols):
         # found by the overlap_indices function.
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
         # Decoding chunk in i-1 position and adding to sequence
-        prev_chunk_seq = decode_consensus(probabilities_chunk[first_start_idx:first_end_idx], label_symbols)
+        prev_chunk_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx], label_symbols)
         sequece_parts.append(prev_chunk_seq)
         # Handling last sequence
         if i == len(positions) - 1:
-            current_chunk_seq = decode_consensus(probs[i][second_start_idx:], label_symbols)
+            current_chunk_seq = decode_consensus_func(probs[i][second_start_idx:], label_symbols)
             sequece_parts.append(current_chunk_seq)
         first_start_idx = second_start_idx
     return "".join(sequece_parts)
