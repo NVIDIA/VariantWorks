@@ -27,23 +27,7 @@ import numpy as np
 
 from variantworks.encoders import SummaryEncoder, HaploidLabelEncoder
 from variantworks.types import FileRegion
-
-CHUNK_LEN = 1000
-CHUNK_OVLP = 200
-
-
-def sliding_window(a, window=3, step=1, axis=0):
-    """Generate chunks for encoding and labels."""
-    slicee = [slice(None)] * a.ndim
-    end = 0
-    for start in range(0, a.shape[axis] - window + 1, step):
-        end = start + window
-        slicee[axis] = slice(start, end)
-        yield a[tuple(slicee)]
-    if a.shape[axis] > end:
-        start = a.shape[axis] - window
-        slicee[axis] = slice(start, a.shape[axis])
-        yield a[tuple(slicee)]
+from variantworks.utils.encoders import sliding_window
 
 
 def encode(sample_encoder, label_encoder, region):
@@ -60,10 +44,15 @@ def generate_hdf5(args):
     """Generate encodings in multiprocess loop and save tensors to HDF5."""
     file_regions = []
     for pileup_file in args.pileup_files:
-        file_regions.append(FileRegion(start_pos=0, end_pos=20000,
+        file_regions.append(FileRegion(start_pos=0, end_pos=None,
                             file_path=pileup_file))
 
     # Setup encoder for samples and labels.
+
+    global CHUNK_LEN
+    global CHUNK_OVLP
+    CHUNK_LEN = args.chunk_len
+    CHUNK_OVLP = args.chunk_ovlp
 
     sample_encoder = SummaryEncoder()
     label_encoder = HaploidLabelEncoder()
@@ -74,16 +63,15 @@ def generate_hdf5(args):
     features = []
     labels = []
     print('Serializing {} pileup files...'.format(len(file_regions)))
-    for file_region in file_regions:
+    for out in pool.imap(encode_func, file_regions):
         label_idx = 0
-        for out in pool.imap(encode_func, file_region):
-            if label_idx % 100 == 0:
-                print('Saved {} pileups'.format(label_idx))
-            (encoding_chunks, label_chunks) = out
-            if encoding_chunks.shape[0] == CHUNK_LEN and label_chunks.shape[0] == CHUNK_LEN:
-                features.append(encoding_chunks)
-                labels.append(label_chunks)
-            label_idx += 1
+        if label_idx % 100 == 0:
+            print('Saved {} pileups'.format(label_idx))
+        (encoding_chunks, label_chunks) = out
+        if encoding_chunks.shape[0] == CHUNK_LEN and label_chunks.shape[0] == CHUNK_LEN:
+            features.append(encoding_chunks)
+            labels.append(label_chunks)
+        label_idx += 1
     print('Saved {} pileup files'.format(len(file_regions)))
     features = np.stack(features, axis=0)
     labels = np.stack(labels, axis=0)
@@ -105,6 +93,10 @@ def build_parser():
     parser.add_argument('-t', '--threads', type=int,
                         help='Threads to parallelize over.',
                         default=mp.cpu_count())
+    parser.add_argument('-c', '--chunk_len', type=int,
+                        help='Length of chunks to be created from pileups.', default=1000)
+    parser.add_argument('--chunk_ovlp', type=int,
+                        help='Length of overlaps between chunks.', default=200)
     return parser
 
 
