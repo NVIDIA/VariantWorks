@@ -325,9 +325,9 @@ class VCFReader(BaseReader):
             Default value.
         """
         if header_type == int:
-            return np.int32(0)
+            return np.iinfo(np.int32).min
         elif header_type == float:
-            return np.float32(float("NaN"))
+            return np.nan
         elif header_type == bool:
             return np.bool_(False)
         else:
@@ -383,15 +383,21 @@ class VCFReader(BaseReader):
                     # Get header type
                     header_number = self._header_number[info_col]
 
-                    if variant.INFO.get(info_col) is not None:
-                        val = variant.INFO[info_col]
+                    val = variant.INFO.get(info_col)
+                    if val is None:
+                        # Generate a tuple with default values.
+                        default_val = self._get_default_val(self._header_type[info_col])
+                        num_vals = self._get_normalized_count(header_number, len(alts), len(samples))
+                        val = tuple([default_val] * num_vals)
+                    elif isinstance(val, tuple) and None in val:
+                        # If some values in tuple are None, replace those with default values.
+                        default_val = self._get_default_val(self._header_type[info_col])
+                        temp_val_list = [default_val if v is None else v for v in val]
+                        val = tuple(temp_val_list)
+                    else:
                         # Make value a tuple to reduce special case handling later.
                         if not isinstance(val, tuple):
                             val = tuple((val,))
-                    else:
-                        default_val = self._get_default_val(self._header_type[info_col])
-                        num_vals = self._get_normalized_count(header_number, len(alts), len(samples))
-                        val = [default_val] * num_vals
 
                     df_key = info_col
 
