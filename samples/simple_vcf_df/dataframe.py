@@ -43,4 +43,4 @@ reader = VCFReader(test_vcf_file,
 print(reader.dataframe)
 
 writer = VCFWriter(reader.dataframe, os.path.join(cwd, "test_out.vcf"), sample_names=reader.samples, num_threads=4)
-writer.write_output()
+writer.write_output(reader.dataframe)

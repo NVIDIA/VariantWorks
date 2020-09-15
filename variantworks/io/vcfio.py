@@ -621,6 +621,7 @@ class VCFReader(BaseReader):
         func = partial(self._parse_vcf_cyvcf)
         for df in pool.imap(func, range(self._num_threads)):
             df_lists.append(df)
+        pool.close()
 
         df_list = [item for sublist in df_lists for item in sublist if len(item) > 0]
 
@@ -650,7 +651,7 @@ class VCFWriter(BaseWriter):
         for the VCF file based on the available columns in the dataframe.
 
         Args:
-            vcf_df : VCF Dataframe.
+            vcf_df : VCF Dataframe to generate header from.
             output_path : Output path for VCF output file.
             sample_names : List with names of samples in dataframe. Required to
                            distinguish between info and sample format columns. If not
@@ -660,7 +661,7 @@ class VCFWriter(BaseWriter):
         Returns:
             Instance of object.
         """
-        self._vcf_df = vcf_df
+        self._vcf_df = None
         self._output_path = output_path
         self._sample_names = sample_names
         self._num_threads = num_threads
@@ -681,7 +682,11 @@ class VCFWriter(BaseWriter):
 
         self._ignore_headers = set(["variant_type"])
 
-        self._categorize_df_headers()
+        # Create and write header.
+        self._categorize_df_headers(vcf_df)
+        with open(self._output_path, "w+") as file_writer:
+            file_writer.write(self._generate_header())
+            file_writer.write("\n")
 
     @staticmethod
     def _determine_header_type(val):
@@ -702,17 +707,20 @@ class VCFWriter(BaseWriter):
         else:
             return str
 
-    def _categorize_df_headers(self):
+    def _categorize_df_headers(self, vcf_df):
         """Categorize the headers in the dataframe into VCF header types.
 
         For each column name, determine if column is a standard, INFO, FILTER
         or FORMAT column. Then determine the type and number for values in that
         column. This method fills internal member data structures to maintain this
         information.
-        """
-        df_keys = list(self._vcf_df.columns)
 
-        temp_row_dict = self._vcf_df.iloc[0].to_dict()
+        Args:
+            vcf_df : VCF Dataframe to read headers from.
+        """
+        df_keys = list(vcf_df.columns)
+
+        temp_row_dict = vcf_df.iloc[0].to_dict()
 
         for col in df_keys:
             data_type = self._determine_header_type(temp_row_dict[col])
@@ -722,7 +730,7 @@ class VCFWriter(BaseWriter):
                 pass  # Do nothing as these headers are not to be written out
             else:
                 # Check for FILTER headers
-                regex = re.compile(r"FILTER_(.*)")
+                regex = re.compile(r"^FILTER_(.*)")
                 m = regex.match(col)
                 if m:
                     # Found FILTER key
@@ -733,7 +741,7 @@ class VCFWriter(BaseWriter):
                 # Check for sample format columns
                 key_in_format = False
                 for sample in self._sample_names:
-                    regex = re.compile(r"{}_(.*)".format(sample))
+                    regex = re.compile(r"^{}_(.*)".format(sample))
                     m = regex.match(col)
                     if m:
                         key_in_format = True
@@ -754,7 +762,7 @@ class VCFWriter(BaseWriter):
                 if key_in_format:
                     continue
                 # Rest go to info columns
-                regex = re.compile(r"(.*)-(\d+)$")
+                regex = re.compile(r"^(.*)-(\d+)$")
                 m = regex.match(col)
                 if m:
                     # Found a column with multiple indices
@@ -941,18 +949,18 @@ class VCFWriter(BaseWriter):
         output_line += variant.samples
         return output_line
 
-    def write_output(self):
-        """Write dataframe to VCF."""
-        file_writer = open(self._output_path, "w+")
+    def write_output(self, vcf_df):
+        """Write dataframe to VCF.
 
-        # Create and write header.
-        file_writer.write(self._generate_header())
-        file_writer.write("\n")
-
-        # Process variant entries in parallel fashion.
-        pool = mp.Pool(self._num_threads)
-        for line in pool.imap(self._get_serialized_vcf_record_for_variant, range(len(self._vcf_df)), chunksize=50000):
-            file_writer.write('\t'.join(line) + '\n')
-
-        # Close file.
-        file_writer.close()
+        Args:
+            vcf_df : VCF dataframe whose entries are to be serialized.
+        """
+        self._vcf_df = vcf_df
+        with open(self._output_path, "a") as file_writer:
+            # Process variant entries in parallel fashion.
+            pool = mp.Pool(self._num_threads)
+            for line in pool.imap(self._get_serialized_vcf_record_for_variant,
+                                  range(len(self._vcf_df)),
+                                  chunksize=50000):
+                file_writer.write('\t'.join(line) + '\n')
+            pool.close()

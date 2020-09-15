@@ -83,4 +83,4 @@ result_writer = VCFWriter(vcf_loader.dataframe,
                           output_path="./out.vcf",
                           sample_names = vcf_loader.samples)
 
-result_writer.write_output()
+result_writer.write_output(vcf_loader.dataframe)

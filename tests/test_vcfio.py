@@ -96,7 +96,7 @@ def test_vcf_outputting(get_created_vcf_tabix_files):
 
     output_path = '{}_{}.{}'.format("inferred", "".join(os.path.basename(orig_vcf_file_path).split('.')[0:-2]), 'vcf')
     vcf_writer = VCFWriter(input_vcf_df, output_path=output_path, sample_names=vcf_reader.samples)
-    vcf_writer.write_output()
+    vcf_writer.write_output(input_vcf_df)
 
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
     vcf_reader_updated = VCFReader(output_path,
