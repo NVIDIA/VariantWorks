@@ -31,7 +31,6 @@ class AlexNet(TrainableNM):
     @add_port_docs()
     def input_ports(self):
         """Return definitions of module input ports.
-
         Returns:
             Module input ports.
         """
@@ -43,7 +42,6 @@ class AlexNet(TrainableNM):
     @add_port_docs()
     def output_ports(self):
         """Return definitions of module output ports.
-
         Returns:
             Module output ports.
         """
@@ -54,11 +52,9 @@ class AlexNet(TrainableNM):
 
     def __init__(self, num_input_channels, num_output_logits):
         """Construct an AlexNet NeMo instance.
-
         Args:
             num_input_channels : Number of input channels in image.
             num_output_logits : Number of output logits of classifier.
-
         Returns:
             Instance of class.
         """
@@ -99,10 +95,8 @@ class AlexNet(TrainableNM):
 
     def forward(self, encoding):
         """Abstract function to run the network.
-
         Args:
             encoding : Input image to run network on.
-
         Returns:
             Output of forward pass.
         """
@@ -112,3 +106,65 @@ class AlexNet(TrainableNM):
         encoding = self.common_classifier(encoding)
         vz = self.classifier(encoding)
         return vz
+
+
+class ConsensusRNN(TrainableNM):
+    """A Neural Module for training a Consensus RNN."""
+
+    @property
+    @add_port_docs()
+    def input_ports(self):
+        """Return definitions of module input ports.
+
+        Returns:
+            Module input ports.
+        """
+        return {
+            "encoding": NeuralType(('B', 'W', 'C'), ChannelType()),
+        }
+
+    @property
+    @add_port_docs()
+    def output_ports(self):
+        """Return definitions of module output ports.
+
+        Returns:
+            Module output ports.
+        """
+        return {
+            # Variant type
+            'output_logit': NeuralType(('B', 'W'), LogitsType()),
+        }
+
+    def __init__(self, sequence_length, num_output_logits):
+        """Construct an Consensus RNN NeMo instance.
+
+        Args:
+            sequence_length : Length of sequence to feed into RNN.
+            num_output_logits : Number of output classes of classifier.
+        Returns:
+            Instance of class.
+        """
+        super().__init__()
+        self.num_output_logits = num_output_logits
+        self.sequence_length = sequence_length
+
+        self.gru = nn.GRU(10, 128, 2, batch_first=True, bidirectional=True)
+        self.classifier = nn.Linear(2 * 128, self.num_output_logits)
+        self.softmax = nn.Softmax()
+
+        self._device = torch.device(
+            "cuda" if self.placement == DeviceType.GPU else "cpu")
+        self.to(self._device)
+
+    def forward(self, encoding):
+        """Abstract function to run the network.
+        Args:
+            encoding : Input sequence to run network on.
+        Returns:
+            Output of forward pass.
+        """
+        encoding = self.gru(encoding)
+        encoding = self.classifier(encoding)
+        outputs = self.softmax(encoding)
+        return outputs
