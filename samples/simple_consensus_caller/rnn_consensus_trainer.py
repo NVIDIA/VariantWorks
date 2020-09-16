@@ -19,6 +19,7 @@
 import argparse
 
 import nemo
+import torch
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
@@ -26,6 +27,23 @@ from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback,
 from variantworks.dataloader import HDFPileupDataLoader
 from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
+
+
+class CategoricalAccuracy(object):
+    """Categorical accuracy metric."""
+
+    def __init__(self):
+        """Constructor for metric."""
+        self._num_correct = 0.0
+        self._num_examples = 0.0
+
+    def __call__(self, y_true, y_pred):
+        """Compute categorical accuracy."""
+        indices = torch.max(y_pred, -1)[1]
+        correct = torch.eq(indices, y_true).view(-1)
+        self._num_correct += torch.sum(correct).item()
+        self._num_examples += correct.shape[0]
+        return self._num_correct / self._num_examples
 
 
 def create_model():
@@ -56,6 +74,7 @@ def train(args):
                                         encoding_neural_type=encoding_neural_type,
                                         label_neural_type=label_neural_type)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    cat_acc = CategoricalAccuracy()
     vz_labels, encoding = train_dataset()
     vz = model(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
@@ -64,9 +83,9 @@ def train(args):
 
     # Logger callback
     loggercallback = nemo.core.SimpleLossLoggerCallback(
-        tensors=[vz_loss],
+        tensors=[vz_loss, vz, vz_labels],
         step_freq=5,
-        print_func=lambda x: logging.info(f'Train Loss: {str(x[0].item())}'),
+        print_func=lambda x: logging.info(f'Train Loss: {str(x[0].item())}, Train Acc: {str(cat_acc(x[2], x[1]))}'),
     )
     callbacks.append(loggercallback)
 
