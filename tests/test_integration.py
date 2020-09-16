@@ -26,7 +26,7 @@ import torch
 from variantworks.dataloader import ReadPileupDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
-from variantworks.sample_encoder import ZygosityLabelDecoder
+from variantworks.encoders import ZygosityLabelDecoder
 
 from test_utils import get_data_folder
 
@@ -42,14 +42,13 @@ def test_simple_vc_trainer():
     # Generate dataset
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     labels = os.path.join(get_data_folder(), "candidates.vcf.gz")
-    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFReader([vcf_bam_tuple])
+    vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=1, num_output_logits=3)
 
     # Create train DAG
-    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, vcf_loader,
+    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, [vcf_loader],
                                          batch_size=32, shuffle=True)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = dataset_train()
@@ -57,8 +56,8 @@ def test_simple_vc_trainer():
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, vcf_loader, batch_size=32,
-                                        shuffle=False)
+    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, [vcf_loader],
+                                        batch_size=32, shuffle=False)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
     vz_labels_eval, encoding_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
@@ -114,9 +113,8 @@ def test_simple_vc_infer():
     # Generate dataset
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
-    vcf_bam_tuple = VCFReader.VcfBamPath(vcf=labels, bam=bam, is_fp=False)
-    vcf_loader = VCFReader([vcf_bam_tuple])
-    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_loader, batch_size=32,
+    vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
+    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, [vcf_loader], batch_size=32,
                                         shuffle=False)
 
     # Neural Network

@@ -56,3 +56,8 @@ class BaseReader(ABC):
     def __iter__(self):
         """Iterate over class entries."""
         return BaseReaderIterator(self)
+
+    @abstractmethod
+    def dataframe(self):
+        """Return parsed file as dataframe."""
+        return NotImplementedError

@@ -16,21 +16,23 @@
 """Shared enums and types across VariantWorks."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 from typing import List, Dict
 
 
-class VariantZygosity(Enum):
+class VariantZygosity(IntEnum):
     """An enum defining zygosity of variant."""
 
+    NONE = -1
     NO_VARIANT = 0
     HOMOZYGOUS = 1
     HETEROZYGOUS = 2
 
 
-class VariantType(Enum):
+class VariantType(IntEnum):
     """An enum defining type of variant."""
 
+    NONE = -1
     SNP = 0
     INSERTION = 1
     DELETION = 2
@@ -48,9 +50,18 @@ class Variant:
     quality: int
     filter: str
     info: Dict
-    format: List[str]
+    format: List[List]
     samples: List[List]
-    zygosity: VariantZygosity
+    zygosity: List[VariantZygosity]
     type: VariantType
     vcf: str
-    bam: str
+    bams: List[str]
+
+
+@dataclass
+class FileRegion:
+    """A dataclass encapsulating a region of positions within a file."""
+
+    start_pos: int
+    end_pos: int
+    file_path: str

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #
 # Copyright 2020 NVIDIA CORPORATION.
 #
@@ -16,19 +14,4 @@
 # limitations under the License.
 #
 
-
-logger "Install VariantWorks external dependencies..."
-python -m pip install -r requirements.txt
-
-logger "Install pyclaragenomics..."
-python -m pip install -e .
-
-logger "Run Tests..."
-python -m pytest -s tests/
-
-logger "Run Documentation Snippets..."
-# Reverse alphabetical order, so the training snippet will be executed before inference
-for f in $(find docs/source/snippets/*.py | sort -r); do
-  logger "Executing \"${f}\""
-  python "${f}"
-done
+"""Init file for utils module."""

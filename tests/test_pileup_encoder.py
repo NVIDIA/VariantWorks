@@ -15,12 +15,15 @@
 #
 
 import os
-import pytest
-import torch
 
-from variantworks.base_encoder import base_enum_encoder
+import pytest
+import shutil
+import tempfile
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
 from variantworks.types import Variant, VariantZygosity, VariantType
-from variantworks.sample_encoder import PileupEncoder
+from variantworks.encoders import BaseEnumEncoder, BaseUnicodeEncoder, PileupEncoder
 
 from test_utils import get_data_folder
 
@@ -30,14 +33,34 @@ def snp_variant():
     bam = os.path.join(get_data_folder(), "small_bam.bam")
     variant = Variant(chrom="1", pos=240000, id="GL000235", ref='T', allele='A',
                       quality=60, filter=None, info={'DP': 35, 'AF': 0.0185714}, format=['GT', 'GQ'],
-                      samples=[['1/1', '50']], zygosity=VariantZygosity.HOMOZYGOUS,
-                      type=VariantType.SNP, vcf='null.vcf', bam=bam)
+                      samples=[['1/1', '50']], zygosity=[VariantZygosity.HOMOZYGOUS],
+                      type=VariantType.SNP, vcf='null.vcf', bams=[bam])
+    return variant
+
+
+@pytest.fixture
+def insertion_variant():
+    bam = os.path.join(get_data_folder(), "some_indels.bam")
+    variant = Variant(chrom="1", pos=10122622, id="rs57037935", ref='T', allele='TG',
+                      quality=50, filter=[], info={}, format=['GT', 'PS', 'DP', 'ADALL', 'AD', 'GQ'],
+                      samples=[['1/1', None, 546, [0, 246], [25, 25], 330]], zygosity=[VariantZygosity.HOMOZYGOUS],
+                      type=VariantType.INSERTION, vcf='null.vcf', bams=[bam])
+    return variant
+
+
+@pytest.fixture
+def deletion_variant():
+    bam = os.path.join(get_data_folder(), "some_indels.bam")
+    variant = Variant(chrom="1", pos=10163457, id=None, ref='CTTTA', allele='C',
+                      quality=50, filter=[], info={}, format=['GT', 'PS', 'DP', 'ADALL', 'AD', 'GQ'],
+                      samples=[['1/0', None, 177, [0, 0, 0], [0, 0, 0], 160]], zygosity=[VariantZygosity.HETEROZYGOUS],
+                      type=VariantType.DELETION, vcf='null.vcf', bams=[bam])
     return variant
 
 
 def test_snp_encoder_basic(snp_variant):
     max_reads = 100
-    window_size = 5
+    window_size = 10
     width = 2 * window_size + 1
     height = max_reads
     layers = [PileupEncoder.Layer.READ]
@@ -61,7 +84,7 @@ def test_snp_ref_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.ref])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.ref))
 
 
 def test_snp_allele_encoding(snp_variant):
@@ -74,7 +97,7 @@ def test_snp_allele_encoding(snp_variant):
 
     variant = snp_variant
     encoding = encoder(variant)
-    assert(encoding[0, 0, window_size] == base_enum_encoder[variant.allele])
+    assert(encoding[0, 0, window_size] == BaseEnumEncoder()(variant.allele))
 
 
 def test_snp_encoder_base_quality(snp_variant):
@@ -96,7 +119,7 @@ def test_snp_encoder_base_quality(snp_variant):
     # and then converting it to a long tensor and summing up all elements to match
     # against total size.
     all_lt_1 = (encoding <= 1.0).long()
-    assert(torch.sum(all_lt_1) == (max_reads * width))
+    assert(torch.sum(all_lt_1) == (height * width))
 
 
 def test_snp_encoder_mapping_quality(snp_variant):
@@ -118,7 +141,39 @@ def test_snp_encoder_mapping_quality(snp_variant):
     # and then converting it to a long tensor and summing up all elements to match
     # against total size.
     all_lt_1 = (encoding <= 1.0).long()
-    assert(torch.sum(all_lt_1) == (max_reads * width))
+    assert(torch.sum(all_lt_1) == (height * width))
+
+
+def test_insertion_read_encoding(insertion_variant):
+    max_reads = 100
+    window_size = 30
+    width = 2 * window_size + 1
+    height = max_reads
+    layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
+
+    variant = insertion_variant
+
+    encoding = encoder(variant)
+    assert(encoding.size() == torch.Size([len(layers), height, width]))
+
+
+def test_deletion_read_encoding(deletion_variant):
+    max_reads = 100
+    window_size = 10
+    width = 2 * window_size + 1
+    height = max_reads
+    layers = [PileupEncoder.Layer.READ, PileupEncoder.Layer.REFERENCE, PileupEncoder.Layer.ALLELE]
+
+    encoder = PileupEncoder(window_size=window_size,
+                            max_reads=max_reads, layers=layers)
+
+    variant = deletion_variant
+
+    encoding = encoder(variant)
+    assert(encoding.size() == torch.Size([len(layers), height, width]))
 
 
 def test_pileup_unknown_layer():
@@ -127,3 +182,21 @@ def test_pileup_unknown_layer():
     with pytest.raises(AttributeError):
         layers = [PileupEncoder.Layer.BLAH]
         PileupEncoder(window_size=window_size, max_reads=max_reads, layers=layers)
+
+
+def test_pileup_visualization(snp_variant):
+    output_folder = tempfile.mkdtemp(prefix='vw_test_output_')
+    encoder = PileupEncoder(
+        layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.ALLELE, PileupEncoder.Layer.REFERENCE,
+                PileupEncoder.Layer.BASE_QUALITY, PileupEncoder.Layer.MAPPING_QUALITY],
+        base_encoder=BaseUnicodeEncoder()
+    )
+    fig_title, fig = encoder.visualize(snp_variant, save_to_path=output_folder, max_subplots_per_line=2)
+    assert len([name for name in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, name))]) == 1
+
+    writer = SummaryWriter(log_dir=output_folder)
+    writer.add_figure(fig_title, fig)
+    writer.flush()
+    writer.close()
+
+    shutil.rmtree(output_folder)

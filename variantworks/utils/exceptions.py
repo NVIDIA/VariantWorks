@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #
 # Copyright 2020 NVIDIA CORPORATION.
 #
@@ -15,20 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Custom Exceptions."""
 
 
-logger "Install VariantWorks external dependencies..."
-python -m pip install -r requirements.txt
+def extend_exception(e, msg):
+    """Extend an exception with new message.
 
-logger "Install pyclaragenomics..."
-python -m pip install -e .
-
-logger "Run Tests..."
-python -m pytest -s tests/
-
-logger "Run Documentation Snippets..."
-# Reverse alphabetical order, so the training snippet will be executed before inference
-for f in $(find docs/source/snippets/*.py | sort -r); do
-  logger "Executing \"${f}\""
-  python "${f}"
-done
+    Args:
+        e : Original exception
+        msg : New message to be added to exception
+    """
+    return type(e)("{}\n{}".format(str(e), msg)).with_traceback(e.__traceback__)
