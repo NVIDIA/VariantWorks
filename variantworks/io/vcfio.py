@@ -119,6 +119,10 @@ class VCFReader(BaseReader):
         entries. VCFReader also doesn't maintain the original ordering of variants
         from the VCF becasue of its multi threaded nature for parsing.
 
+        If a gVCF file is passed into the VCFReader, all entries where the ALT
+        columns are "." or "<NON_REF>" will be ignored as range entries
+        are not handled in this reader currently.
+
         Args:
             vcf : Path to VCF file.
             bams : List of BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.
