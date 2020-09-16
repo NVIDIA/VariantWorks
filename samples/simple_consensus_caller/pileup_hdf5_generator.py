@@ -112,7 +112,7 @@ def create_pileup(data_dir):
     subprocess.check_call(pileup_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Remove intermediate files
-    files = glob.glob("*{}*bam*".format(suffix))
+    files = glob.glob("*_{}.*bam*".format(suffix))
     for f in files:
         os.remove(f)
 
@@ -124,18 +124,22 @@ def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
     region = create_pileup(data_dir)
 
     # Generate matrix and label encoding.
-    encoding, encoding_positions = sample_encoder(region)
-    label, label_positions = label_encoder(region)
-    assert(len(encoding) == len(label)), print("Encoding and label dimensions not as expected:",
-                                               encoding.shape,
-                                               label.shape,
-                                               region)
+    try:
+        encoding, encoding_positions = sample_encoder(region)
+        label, label_positions = label_encoder(region)
+        assert(len(encoding) == len(label)), print("Encoding and label dimensions not as expected:",
+                                                   encoding.shape,
+                                                   label.shape,
+                                                   region)
 
-    encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
-    label_chunks = sliding_window(label, chunk_len,
-                                  step=chunk_len - chunk_ovlp)
-    os.remove(region.file_path)
-    return (encoding_chunks, label_chunks)
+        os.remove(region.file_path)
+        encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
+        label_chunks = sliding_window(label, chunk_len,
+                                      step=chunk_len - chunk_ovlp)
+        return (encoding_chunks, label_chunks)
+    except Exception:
+        os.remove(region.file_path)
+        return ([], [])
 
 
 def generate_hdf5(args):
