@@ -25,8 +25,9 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType
 import torch
 
-from variantworks.sample_encoder import PileupEncoder, ZygosityLabelEncoder
+from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
+from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 
 
 class HDFPileupDataLoader(DataLayerNM):
@@ -49,17 +50,20 @@ class HDFPileupDataLoader(DataLayerNM):
         """
         if self.data_loader_type == HDFPileupDataLoader.Type.TEST:
             return {
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+                "encoding": NeuralType(self.encoding_dims, self.encoding_neural_type),
             }
         else:
             return {
-                "label": NeuralType(tuple('B'), VariantZygosityNeuralType()),
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
+                "label": NeuralType(self.label_dims, self.label_neural_type),
+                "encoding": NeuralType(self.encoding_dims, self.encoding_neural_type),
             }
 
     def __init__(self, data_loader_type, hdf_file, batch_size=32, shuffle=True,
                  num_workers=4, encoding_dtype=torch.float32, label_dtype=torch.int64,
-                 hdf_encoding_key="encodings", hdf_label_key="labels"):
+                 hdf_encoding_key="encodings", hdf_label_key="labels",
+                 encoding_dims=('B', 'W', 'C'), label_dims=('B', 'W'),
+                 encoding_neural_type=SummaryPileupNeuralType(),
+                 label_neural_type=HaploidNeuralType()):
         """Constructor for data loader.
 
         Args:
@@ -79,6 +83,10 @@ class HDFPileupDataLoader(DataLayerNM):
         super().__init__()
         self.data_loader_type = data_loader_type
         self.hdf_file = hdf_file
+        self.encoding_dims = encoding_dims
+        self.label_dims = label_dims
+        self.encoding_neural_type = encoding_neural_type
+        self.label_neural_type = label_neural_type
 
         class DatasetWrapper(TorchDataset):
             """A wrapper around Torch dataset class to generate individual samples."""
@@ -131,7 +139,6 @@ class HDFPileupDataLoader(DataLayerNM):
         dataset = DatasetWrapper(
             data_loader_type, self.hdf_file, encoding_dtype, label_dtype,
             hdf_encoding_key, hdf_label_key)
-        print(len(dataset))
         self.dataloader = TorchDataLoader(dataset,
                                           batch_size=batch_size, shuffle=shuffle,
                                           num_workers=num_workers)
@@ -179,14 +186,14 @@ class ReadPileupDataLoader(DataLayerNM):
                 "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
             }
 
-    def __init__(self, data_loader_type, variant_loader, batch_size=32, shuffle=True, num_workers=4,
+    def __init__(self, data_loader_type, variant_loaders, batch_size=32, shuffle=True, num_workers=4,
                  sample_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
                  label_encoder=ZygosityLabelEncoder()):
         """Construct a data loader.
 
         Args:
             data_loader_type : Type of data loader (ReadPileupDataLoader.Type.TRAIN/EVAL/TEST)
-            variant_loader : A loader class for variants
+            variant_loaders : A list of loader classes for variants
             batch_size : batch size for data loader [32]
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
@@ -199,36 +206,48 @@ class ReadPileupDataLoader(DataLayerNM):
         """
         super().__init__()
         self.data_loader_type = data_loader_type
-        self.variant_loader = variant_loader
+        self.variant_loaders = variant_loaders
         self.sample_encoder = sample_encoder
         self.label_encoder = label_encoder
 
         class DatasetWrapper(TorchDataset):
             """A wrapper around Torch dataset class to generate individual samples."""
 
-            def __init__(self, data_loader_type, sample_encoder, variant_loader, label_encoder):
+            def __init__(self, data_loader_type, sample_encoder, variant_loaders, label_encoder):
                 """Construct a dataset wrapper.
 
                 Args:
                     data_loader_type : Type of data loader
                     sample_encoder : Custom pileup encoder for variant
-                    variant_loader : A loader class for variants
+                    variant_loaders : A list of loader classes for variants
                     label_encoder : Custom label encoder for variant
 
                 Returns:
                     Instance of class.
                 """
                 super().__init__()
-                self.variant_loader = variant_loader
+                self.variant_loaders = variant_loaders
                 self.label_encoder = label_encoder
                 self.sample_encoder = sample_encoder
                 self.data_loader_type = data_loader_type
 
+                self._len = sum([len(loader) for loader in self.variant_loaders])
+
+            def _map_idx_to_sample(self, sample_idx):
+                file_idx = 0
+                while(file_idx < len(self.variant_loaders)):
+                    if sample_idx < len(self.variant_loaders[file_idx]):
+                        return self.variant_loaders[file_idx][sample_idx]
+                    else:
+                        sample_idx -= len(self.variant_loaders[file_idx])
+                        file_idx += 1
+                raise RuntimeError("Could not map sample index to file. This is a bug.")
+
             def __len__(self):
-                return len(self.variant_loader)
+                return self._len
 
             def __getitem__(self, idx):
-                sample = self.variant_loader[idx]
+                sample = self._map_idx_to_sample(idx)
 
                 if self.data_loader_type == ReadPileupDataLoader.Type.TEST:
                     sample = self.sample_encoder(sample)
@@ -241,7 +260,7 @@ class ReadPileupDataLoader(DataLayerNM):
                     return label, encoding
 
         dataset = DatasetWrapper(
-            data_loader_type, self.sample_encoder, self.variant_loader, self.label_encoder)
+            data_loader_type, self.sample_encoder, self.variant_loaders, self.label_encoder)
         self.dataloader = TorchDataLoader(dataset,
                                           batch_size=batch_size, shuffle=shuffle,
                                           num_workers=num_workers)
