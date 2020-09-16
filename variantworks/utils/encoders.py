@@ -125,11 +125,13 @@ def sliding_window(array, window, step=1, axis=0):
     """
     chunk = [slice(None)] * array.ndim
     end = 0
+    chunks = []
     for start in range(0, array.shape[axis] - window + 1, step):
         end = start + window
         chunk[axis] = slice(start, end)
-        yield array[tuple(chunk)]
+        chunks.append(array[tuple(chunk)])
     if array.shape[axis] > end:
         start = array.shape[axis] - window
         chunk[axis] = slice(start, array.shape[axis])
-        yield array[tuple(chunk)]
+        chunks.append(array[tuple(chunk)])
+    return chunks

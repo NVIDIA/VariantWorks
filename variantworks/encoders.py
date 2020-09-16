@@ -102,7 +102,10 @@ class SummaryEncoder(Encoder):
         # Load pileup file into a dataframe
         pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
 
-        if (len(pileup) < end_pos) or (end_pos is None):
+        if (end_pos is None):
+            end_pos = len(pileup)
+
+        if (len(pileup) < end_pos):
             end_pos = len(pileup)
 
         subreads = pileup[:, 4]
@@ -188,7 +191,10 @@ class HaploidLabelEncoder(Encoder):
         # Load pileup file into a dataframe
         pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
 
-        if (len(pileup) < end_pos) or (end_pos is None):
+        if (end_pos is None):
+            end_pos = len(pileup)
+
+        if (len(pileup) < end_pos):
             end_pos = len(pileup)
 
         subreads = pileup[:, 4]
