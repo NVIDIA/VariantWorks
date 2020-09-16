@@ -25,6 +25,7 @@ from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback,
 
 from variantworks.dataloader import HDFPileupDataLoader
 from variantworks.networks import AlexNet
+from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 
 
 def create_model():
@@ -46,7 +47,10 @@ def train(args):
     # Create train DAG
     train_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.TRAIN, args.train_hdf, batch_size=32,
                                         shuffle=True, num_workers=args.threads,
-                                        hdf_encoding_key="encodings", hdf_label_key="labels")
+                                        hdf_encoding_key="encodings", hdf_label_key="labels",
+                                        encoding_dims=('B', 'C', 'H', 'W'), label_dims=tuple('B'),
+                                        encoding_neural_type=ReadPileupNeuralType(),
+                                        label_neural_type=VariantZygosityNeuralType())
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     vz_labels, encoding = train_dataset()
     vz = model(encoding=encoding)
@@ -81,7 +85,10 @@ def train(args):
     if args.eval_hdf:
         eval_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.EVAL, args.eval_hdf, batch_size=32,
                                            shuffle=False, num_workers=args.threads,
-                                           hdf_encoding_key="encodings", hdf_label_key="labels")
+                                           hdf_encoding_key="encodings", hdf_label_key="labels",
+                                           encoding_dims=('B', 'C', 'H', 'W'), label_dims=tuple('B'),
+                                           encoding_neural_type=ReadPileupNeuralType(),
+                                           label_neural_type=VariantZygosityNeuralType())
         eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
         eval_vz_labels, eval_encoding = eval_dataset()
         eval_vz = model(encoding=eval_encoding)

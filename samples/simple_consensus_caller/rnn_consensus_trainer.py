@@ -22,7 +22,7 @@ import nemo
 import torch
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
-from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
+from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback
 
 from variantworks.dataloader import HDFPileupDataLoader
 from variantworks.networks import ConsensusRNN
@@ -44,6 +44,39 @@ class CategoricalAccuracy(object):
         self._num_correct += torch.sum(correct).item()
         self._num_examples += correct.shape[0]
         return self._num_correct / self._num_examples
+
+
+def generate_eval_callback(categorical_accuracy_func):
+    """Custom callback function generator for network evaluation loop."""
+    def eval_iter_callback(tensors, global_vars):
+        if "eval_loss" not in global_vars.keys():
+            global_vars["eval_loss"] = []
+        for kv, v in tensors.items():
+            if kv.startswith("loss"):
+                global_vars["eval_loss"].append(torch.mean(torch.stack(v)).item())
+                # global_vars['eval_loss'].append(v.item())
+
+        if "top1" not in global_vars.keys():
+            global_vars["top1"] = []
+
+        output = None
+        labels = None
+        for kv, v in tensors.items():
+            if kv.startswith("output"):
+                # output = tensors[kv]
+                output = torch.cat(tensors[kv])
+            if kv.startswith("label"):
+                # labels = tensors[kv]
+                labels = torch.cat(tensors[kv])
+
+        if output is None:
+            raise Exception("output is None")
+
+        with torch.no_grad():
+            accuracy = categorical_accuracy_func(labels, output)
+            global_vars["top1"].append(accuracy)
+
+    return eval_iter_callback
 
 
 def create_model():
@@ -84,7 +117,7 @@ def train(args):
     # Logger callback
     loggercallback = nemo.core.SimpleLossLoggerCallback(
         tensors=[vz_loss, vz, vz_labels],
-        step_freq=5,
+        step_freq=50,
         print_func=lambda x: logging.info(f'Train Loss: {str(x[0].item())}, Train Acc: {str(cat_acc(x[2], x[1]))}'),
     )
     callbacks.append(loggercallback)
@@ -108,7 +141,10 @@ def train(args):
     if args.eval_hdf:
         eval_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.EVAL, args.eval_hdf, batch_size=32,
                                            shuffle=False, num_workers=args.threads,
-                                           hdf_encoding_key="encodings", hdf_label_key="labels")
+                                           hdf_encoding_key="features", hdf_label_key="labels",
+                                           encoding_dims=encoding_dims, label_dims=label_dims,
+                                           encoding_neural_type=encoding_neural_type,
+                                           label_neural_type=label_neural_type)
         eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
         eval_vz_labels, eval_encoding = eval_dataset()
         eval_vz = model(encoding=eval_encoding)
@@ -117,7 +153,7 @@ def train(args):
         # Add evaluation callback
         evaluator_callback = nemo.core.EvaluatorCallback(
             eval_tensors=[eval_vz_loss, eval_vz, eval_vz_labels],
-            user_iter_callback=eval_iter_callback,
+            user_iter_callback=generate_eval_callback(CategoricalAccuracy()),
             user_epochs_done_callback=eval_epochs_done_callback,
             eval_step=100,
             eval_epoch=1,
