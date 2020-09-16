@@ -215,6 +215,13 @@ class VCFReader(BaseReader):
         10. format - VCF FORMAT column [if requested]. GT is converted to an int \
                 representation of VariantZygosity enum.
 
+        For any entries where a value is missing or cannot be inferred, the following
+        default values are used:
+        float = NaN
+        int = int32.min
+        str = empty str
+        flag = False
+
         This dataframe can be easily converted to cuDF for large scale
         variant processing.
 
@@ -360,6 +367,11 @@ class VCFReader(BaseReader):
             # Iterate over each allele in variant to split up multi alleles.
             alts = variant.ALT
             for alt_idx, alt in enumerate(alts):
+                # This parser currently doesn't support gVCF files completely, hence any
+                # gVCF entries are ignored.
+                if alt == "." or alt == "<NON_REF>":
+                    continue
+
                 # Add standard DF entries for each variant.
                 df_dict["chrom"].append(variant.CHROM)
                 df_dict["start_pos"].append(variant.start)
@@ -465,6 +477,8 @@ class VCFReader(BaseReader):
                             val = variant.format(format_col)
                             if val is not None:
                                 val = val[sample_idx]
+                                if isinstance(val, np.str_):
+                                    val = [val]
                             else:
                                 default_val = self._get_default_val(self._header_type[format_col])
                                 num_vals = self._get_normalized_count(header_number, len(alts), len(samples))
