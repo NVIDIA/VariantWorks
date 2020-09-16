@@ -105,9 +105,9 @@ def calculate_positions(start_pos, end_pos, subreads, truth_coverage, exclude_no
         # Keep track of ref and insert positions in the pileup and the insertions
         # in the pileup.
         ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
-        ref_insert_pos.append((i, 0))
+        ref_insert_pos.append([i, 0])
         for j in range(longest_insertion):
-            ref_insert_pos.append((i, j+1))
+            ref_insert_pos.append([i, j+1])
         positions += ref_insert_pos
     return positions
 

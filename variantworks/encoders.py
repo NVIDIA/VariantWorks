@@ -93,6 +93,11 @@ class SummaryEncoder(Encoder):
         Args:
             region : Region dataclass specifying region within a pileup to generate
                      an encoding for.
+
+        Returns:
+            (count_matrix, positions) tuple
+            count_matrix : A torch tensor encoding the summary count for the pileup
+            positions : A torch tensor encoding reference and inserted positions in pileup
         """
         assert(isinstance(region, FileRegion))
         start_pos = region.start_pos
@@ -113,6 +118,7 @@ class SummaryEncoder(Encoder):
         positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage,
                                         self._exclude_no_coverage_positions)
 
+        positions = torch.IntTensor(positions)
         # Using positions, calculate pileup counts
         pileup_counts = torch.zeros((len(positions), 10))
         for i in range(len(positions)):
@@ -143,9 +149,9 @@ class SummaryEncoder(Encoder):
                     pileup_counts[i, self.symbols.index(inserted_base)] += 1
 
         if self._normalize_counts:
-            return normalize_counts(pileup_counts, positions)
+            return normalize_counts(pileup_counts, positions), positions
         else:
-            return pileup_counts
+            return pileup_counts, positions
 
 
 class HaploidLabelEncoder(Encoder):
