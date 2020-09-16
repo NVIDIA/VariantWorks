@@ -98,8 +98,13 @@ def test_vcf_outputting(get_created_vcf_tabix_files):
     vcf_writer = VCFWriter(input_vcf_df, output_path=output_path, sample_names=vcf_reader.samples)
     vcf_writer.write_output(input_vcf_df)
 
+    # Tabix index output file
+    with open(output_path, "rb") as in_file:
+        data = in_file.read()
+    indexed_output_file_path, _ = get_created_vcf_tabix_files(data)
+
     # Validate output files format and make sure the outputted genotype for each record matches to the network output
-    vcf_reader_updated = VCFReader(output_path,
+    vcf_reader_updated = VCFReader(indexed_output_file_path,
                                    is_fp=False,
                                    format_keys=["*"],
                                    info_keys=["*"],
