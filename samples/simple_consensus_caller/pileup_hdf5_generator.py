@@ -27,7 +27,6 @@ import subprocess
 import h5py
 import numpy as np
 import glob
-import pandas as pd
 
 from variantworks.encoders import SummaryEncoder, HaploidLabelEncoder
 from variantworks.types import FileRegion
@@ -37,126 +36,127 @@ from variantworks.utils.encoders import sliding_window
 def validate_data_dirs(data_dirs):
     """Ensure that each data directory contains subreads, draft, and truth."""
     for directory in data_dirs:
-        if (not os.path.exists(directory + "/subreads.fa")):
+        if (not os.path.exists(os.path.join(directory, "subreads.fa"))):
             raise RuntimeError("subreads.fa not present in all data folders.")
-        if (not os.path.exists(directory + "/draft.fa")):
+        if (not os.path.exists(os.path.join(directory, "draft.fa"))):
             raise RuntimeError("draft.fa not present in all data folders.")
-        if (not os.path.exists(directory + "/truth.fa")):
+        if (not os.path.exists(os.path.join(directory, "truth.fa"))):
             raise RuntimeError("truth.fa not present in all data folders.")
 
 
 def create_pileup(data_dir):
     """Create a pileup file from subreads, draft, and truth."""
-    subreads_file = data_dir + "subreads.fa"
-    draft_file = data_dir + "draft.fa"
-    truth_file = data_dir + "truth.fa"
-    suffix = data_dir.split("/")[-2]
+    subreads_file = os.path.join(data_dir, "subreads.fa")
+    draft_file = os.path.join(data_dir, "draft.fa")
+    truth_file = os.path.join(data_dir, "truth.fa")
+    suffix = os.path.basename(os.path.normpath(data_dir))
 
+    subreads_draft_bam = "{}_{}.bam".format("subreads2draft", suffix)
     subreads_align_cmd = [
         "minimap2",
         "-x",
         "map-pb",
         "-t",
         "1",
-        str(draft_file),
-        str(subreads_file),
+        draft_file,
+        subreads_file,
         "--MD",
         "-a",
         "-o",
-        "subreads2draft"+str(suffix)+".bam"]
-    subprocess.check_call(subreads_align_cmd)
+        subreads_draft_bam]
+    subprocess.check_call(subreads_align_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    subreads_draft_sorted_bam = "{}_{}.sorted.bam".format("subreads2draft", suffix)
     subreads_sort_cmd = [
         "samtools",
         "sort",
-        "subreads2draft"+str(suffix)+".bam",
+        subreads_draft_bam,
         "-o",
-        "subreads2draft"+str(suffix)+".sorted.bam"]
-    subreads_idx_cmd = [
-        "samtools", "index", "subreads2draft"+str(suffix)+".sorted.bam"]
-    subprocess.check_call(subreads_sort_cmd)
-    subprocess.check_call(subreads_idx_cmd)
+        subreads_draft_sorted_bam]
+    subprocess.check_call(subreads_sort_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    subreads_idx_cmd = [
+        "samtools", "index", subreads_draft_sorted_bam]
+    subprocess.check_call(subreads_idx_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    truth_draft_bam = "{}_{}.bam".format("truth2draft", suffix)
     truth_align_cmd = [
         "minimap2",
         "-x",
         "map-pb",
         "-t",
         "1",
-        str(draft_file),
-        str(truth_file),
+        draft_file,
+        truth_file,
         "--MD",
         "-a",
         "-o",
-        "truth2draft"+str(suffix)+".bam"]
-    subprocess.check_call(truth_align_cmd)
+        truth_draft_bam]
+    subprocess.check_call(truth_align_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    truth_draft_sorted_bam = "{}_{}.sorted.bam".format("truth2draft", suffix)
     truth_sort_cmd = [
         "samtools",
         "sort",
-        "truth2draft"+str(suffix)+".bam",
+        truth_draft_bam,
         "-o",
-        "truth2draft"+str(suffix)+".sorted.bam"]
-    truth_idx_cmd = ["samtools", "index", "truth2draft"+str(suffix)+".sorted.bam"]
+        truth_draft_sorted_bam]
     subprocess.check_call(truth_sort_cmd)
-    subprocess.check_call(truth_idx_cmd)
 
-    pileup = "subreads_and_truth"+str(suffix)+".pileup"
-    pileup_cmd = ["samtools", "mpileup", "subreads2draft"+str(suffix)+".sorted.bam",
-                  "truth2draft"+str(suffix)+".sorted.bam", "-s", "--reverse-del", "-o", pileup]
-    subprocess.check_call(pileup_cmd)
+    truth_idx_cmd = ["samtools", "index", truth_draft_sorted_bam]
+    subprocess.check_call(truth_idx_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    return FileRegion(start_pos=0, end_pos=None, file_path=pileup)
+    mpileup_file = "subreads_and_truth_{}.pileup".format(suffix)
+    pileup_cmd = ["samtools", "mpileup", subreads_draft_sorted_bam,
+                  truth_draft_sorted_bam, "-s", "--reverse-del", "-o", mpileup_file]
+    subprocess.check_call(pileup_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Remove intermediate files
+    files = glob.glob("*{}*bam*".format(suffix))
+    for f in files:
+        os.remove(f)
+
+    return FileRegion(start_pos=0, end_pos=None, file_path=mpileup_file)
 
 
-def encode(sample_encoder, label_encoder, data_dir):
+def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
     """Generate sample and label encoding for variant."""
     region = create_pileup(data_dir)
-    try:
-        encoding = sample_encoder(region)
-        label = label_encoder(region)
-    except pd.errors.ParserError:
-        return ([], [])
-    encoding_chunks = sliding_window(encoding, window=CHUNK_LEN, step=CHUNK_LEN - CHUNK_OVLP)
-    label_chunks = sliding_window(label, window=CHUNK_LEN,
-                                  step=CHUNK_LEN - CHUNK_OVLP)
 
-    # Delete created files by samtools and minimap2
-    os.system("rm " + str(region.file_path))
-    suffix = data_dir.split("/")[-2]
-    os.system("rm subreads2draft"+str(suffix)+".bam")
-    os.system("rm subreads2draft"+str(suffix)+".sorted.bam")
-    os.system("rm subreads2draft"+str(suffix)+".sorted.bam.bai")
-    os.system("rm truth2draft"+str(suffix)+".bam")
-    os.system("rm truth2draft"+str(suffix)+".sorted.bam")
-    os.system("rm truth2draft"+str(suffix)+".sorted.bam.bai")
+    # Generate matrix and label encoding.
+    encoding, encoding_positions = sample_encoder(region)
+    label, label_positions = label_encoder(region)
+    assert(len(encoding) == len(label)), print("Encoding and label dimensions not as expected:",
+                                               encoding.shape,
+                                               label.shape,
+                                               region)
 
+    encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
+    label_chunks = sliding_window(label, chunk_len,
+                                  step=chunk_len - chunk_ovlp)
+    os.remove(region.file_path)
     return (encoding_chunks, label_chunks)
 
 
 def generate_hdf5(args):
     """Generate encodings in multiprocess loop and save tensors to HDF5."""
-    if (args.single_dir is None):
-        data_dirs = glob.glob(args.data_dir[0] + "/*/")
-        if len(data_dirs) == 0:
-            raise RuntimeError("Could not find any folders within data directory.")
-        validate_data_dirs(data_dirs)
-    else:
-        data_dirs = [args.single_dir[0]]
-        validate_data_dirs(data_dirs)
+    data_dirs = []
+    for data_dir in args.data_dir:
+        for subdir in os.listdir(data_dir):
+            subdir = os.path.abspath(os.path.join(data_dir, subdir))
+            if os.path.isdir(subdir):
+                data_dirs.append(subdir)
 
-    print(data_dirs)
-    global CHUNK_LEN
-    global CHUNK_OVLP
-    global N_DIRS
-    CHUNK_LEN = args.chunk_len
-    CHUNK_OVLP = args.chunk_ovlp
-    N_DIRS = len(data_dirs)
+    for subdir in args.single_dir:
+        data_dirs.append(subdir)
+
+    # Validate directories
+    validate_data_dirs(data_dirs)
 
     # Setup encoder for samples and labels.
-    sample_encoder = SummaryEncoder()
-    label_encoder = HaploidLabelEncoder()
-    encode_func = partial(encode, sample_encoder, label_encoder)
+    sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True)
+    label_encoder = HaploidLabelEncoder(exclude_no_coverage_positions=True)
+    encode_func = partial(encode, sample_encoder, label_encoder, args.chunk_len, args.chunk_ovlp)
 
     # Multi-processing
     pool = mp.Pool(args.threads)
@@ -165,26 +165,21 @@ def generate_hdf5(args):
     print('Serializing {} pileup files...'.format(len(data_dirs)))
     label_idx = 0
     for out in pool.imap(encode_func, data_dirs):
-        if label_idx % 100 == 0:
-            print('Saved {} pileups'.format(label_idx))
+        if (label_idx + 1) % 100 == 0:
+            print('Generated {} pileups'.format(label_idx + 1))
         (encoding_chunks, label_chunks) = out
         if len(encoding_chunks) > 0 and len(label_chunks) > 0:
-            if encoding_chunks[0].shape[0] == CHUNK_LEN and label_chunks[0].shape[0] == CHUNK_LEN:
+            if encoding_chunks[0].shape[0] == args.chunk_len and label_chunks[0].shape[0] == args.chunk_len:
                 features += (encoding_chunks)
                 labels += (label_chunks)
         label_idx += 1
-    print('Saved {} pileup files'.format(len(data_dirs)))
+    print('Generated {} pileup files'.format(len(data_dirs)))
     features = np.stack(features, axis=0)
     labels = np.stack(labels, axis=0)
     h5_file = h5py.File(args.output_file, 'w')
     h5_file.create_dataset('features', data=features)
     h5_file.create_dataset('labels', data=labels)
     h5_file.close()
-
-    # cleanup
-    os.system("rm *.bam")
-    os.system("rm *.bai")
-    os.system("rm *.pileup")
 
 
 def build_parser():
@@ -195,7 +190,7 @@ def build_parser():
     parser.add_argument('-d', '--data_dir', nargs='+',
                         help='Directory with folders containing subreads, draft, truth.', default=[])
     parser.add_argument('-r', '--single_dir', nargs='+',
-                        help='Directory containing subreads, draft, truth.', default=None)
+                        help='Directory containing subreads, draft, truth.', default=[])
     parser.add_argument('-o', '--output_file', type=str,
                         help='Path to output HDF5 file.')
     parser.add_argument('-t', '--threads', type=int,

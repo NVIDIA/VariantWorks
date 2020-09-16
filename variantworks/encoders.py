@@ -31,6 +31,11 @@ from variantworks.utils.visualization import rgb_to_hex
 from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions
 
 
+# Torch multiprocessing limits interferes with python mp module. Using this helps resolve
+# error as described in https://forums.fast.ai/t/runtimeerror-received-0-items-of-ancdata/48935/2
+torch.multiprocessing.set_sharing_strategy('file_system')
+
+
 class Encoder:
     """An abstract class defining the interface to an encoder implementation.
 
@@ -105,7 +110,7 @@ class SummaryEncoder(Encoder):
         pileup_file = region.file_path
 
         # Load pileup file into a dataframe
-        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
+        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None, quoting=3).values
 
         if (end_pos is None):
             end_pos = len(pileup)
@@ -167,7 +172,7 @@ class HaploidLabelEncoder(Encoder):
     (https://github.com/nanoporetech/medaka/blob/master/medaka/labels.py)
     """
 
-    def __init__(self, exclude_no_coverage_positions=False):
+    def __init__(self, exclude_no_coverage_positions=True):
         """Constructor for the class.
 
         Returns:
@@ -188,6 +193,11 @@ class HaploidLabelEncoder(Encoder):
         Args:
             region : Region dataclass specifying region within a pileup to generate
                      an encoding for.
+
+        Returns:
+            (labels, positions) tuple
+            labels : A torch tensor encoding the labels for the pileup
+            positions : A torch tensor encoding reference and inserted positions in labels
         """
         assert(isinstance(region, FileRegion))
         start_pos = region.start_pos
@@ -195,7 +205,7 @@ class HaploidLabelEncoder(Encoder):
         pileup_file = region.file_path
 
         # Load pileup file into a dataframe
-        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None).values
+        pileup = pd.read_csv(pileup_file, delimiter="\t", header=None, quoting=3).values
 
         if (end_pos is None):
             end_pos = len(pileup)
@@ -208,6 +218,7 @@ class HaploidLabelEncoder(Encoder):
         positions = calculate_positions(start_pos, end_pos, subreads, truth_coverage,
                                         self._exclude_no_coverage_positions)
 
+        positions = torch.IntTensor(positions)
         # Using positions, calculate pileup counts
         truth = pileup[:, 8]
         labels = np.zeros((len(positions),))  # gap, A, C, G, T (sparse format)
@@ -237,7 +248,7 @@ class HaploidLabelEncoder(Encoder):
             else:
                 raise RuntimeError(
                     "Encode labels error - inserted position should be >= 0.")
-        return torch.from_numpy(labels)
+        return torch.from_numpy(labels), positions
 
 
 class BaseEnumEncoder(Encoder):
