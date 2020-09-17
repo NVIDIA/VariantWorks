@@ -143,11 +143,12 @@ class ConsensusRNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W'), LogitsType()),
         }
 
-    def __init__(self, sequence_length, num_output_logits):
+    def __init__(self, sequence_length, input_feature_size, num_output_logits):
         """Construct an Consensus RNN NeMo instance.
 
         Args:
             sequence_length : Length of sequence to feed into RNN.
+            input_feature_size : Length of input feature set.
             num_output_logits : Number of output classes of classifier.
 
         Returns:
@@ -156,7 +157,7 @@ class ConsensusRNN(TrainableNM):
         super().__init__()
         self.num_output_logits = num_output_logits
 
-        self.gru = nn.GRU(10, 128, 2, batch_first=True, bidirectional=True)
+        self.gru = nn.GRU(input_feature_size, 128, 2, batch_first=True, bidirectional=True)
         self.classifier = nn.Linear(2 * 128, self.num_output_logits)
 
         self._device = torch.device(

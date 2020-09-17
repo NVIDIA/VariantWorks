@@ -79,8 +79,11 @@ def stitch(probs, positions, decode_consensus_func):
     first_start_idx = 0
     for i in range(1, len(positions), 1):
         probabilities_chunk = probs[i - 1]
-        first_positions_chunk = positions[i - 1]
-        second_positions_chunk = positions[i]
+        # Convert positions tensor into np.darray format expected for overlap_indices function
+        first_positions_chunk = np.array([(pos[0], pos[1]) for pos in positions[i - 1]],
+                                         dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
+        second_positions_chunk = np.array([(pos[0], pos[1]) for pos in positions[i]],
+                                          dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
         # end1 and start2 are the new breaking points between two consecutive overlaps
         # found by the overlap_indices function.
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)

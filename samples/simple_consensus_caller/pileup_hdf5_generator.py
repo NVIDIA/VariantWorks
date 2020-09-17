@@ -134,12 +134,13 @@ def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
 
         os.remove(region.file_path)
         encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
+        position_chunks = sliding_window(encoding_positions, chunk_len, step=chunk_len - chunk_ovlp)
         label_chunks = sliding_window(label, chunk_len,
                                       step=chunk_len - chunk_ovlp)
-        return (encoding_chunks, label_chunks)
+        return (encoding_chunks, position_chunks, label_chunks)
     except Exception:
         os.remove(region.file_path)
-        return ([], [])
+        return ([], [], [])
 
 
 def generate_hdf5(args):
@@ -166,22 +167,27 @@ def generate_hdf5(args):
     pool = mp.Pool(args.threads)
     features = []
     labels = []
+    positions = []
     print('Serializing {} pileup files...'.format(len(data_dirs)))
     label_idx = 0
     for out in pool.imap(encode_func, data_dirs):
         if (label_idx + 1) % 100 == 0:
             print('Generated {} pileups'.format(label_idx + 1))
-        (encoding_chunks, label_chunks) = out
-        if len(encoding_chunks) > 0 and len(label_chunks) > 0:
-            if encoding_chunks[0].shape[0] == args.chunk_len and label_chunks[0].shape[0] == args.chunk_len:
-                features += (encoding_chunks)
-                labels += (label_chunks)
+        (encoding_chunks, position_chunks, label_chunks) = out
+        if encoding_chunks[0].shape[0] == args.chunk_len and \
+                label_chunks[0].shape[0] == args.chunk_len and \
+                position_chunks[0].shape[0] == args.chunk_len:
+            features += (encoding_chunks)
+            labels += (label_chunks)
+            positions += (position_chunks)
         label_idx += 1
     print('Generated {} pileup files'.format(len(data_dirs)))
     features = np.stack(features, axis=0)
     labels = np.stack(labels, axis=0)
+    positions = np.stack(positions, axis=0)
     h5_file = h5py.File(args.output_file, 'w')
     h5_file.create_dataset('features', data=features)
+    h5_file.create_dataset('positions', data=positions)
     h5_file.create_dataset('labels', data=labels)
     h5_file.close()
 

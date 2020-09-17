@@ -24,7 +24,7 @@ from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback
 
-from variantworks.dataloader import HDFPileupDataLoader
+from variantworks.dataloader import HDFDataLoader
 from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 
@@ -82,7 +82,7 @@ def generate_eval_callback(categorical_accuracy_func):
 def create_model():
     """Return neural network to train."""
     # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, num_output_logits=5)
+    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
 
     return rnn
 
@@ -100,15 +100,14 @@ def train(args):
     label_neural_type = HaploidNeuralType()
 
     # Create train DAG
-    train_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.TRAIN, args.train_hdf, batch_size=32,
-                                        shuffle=True, num_workers=args.threads,
-                                        hdf_encoding_key="features", hdf_label_key="labels",
-                                        encoding_dims=encoding_dims, label_dims=label_dims,
-                                        encoding_neural_type=encoding_neural_type,
-                                        label_neural_type=label_neural_type)
+    train_dataset = HDFDataLoader(args.train_hdf, batch_size=32,
+                                  shuffle=True, num_workers=args.threads,
+                                  tensor_keys=["features", "labels"],
+                                  tensor_dims=[encoding_dims, label_dims],
+                                  tensor_neural_types=[encoding_neural_type, label_neural_type])
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
     cat_acc = CategoricalAccuracy()
-    vz_labels, encoding = train_dataset()
+    encoding, vz_labels = train_dataset()
     vz = model(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
@@ -139,14 +138,13 @@ def train(args):
 
     # Create eval DAG if eval files are available
     if args.eval_hdf:
-        eval_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.EVAL, args.eval_hdf, batch_size=32,
-                                           shuffle=False, num_workers=args.threads,
-                                           hdf_encoding_key="features", hdf_label_key="labels",
-                                           encoding_dims=encoding_dims, label_dims=label_dims,
-                                           encoding_neural_type=encoding_neural_type,
-                                           label_neural_type=label_neural_type)
+        eval_dataset = HDFDataLoader(args.eval_hdf, batch_size=512,
+                                     shuffle=False, num_workers=args.threads,
+                                     tensor_keys=["features", "labels"],
+                                     tensor_dims=[encoding_dims, label_dims],
+                                     tensor_neural_types=[encoding_neural_type, label_neural_type])
         eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-        eval_vz_labels, eval_encoding = eval_dataset()
+        eval_encoding, eval_vz_labels = eval_dataset()
         eval_vz = model(encoding=eval_encoding)
         eval_vz_loss = eval_vz_ce_loss(logits=eval_vz, labels=eval_vz_labels)
 
@@ -155,7 +153,7 @@ def train(args):
             eval_tensors=[eval_vz_loss, eval_vz, eval_vz_labels],
             user_iter_callback=generate_eval_callback(CategoricalAccuracy()),
             user_epochs_done_callback=eval_epochs_done_callback,
-            eval_step=100,
+            eval_step=500,
             eval_epoch=1,
             eval_at_start=False,
         )

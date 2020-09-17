@@ -23,7 +23,7 @@ from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
 
-from variantworks.dataloader import HDFPileupDataLoader
+from variantworks.dataloader import HDFDataLoader
 from variantworks.networks import AlexNet
 from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 
@@ -45,14 +45,13 @@ def train(args):
     model = create_model()
 
     # Create train DAG
-    train_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.TRAIN, args.train_hdf, batch_size=32,
-                                        shuffle=True, num_workers=args.threads,
-                                        hdf_encoding_key="encodings", hdf_label_key="labels",
-                                        encoding_dims=('B', 'C', 'H', 'W'), label_dims=tuple('B'),
-                                        encoding_neural_type=ReadPileupNeuralType(),
-                                        label_neural_type=VariantZygosityNeuralType())
+    train_dataset = HDFDataLoader(args.train_hdf, batch_size=32,
+                                  shuffle=True, num_workers=args.threads,
+                                  tensor_keys=["encodings", "labels"],
+                                  tensor_dims=[('B', 'C', 'H', 'W'), tuple('B')],
+                                  tensor_neural_types=[ReadPileupNeuralType(), VariantZygosityNeuralType()])
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-    vz_labels, encoding = train_dataset()
+    encoding, vz_labels = train_dataset()
     vz = model(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
@@ -83,14 +82,13 @@ def train(args):
 
     # Create eval DAG if eval files are available
     if args.eval_hdf:
-        eval_dataset = HDFPileupDataLoader(HDFPileupDataLoader.Type.EVAL, args.eval_hdf, batch_size=32,
-                                           shuffle=False, num_workers=args.threads,
-                                           hdf_encoding_key="encodings", hdf_label_key="labels",
-                                           encoding_dims=('B', 'C', 'H', 'W'), label_dims=tuple('B'),
-                                           encoding_neural_type=ReadPileupNeuralType(),
-                                           label_neural_type=VariantZygosityNeuralType())
+        eval_dataset = HDFDataLoader(args.eval_hdf, batch_size=32,
+                                     shuffle=False, num_workers=args.threads,
+                                     tensor_keys=["encodings", "labels"],
+                                     tensor_dims=[('B', 'C', 'H', 'W'), tuple('B')],
+                                     tensor_neural_types=[ReadPileupNeuralType(), VariantZygosityNeuralType()])
         eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-        eval_vz_labels, eval_encoding = eval_dataset()
+        eval_encoding, eval_vz_labels = eval_dataset()
         eval_vz = model(encoding=eval_encoding)
         eval_vz_loss = eval_vz_ce_loss(logits=eval_vz, labels=eval_vz_labels)
 
