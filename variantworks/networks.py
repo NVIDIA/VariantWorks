@@ -140,7 +140,7 @@ class ConsensusRNN(TrainableNM):
         """
         return {
             # Variant type
-            'output_logit': NeuralType(('B', 'W'), LogitsType()),
+            'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
     def __init__(self, sequence_length, input_feature_size, num_output_logits):
@@ -175,5 +175,6 @@ class ConsensusRNN(TrainableNM):
         """
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)
-        outputs = F.softmax(encoding)
+        # Softmax along the logits dimension
+        outputs = F.softmax(encoding, dim=2)
         return outputs

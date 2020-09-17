@@ -95,7 +95,7 @@ def train(args):
 
     model = create_model()
     encoding_dims = ('B', 'W', 'C')
-    label_dims = ('B')
+    label_dims = ('B', 'W')
     encoding_neural_type = SummaryPileupNeuralType()
     label_neural_type = HaploidNeuralType()
 
@@ -105,7 +105,7 @@ def train(args):
                                   tensor_keys=["features", "labels"],
                                   tensor_dims=[encoding_dims, label_dims],
                                   tensor_neural_types=[encoding_neural_type, label_neural_type])
-    vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+    vz_ce_loss = CrossEntropyLossNM(logits_ndim=3)
     cat_acc = CategoricalAccuracy()
     encoding, vz_labels = train_dataset()
     vz = model(encoding=encoding)
@@ -143,7 +143,7 @@ def train(args):
                                      tensor_keys=["features", "labels"],
                                      tensor_dims=[encoding_dims, label_dims],
                                      tensor_neural_types=[encoding_neural_type, label_neural_type])
-        eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
+        eval_vz_ce_loss = CrossEntropyLossNM(logits_ndim=3)
         eval_encoding, eval_vz_labels = eval_dataset()
         eval_vz = model(encoding=eval_encoding)
         eval_vz_loss = eval_vz_ce_loss(logits=eval_vz, labels=eval_vz_labels)
