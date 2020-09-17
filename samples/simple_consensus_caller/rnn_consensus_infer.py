@@ -44,7 +44,7 @@ def infer(args):
 
     # Create train DAG
     infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=32,
-                                  shuffle=False, num_workers=args.threads,
+                                  shuffle=False, num_workers=1,
                                   tensor_keys=["features", "positions"],
                                   tensor_dims=[('B', 'W', 'C'), ('B', 'C')],
                                   tensor_neural_types=[SummaryPileupNeuralType(), HaploidNeuralType()],
@@ -80,10 +80,6 @@ def build_parser():
     parser.add_argument("--infer_hdf", type=str,
                         help="HDF with molecule encodings to infer on. Please use one HDF per molecule.",
                         required=True)
-    import multiprocessing
-    parser.add_argument("-t", "--threads", type=int,
-                        help="Threads to use for parallel loading.",
-                        required=False, default=multiprocessing.cpu_count())
     parser.add_argument("--model_dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
