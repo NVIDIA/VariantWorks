@@ -24,11 +24,9 @@ def find_insertions(base_pileup):
 
     Args:
         base_pileup: Single base's pileup string output from samtools mpileup
-
     Returns:
         insertions: list of all insertions in pileup string
         next_to_del: whether insertion is next to deletion symbol (should be ignored)
-
     """
     insertions = []
     idx = 0
@@ -58,10 +56,8 @@ def normalize_counts(pileup_counts, positions):
     Args:
         pileup_counts: torch tensor containing counts for each pileup column
         positions: structured numpy array containing major and minor positions
-
     Returns:
         norm_counts: Depth normalized pileup counts
-
     """
     # Calculate depth across all pileup columns
     depth = torch.sum(pileup_counts, axis=1)
@@ -89,10 +85,8 @@ def calculate_positions(start_pos, end_pos, subreads, truth_coverage, exclude_no
         truth_coverage: Array of integers specifying coverage at each pileup column
         exclude_no_coverage_positions: Boolean specifying whether to include 0 coverage
         positions during position calculation
-
     Returns:
         positions: Array of tuples containing major/minor positions of pileup
-
     """
     positions = []
     # Calculate ref and insert positions
@@ -111,8 +105,33 @@ def calculate_positions(start_pos, end_pos, subreads, truth_coverage, exclude_no
         # Keep track of ref and insert positions in the pileup and the insertions
         # in the pileup.
         ref_insert_pos = []  # ref position for ref base pos in pileup, insert for additional inserted bases
-        ref_insert_pos.append((i, 0))
+        ref_insert_pos.append([i, 0])
         for j in range(longest_insertion):
-            ref_insert_pos.append((i, j+1))
+            ref_insert_pos.append([i, j+1])
         positions += ref_insert_pos
     return positions
+
+
+def sliding_window(array, window, step=1, axis=0):
+    """Generate chunks for encoding and labels.
+
+    Args:
+        array: Numpy array with the pileup counts
+        window: Length of output chunks
+        step: window minus chunk overlap
+        axis: defaults to 0
+    Returns:
+        Iterator with chunks
+    """
+    chunk = [slice(None)] * array.ndim
+    end = 0
+    chunks = []
+    for start in range(0, array.shape[axis] - window + 1, step):
+        end = start + window
+        chunk[axis] = slice(start, end)
+        chunks.append(array[tuple(chunk)])
+    if array.shape[axis] > end:
+        start = array.shape[axis] - window
+        chunk[axis] = slice(start, array.shape[axis])
+        chunks.append(array[tuple(chunk)])
+    return chunks

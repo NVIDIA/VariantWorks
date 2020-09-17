@@ -27,7 +27,7 @@ def test_labels_correctness():
                         end_pos=14460,
                         file_path=os.path.join(get_data_folder(), "subreads_and_truth.pileup"))
     encoder = HaploidLabelEncoder(exclude_no_coverage_positions=False)
-    haploid_labels = encoder(region)
+    haploid_labels, _ = encoder(region)
     correct_labels = np.load(os.path.join(get_data_folder(), "sample_haploid_labels.npy"))
     assert(haploid_labels.shape == correct_labels.shape)
     assert(np.allclose(haploid_labels, correct_labels))
