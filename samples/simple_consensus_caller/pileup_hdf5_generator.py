@@ -131,12 +131,15 @@ def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
                                                    encoding.shape,
                                                    label.shape,
                                                    region)
+        assert(len(encoding_positions) == len(encoding)), print("Encoding and positions not as expected:",
+                                                                encoding.shape,
+                                                                encoding_positions.shape,
+                                                                region)
 
         os.remove(region.file_path)
         encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
         position_chunks = sliding_window(encoding_positions, chunk_len, step=chunk_len - chunk_ovlp)
-        label_chunks = sliding_window(label, chunk_len,
-                                      step=chunk_len - chunk_ovlp)
+        label_chunks = sliding_window(label, chunk_len, step=chunk_len - chunk_ovlp)
         return (encoding_chunks, position_chunks, label_chunks)
     except Exception:
         os.remove(region.file_path)
@@ -174,13 +177,14 @@ def generate_hdf5(args):
         if (label_idx + 1) % 100 == 0:
             print('Generated {} pileups'.format(label_idx + 1))
         (encoding_chunks, position_chunks, label_chunks) = out
-        if encoding_chunks[0].shape[0] == args.chunk_len and \
-                label_chunks[0].shape[0] == args.chunk_len and \
-                position_chunks[0].shape[0] == args.chunk_len:
-            features += (encoding_chunks)
-            labels += (label_chunks)
-            positions += (position_chunks)
-        label_idx += 1
+        if encoding_chunks and position_chunks and label_chunks:
+            if encoding_chunks[0].shape[0] == args.chunk_len \
+                    and label_chunks[0].shape[0] == args.chunk_len \
+                    and position_chunks[0].shape[0] == args.chunk_len:
+                features += (encoding_chunks)
+                labels += (label_chunks)
+                positions += (position_chunks)
+                label_idx += 1
     print('Generated {} pileup files'.format(len(data_dirs)))
     features = np.stack(features, axis=0)
     labels = np.stack(labels, axis=0)
