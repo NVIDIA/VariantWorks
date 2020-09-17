@@ -221,10 +221,10 @@ class VCFReader(BaseReader):
 
         For any entries where a value is missing or cannot be inferred, the following
         default values are used:
-        float = NaN
-        int = int32.min
+        float = numpy.nan
+        int = numpy.int32.min
         str = empty str
-        flag = False
+        flag = numpy.bool_(False)
 
         This dataframe can be easily converted to cuDF for large scale
         variant processing.
