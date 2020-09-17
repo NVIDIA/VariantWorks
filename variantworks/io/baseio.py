@@ -61,3 +61,16 @@ class BaseReader(ABC):
     def dataframe(self):
         """Return parsed file as dataframe."""
         return NotImplementedError
+
+
+class BaseWriter(ABC):
+    """Base class for format writer."""
+
+    def __init__(self):
+        """Initialize a writer instance."""
+        pass
+
+    @abstractmethod
+    def write_output(self):
+        """Write format to disk."""
+        return NotImplementedError

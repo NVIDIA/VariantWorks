@@ -18,29 +18,29 @@
 
 import os
 import pandas as pd
-import time
 
-from variantworks.io.vcfio import VCFReader
+from variantworks.io.vcfio import VCFReader, VCFWriter
 
 pd.set_option('max_columns', 100)
 
-sample_folder = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+cwd = os.path.dirname(os.path.realpath(__file__))
+sample_folder = os.path.dirname(cwd)
 repo_root_folder = os.path.dirname(sample_folder)
 tests_data_folder = os.path.join(repo_root_folder, "tests", "data")
 test_vcf_file = os.path.join(tests_data_folder, "candidates_multisample.vcf.gz")
 
-t = time.time()
 reader = VCFReader(test_vcf_file,
                    bams=[],
                    tags={"custom_tag": 1},
-                   info_keys=["AF"],
-                   filter_keys=[],
-                   format_keys=[],
+                   info_keys=["*"],
+                   filter_keys=["*"],
+                   format_keys=["*"],
                    num_threads=4,
                    regions=[],
-                   require_genotype=True,
-                   sort=True)
-read_time = time.time() - t
+                   require_genotype=False,
+                   sort=True,
+                   unbounded_val_max_cols=2)
 print(reader.dataframe)
 
-print("Elapsed time for reading VCF (seconds): ", read_time)
+writer = VCFWriter(reader.dataframe, os.path.join(cwd, "test_out.vcf"), sample_names=reader.samples, num_threads=4)
+writer.write_output(reader.dataframe)
