@@ -19,6 +19,7 @@
 import argparse
 
 import nemo
+import os
 import torch
 from nemo import logging
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
@@ -91,7 +92,8 @@ def train(args):
     """Train a sample model with test data."""
     # Create neural factory as per NeMo requirements.
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU)
+        placement=nemo.core.neural_factory.DeviceType.GPU,
+        local_rank=args.local_rank)
 
     model = create_model()
     encoding_dims = ('B', 'W', 'C')
@@ -170,6 +172,8 @@ def build_parser():
     """Build parser object with options for sample."""
     parser = argparse.ArgumentParser(
         description="Simple SNP caller based on VariantWorks.")
+
+    parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', None), type=int)
 
     parser.add_argument("--train_hdf",
                         help="HDF with examples for training.",
