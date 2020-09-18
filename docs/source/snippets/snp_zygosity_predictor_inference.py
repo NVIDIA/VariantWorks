@@ -23,10 +23,9 @@ import pathlib
 import torch
 
 from variantworks.dataloader import ReadPileupDataLoader
-from variantworks.io.vcfio import VCFReader
+from variantworks.io.vcfio import VCFReader, VCFWriter
 from variantworks.networks import AlexNet
 from variantworks.encoders import PileupEncoder, ZygosityLabelDecoder
-from variantworks.result_writer import VCFResultWriter
 
 # Get VariantWorks root directory
 repo_root_dir = pathlib.Path(__file__).parent.parent.parent.parent.absolute()
@@ -75,9 +74,13 @@ for tensor_batches in results:
         inferred_zygosity += [zyg_decoder(pred)
                               for pred in predicted_classes]
 
-# Use the VCFResultWriter to output predicted zygosities to a VCF file.
-result_writer = VCFResultWriter(vcf_loader,
-                                inferred_zygosities=inferred_zygosity,
-                                output_location="./")
+# Update genotype entry in dataframe with predicted values.
+genotype_column = "{}_GT".format(*vcf_loader.samples)
+vcf_loader.dataframe[genotype_column] = inferred_zygosity
 
-result_writer.write_output()
+# Use the VCFWriter to output predicted zygosities to a VCF file.
+result_writer = VCFWriter(vcf_loader.dataframe,
+                          output_path="./out.vcf",
+                          sample_names = vcf_loader.samples)
+
+result_writer.write_output(vcf_loader.dataframe)
