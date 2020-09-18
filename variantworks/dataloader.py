@@ -111,7 +111,7 @@ class HDFDataLoader(DataLayerNM):
         dataset = DatasetWrapper(self.hdf_file, self.tensor_dtypes, self.tensor_keys)
         self.dataloader = TorchDataLoader(dataset,
                                           batch_size=batch_size, shuffle=shuffle,
-                                          num_workers=num_workers)
+                                          num_workers=num_workers, pin_memory=True)
 
     def __len__(self):
         """Return length of data loader."""
