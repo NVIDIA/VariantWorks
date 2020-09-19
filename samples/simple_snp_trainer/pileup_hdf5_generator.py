@@ -92,7 +92,7 @@ def build_parser():
                         help="List of false positive files. For inference test set, use this option.", default=[])
     parser.add_argument("--bam", type=str,
                         help="BAM file with reads.", required=True)
-    parser.add_argument("-o", "--output_file", type=str,
+    parser.add_argument("-o", "--output-file", type=str,
                         help="Path to output HDF5 file.")
     parser.add_argument("-t", "--threads", type=int,
                         help="Threads to parallelize over.", default=mp.cpu_count())

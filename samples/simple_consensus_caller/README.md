@@ -63,7 +63,7 @@ and labels to the network during training and evaluation, and a reference RNN ne
 
 The following is a sample command line for the trainer.
 ```
-python rnn_consensus_trainer.py --train_hdf train.hdf --epochs 5 --model_dir `pwd`/sample_models --eval_hdf eval.hdf
+python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 5 --model-dir `pwd`/sample_models --eval-hdf eval.hdf
 ```
 
 Details of the script usage can be found in its help message.
@@ -86,5 +86,5 @@ sequence encodings are present, the script may concatenate them into a single in
 Here's a sample command line for the inference script using a pre-trained model.
 ```
 python pileup_hdf5_generator.py -r `pwd`/data/samples/3 -o infer.hdf
-python rnn_consensus_infer.py --infer_hdf infer.hdf --model_dir `pwd`/data/pretrained_model -o sample.fasta
+python rnn_consensus_infer.py --infer-hdf infer.hdf --model-dir `pwd`/data/pretrained_model -o sample.fasta
 ```
