@@ -24,3 +24,11 @@ class ReadPileupNeuralType(ChannelType):
 
 class VariantZygosityNeuralType(LabelsType):
     """Element type to represent variant type (no variant, heterozygous or homozygous."""
+
+
+class SummaryPileupNeuralType(ChannelType):
+    """Element type to represent a consensus summary encoding."""
+
+
+class HaploidNeuralType(LabelsType):
+    """Element type to represent label output from HaploidLabelEncoder."""

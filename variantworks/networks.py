@@ -17,6 +17,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
@@ -112,3 +113,68 @@ class AlexNet(TrainableNM):
         encoding = self.common_classifier(encoding)
         vz = self.classifier(encoding)
         return vz
+
+
+class ConsensusRNN(TrainableNM):
+    """A Neural Module for training a Consensus RNN."""
+
+    @property
+    @add_port_docs()
+    def input_ports(self):
+        """Return definitions of module input ports.
+
+        Returns:
+            Module input ports.
+        """
+        return {
+            "encoding": NeuralType(('B', 'W', 'C'), ChannelType()),
+        }
+
+    @property
+    @add_port_docs()
+    def output_ports(self):
+        """Return definitions of module output ports.
+
+        Returns:
+            Module output ports.
+        """
+        return {
+            # Variant type
+            'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
+        }
+
+    def __init__(self, sequence_length, input_feature_size, num_output_logits):
+        """Construct an Consensus RNN NeMo instance.
+
+        Args:
+            sequence_length : Length of sequence to feed into RNN.
+            input_feature_size : Length of input feature set.
+            num_output_logits : Number of output classes of classifier.
+
+        Returns:
+            Instance of class.
+        """
+        super().__init__()
+        self.num_output_logits = num_output_logits
+
+        self.gru = nn.GRU(input_feature_size, 128, 2, batch_first=True, bidirectional=True)
+        self.classifier = nn.Linear(2 * 128, self.num_output_logits)
+
+        self._device = torch.device(
+            "cuda" if self.placement == DeviceType.GPU else "cpu")
+        self.to(self._device)
+
+    def forward(self, encoding):
+        """Abstract function to run the network.
+
+        Args:
+            encoding : Input sequence to run network on.
+
+        Returns:
+            Output of forward pass.
+        """
+        encoding, h_n = self.gru(encoding)
+        encoding = self.classifier(encoding)
+        # Softmax along the logits dimension
+        outputs = F.softmax(encoding, dim=2)
+        return outputs
