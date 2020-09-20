@@ -173,12 +173,13 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Simple SNP caller based on VariantWorks.")
 
-    parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', None), type=int)
-
-    parser.add_argument("--train_hdf",
+    parser.add_argument("--local-rank", type=int,
+                        help="Local rank for multi GPU training. Do not set directly.",
+                        default=os.getenv('LOCAL_RANK', None))
+    parser.add_argument("--train-hdf",
                         help="HDF with examples for training.",
                         required=True)
-    parser.add_argument("--eval_hdf",
+    parser.add_argument("--eval-hdf",
                         help="HDF with examples for evaluation.",
                         required=False)
     parser.add_argument("--epochs", type=int,
@@ -188,7 +189,7 @@ def build_parser():
     parser.add_argument("-t", "--threads", type=int,
                         help="Threads to use for parallel loading.",
                         required=False, default=multiprocessing.cpu_count())
-    parser.add_argument("--model_dir", type=str,
+    parser.add_argument("--model-dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
 

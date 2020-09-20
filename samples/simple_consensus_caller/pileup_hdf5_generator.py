@@ -201,18 +201,18 @@ def build_parser():
     parser = \
         argparse.ArgumentParser(description='Store encoded data in HDF5 format.'
                                 )
-    parser.add_argument('-d', '--data_dir', nargs='+',
+    parser.add_argument('-d', '--data-dir', nargs='+',
                         help='Directory with folders containing subreads, draft, truth.', default=[])
-    parser.add_argument('-r', '--single_dir', nargs='+',
+    parser.add_argument('-r', '--single-dir', nargs='+',
                         help='Directory containing subreads, draft, truth.', default=[])
-    parser.add_argument('-o', '--output_file', type=str,
+    parser.add_argument('-o', '--output-file', type=str,
                         help='Path to output HDF5 file.')
     parser.add_argument('-t', '--threads', type=int,
                         help='Threads to parallelize over.',
                         default=mp.cpu_count())
-    parser.add_argument('-c', '--chunk_len', type=int,
+    parser.add_argument('-c', '--chunk-len', type=int,
                         help='Length of chunks to be created from pileups.', default=1000)
-    parser.add_argument('--chunk_ovlp', type=int,
+    parser.add_argument('--chunk-ovlp', type=int,
                         help='Length of overlaps between chunks.', default=200)
     return parser
 

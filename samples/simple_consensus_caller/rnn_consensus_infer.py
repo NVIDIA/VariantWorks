@@ -77,13 +77,13 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Simple SNP caller based on VariantWorks.")
 
-    parser.add_argument("--infer_hdf", type=str,
+    parser.add_argument("--infer-hdf", type=str,
                         help="HDF with molecule encodings to infer on. Please use one HDF per molecule.",
                         required=True)
-    parser.add_argument("--model_dir", type=str,
+    parser.add_argument("--model-dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
-    parser.add_argument("-o", "--out_file", type=str,
+    parser.add_argument("-o", "--out-file", type=str,
                         help="Output file name for inferred consensus.",
                         required=True)
     return parser
