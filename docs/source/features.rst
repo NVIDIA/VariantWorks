@@ -26,8 +26,7 @@ and implement the abstract method `__call__`, which triggers the encoding genera
 Currently available encoders -
 
 * :class:`PileupEncoder<variantworks.encoders.PileupEncoder>` - Encoding read pileups as multi dimensional images.
-  **Only SNP encoding is available right now.***
-* :class:`BaseEnumEncoder<variantworks.encoders.BaseEnumEncoder>` - An Enum encoder which converts nucleotide base char type to a class number
+* :class:`PileupEncoder<variantworks.encoders.SummaryEncoder>` - Encoding pileups into a matrix of nucleotide summary counts.
 
 I/O
 ---
@@ -44,21 +43,8 @@ compatible and easy to use with data loaders.
 
 Currently available readers - 
 
-* :class:`VCFReader<variantworks.io.vcfio.VCFReader>` - Reader for VCF compressed and indexed VCF files.
-  **VCFReader only support reading single sample VCFs.***
-
-
-Results Writers
-```````````````
-
-After variants have been predicted/evaluated, they are usually required to be output into file formats such as VCF for
-downstream processing. VariantWorks provides a :class:`ResultWriter<variantworks.result_writer.ResultWriter>` base class
-to facilitate the creation of result writers. Custom writers need to implement only the `write_output` function to be compatible
-with the base class.
-
-Currently support result writers -
-
-* :class:`VCFResultWriter<variantworks.result_writer.VCFResultWriter>` class which can output predicted zygosities into a VCF file.
+* VCF I/O module provides :class:`VCFReader<variantworks.io.vcfio.VCFReader>` and :class:`VCFWriter<variantworks.io.vcfio.VCFWriter>` for
+  parsing VCFs into dataframes and serializing VCF dataframes back into files.
 
 
 Data Loaders
@@ -71,6 +57,9 @@ NeMo toolkit, we leverage the data loader abstractions defined in
 Currently available data loaders - 
 
 * :class:`ReadPileupDataLoader<variantworks.dataloader.ReadPileupDataLoader>` - encapsulates loading samples from VCF and using PileupEncoders to generate training data.
+  This type of data loader is typically useful for variant calling tasks which process BAMs and VCFs simultaneously.
+* :class:`HDFDataLoader<variantworks.dataloader.HDFDataLoader>` - encapsulates a generalized, multi-threaded data loader for loading tensors from HDF files. This type
+  of data loader is frequently used when data is prepared/serialized ahead of time into a HDF file and directly read from the HDF file during training/evaluation loops.
 
 
 Reference Networks
@@ -85,5 +74,4 @@ Like the data loaders, reference neural networks are also defined within the NeM
 Currently available networks -
 
 * :class:`AlexNext<variantworks.networks.AlexNet>`
-
-Most customized networks architectures will be added over time.
+* :class:`AlexNext<variantworks.networks.ConsensusRNN>`
