@@ -23,6 +23,7 @@ import h5py
 from nemo.backends.pytorch.nm import DataLayerNM
 from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType
+from nemo.core import DeviceType
 import torch
 
 from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
@@ -93,25 +94,48 @@ class HDFDataLoader(DataLayerNM):
                 self.hdf_file = hdf_file
                 self.tensor_dtypes = tensor_dtypes
                 self.tensor_keys = tensor_keys
+                with h5py.File(self.hdf_file, "r") as hdf:
+                    self.len = len(hdf.get(self.tensor_keys[0]))
+                self._h5_gen = None
 
             def __len__(self):
-                hdf = h5py.File(self.hdf_file, "r")
-                return len(hdf.get(self.tensor_keys[0]))
+                return self.len
 
             def __getitem__(self, idx):
-                hdf = h5py.File(self.hdf_file, "r")
+                # Using generator to keep the file handle to HDF5
+                # file open during the life of the process.
+                if self._h5_gen is None:
+                    self._h5_gen = self._get_generator()
+                    next(self._h5_gen)
+                return self._h5_gen.send(idx)
 
-                outputs = []
-                for i, key in enumerate(self.tensor_keys):
-                    data = hdf.get(key)
-                    tensor = torch.tensor(data[idx], dtype=self.tensor_dtypes[i])
-                    outputs.append(tensor)
-                return tuple(outputs)
+            def _get_generator(self):
+                hrecs = {}
+                hdf = h5py.File(self.hdf_file, "r")
+                for key in hdf.keys():
+                    hrecs[key] = hdf.get(key)
+
+                idx = yield
+                while True:
+                    outputs = []
+                    for i, key in enumerate(self.tensor_keys):
+                        data = hrecs[key]
+                        tensor = torch.tensor(data[idx], dtype=self.tensor_dtypes[i])
+                        outputs.append(tensor)
+                    idx = yield tuple(outputs)
 
         dataset = DatasetWrapper(self.hdf_file, self.tensor_dtypes, self.tensor_keys)
+
+        sampler = None
+        if self._placement == DeviceType.AllGpu:
+            sampler = torch.utils.data.distributed.DistributedSampler(self._dataset)
+
         self.dataloader = TorchDataLoader(dataset,
-                                          batch_size=batch_size, shuffle=shuffle,
-                                          num_workers=num_workers, pin_memory=True)
+                                          batch_size=batch_size,
+                                          shuffle=shuffle if sampler is None else False,
+                                          num_workers=num_workers,
+                                          pin_memory=True,
+                                          sampler=sampler)
 
     def __len__(self):
         """Return length of data loader."""
@@ -231,9 +255,17 @@ class ReadPileupDataLoader(DataLayerNM):
 
         dataset = DatasetWrapper(
             data_loader_type, self.sample_encoder, self.variant_loaders, self.label_encoder)
+
+        sampler = None
+        if self._placement == DeviceType.AllGpu:
+            sampler = torch.utils.data.distributed.DistributedSampler(self._dataset)
+
         self.dataloader = TorchDataLoader(dataset,
-                                          batch_size=batch_size, shuffle=shuffle,
-                                          num_workers=num_workers)
+                                          batch_size=batch_size,
+                                          shuffle=shuffle if sampler is None else False,
+                                          num_workers=num_workers,
+                                          pin_memory=True,
+                                          sampler=sampler)
 
     def __len__(self):
         """Return number of items in dataloader instance."""
