@@ -26,7 +26,13 @@ and implement the abstract method `__call__`, which triggers the encoding genera
 Currently available encoders -
 
 * :class:`PileupEncoder<variantworks.encoders.PileupEncoder>` - Encoding read pileups as multi dimensional images.
-* :class:`PileupEncoder<variantworks.encoders.SummaryEncoder>` - Encoding pileups into a matrix of nucleotide summary counts.
+* :class:`ZygosityLabelEncoder<variantworks.encoders.ZygosityLabelEncoder>` - Encoding a variant entry into a zygosity label.
+* :class:`SummaryEncoder<variantworks.encoders.SummaryEncoder>` - Encoding pileups into a matrix of nucleotide summary counts.
+* :class:`HaploidLabelEncoder<variantworks.encoders.HaploidLabelEncoder>` - Encoding pileups into labels with true nucleotide sequence.
+
+Encoders are also encouraged to implement a visualization function to enable visual inspection of
+encodings for debugging and analysis. This is optional for encoders, and is currently only implemented
+for :meth:`PileupEncoder.visualize<variantworks.encoders.PileupEncoder.visualize>`.
 
 I/O
 ---
