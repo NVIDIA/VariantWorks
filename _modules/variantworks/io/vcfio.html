@@ -1,0 +1,1178 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>variantworks.io.vcfio &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Core Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidocs/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>variantworks.io.vcfio</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for variantworks.io.vcfio</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># Copyright 2020 NVIDIA CORPORATION.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="c1">#</span>
+<span class="sd">&quot;&quot;&quot;Classes for reading and writing VCFs.&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">cyvcf2</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">variantworks.io.baseio</span> <span class="kn">import</span> <span class="n">BaseReader</span><span class="p">,</span> <span class="n">BaseWriter</span>
+<span class="kn">from</span> <span class="nn">variantworks.types</span> <span class="kn">import</span> <span class="n">VariantZygosity</span><span class="p">,</span> <span class="n">VariantType</span><span class="p">,</span> <span class="n">Variant</span>
+<span class="kn">from</span> <span class="nn">variantworks.utils.exceptions</span> <span class="kn">import</span> <span class="n">extend_exception</span>
+
+
+<span class="k">def</span> <span class="nf">_df_row_to_variant</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span>
+                       <span class="n">idx</span><span class="p">,</span>
+                       <span class="n">format_vcf_key_counts</span><span class="p">,</span>
+                       <span class="n">sample_names</span><span class="p">,</span>
+                       <span class="n">filter_vcf_keys</span><span class="p">,</span>
+                       <span class="n">info_vcf_key_counts</span><span class="p">,</span>
+                       <span class="n">header_type</span><span class="p">,</span> <span class="n">vcf</span><span class="p">,</span> <span class="n">bams</span><span class="p">):</span>
+    <span class="c1"># Convert row Series into dict to improve access performance.</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="c1"># Build sample data by iterating through FORMAT columns.</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">zygosities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">format_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">format_vcf_key_counts</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="n">sample_names</span><span class="p">:</span>
+        <span class="n">call_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">format_keys</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="n">format_vcf_key_counts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">call_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header_type</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">k</span><span class="p">)]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">count</span><span class="p">):</span>
+                    <span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header_type</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">-</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">)]))</span>
+                <span class="n">call_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">call_data</span><span class="p">)</span>
+        <span class="n">zyg_col</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_GT&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">call</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">zyg_col</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+            <span class="n">zygosities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">VariantZygosity</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">zyg_col</span><span class="p">]))</span>
+
+    <span class="c1"># Build filter data by iterating over all saved FILTER keys.</span>
+    <span class="n">var_filter</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">filter_vcf_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;FILTER_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)]:</span>
+            <span class="n">var_filter</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="c1"># Build info data by iterating over all saved INFO keys.</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">info_vcf_key_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">header_type</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)])</span>
+            <span class="n">info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">count</span><span class="p">):</span>
+                <span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header_type</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">-</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">)]))</span>
+            <span class="n">info</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+
+    <span class="n">variant</span> <span class="o">=</span> <span class="n">Variant</span><span class="p">(</span><span class="n">chrom</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;chrom&quot;</span><span class="p">],</span>
+                      <span class="n">pos</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;start_pos&quot;</span><span class="p">],</span>
+                      <span class="nb">id</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">in</span> <span class="n">row</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+                      <span class="n">ref</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
+                      <span class="n">allele</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;alt&quot;</span><span class="p">],</span>
+                      <span class="n">quality</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;quality&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;quality&quot;</span> <span class="ow">in</span> <span class="n">row</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+                      <span class="nb">filter</span><span class="o">=</span><span class="p">(</span><span class="n">var_filter</span> <span class="k">if</span> <span class="n">var_filter</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+                      <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
+                      <span class="nb">format</span><span class="o">=</span><span class="n">format_keys</span><span class="p">,</span>
+                      <span class="nb">type</span><span class="o">=</span><span class="n">VariantType</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;variant_type&quot;</span><span class="p">]),</span>
+                      <span class="n">samples</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span>
+                      <span class="n">zygosity</span><span class="o">=</span><span class="n">zygosities</span><span class="p">,</span>
+                      <span class="n">vcf</span><span class="o">=</span><span class="n">vcf</span><span class="p">,</span>
+                      <span class="n">bams</span><span class="o">=</span><span class="n">bams</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">variant</span>
+
+
+<div class="viewcode-block" id="VCFReader"><a class="viewcode-back" href="../../../apidocs/variantworks.html#variantworks.io.vcfio.VCFReader">[docs]</a><span class="k">class</span> <span class="nc">VCFReader</span><span class="p">(</span><span class="n">BaseReader</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Reader for VCF files.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VCFReader.__init__"><a class="viewcode-back" href="../../../apidocs/variantworks.html#variantworks.io.vcfio.VCFReader.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">vcf</span><span class="p">,</span>
+                 <span class="n">bams</span><span class="o">=</span><span class="p">[],</span>
+                 <span class="n">is_fp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">require_genotype</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">tags</span><span class="o">=</span><span class="p">{},</span>
+                 <span class="n">info_keys</span><span class="o">=</span><span class="p">[],</span>
+                 <span class="n">filter_keys</span><span class="o">=</span><span class="p">[],</span>
+                 <span class="n">format_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+                 <span class="n">regions</span><span class="o">=</span><span class="p">[],</span>
+                 <span class="n">num_threads</span><span class="o">=</span><span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">(),</span>
+                 <span class="n">chunksize</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                 <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">unbounded_val_max_cols</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse and extract variants from a vcf/bam tuple.</span>
+
+<span class="sd">        Note VCFReader splits multi-allelic entries into separate variant</span>
+<span class="sd">        entries. VCFReader also doesn&#39;t maintain the original ordering of variants</span>
+<span class="sd">        from the VCF becasue of its multi threaded nature for parsing.</span>
+
+<span class="sd">        If a gVCF file is passed into the VCFReader, all entries where the ALT</span>
+<span class="sd">        columns are &quot;.&quot; or &quot;&lt;NON_REF&gt;&quot; will be ignored as range entries</span>
+<span class="sd">        are not handled in this reader currently.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vcf : Path to VCF file.</span>
+<span class="sd">            bams : List of BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.</span>
+<span class="sd">            is_fp : Is the VCF for false positive variants.</span>
+<span class="sd">            require_genotype : If all samples need genotype called.</span>
+<span class="sd">            tags : A dictionary with custom tags for VCF dataframe.\</span>
+<span class="sd">                Format = {&quot;tag1&quot; : 1, &quot;tag2&quot; : False}. [{} by default]</span>
+<span class="sd">            info_keys : List of INFO columns to parse. For all columns, pass &quot;*&quot;. [Empty by default].</span>
+<span class="sd">            filter_keys : List of FILTER columns to parse. For all columns, pass &quot;*&quot;. [Empty be default].</span>
+<span class="sd">            format_keys : List of FORMAT columns to parse. For all columns, pass &quot;*&quot;. [Empty by default].</span>
+<span class="sd">            regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi).\</span>
+<span class="sd">                Format = [&quot;chr:start-end&quot;, &quot;chr2:s-e&quot;,...]. [None by default]</span>
+<span class="sd">            num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]</span>
+<span class="sd">            chunksize : Number of VCF rows to parse in a single threads. [5000 by default].</span>
+<span class="sd">            sort : Order DataFrame by chr and start position.</span>
+<span class="sd">            unbounded_val_max_cols : Number of values to assume for unbounded VCF keys. [3 by default, minimum 2]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vcf</span> <span class="o">=</span> <span class="n">vcf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bams</span> <span class="o">=</span> <span class="n">bams</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_fp</span> <span class="o">=</span> <span class="n">is_fp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_genotype</span> <span class="o">=</span> <span class="n">require_genotype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span> <span class="o">=</span> <span class="n">tags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_regions</span> <span class="o">=</span> <span class="n">regions</span> <span class="k">if</span> <span class="n">regions</span> <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span> <span class="o">=</span> <span class="n">num_threads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chunksize</span> <span class="o">=</span> <span class="n">chunksize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sort</span> <span class="o">=</span> <span class="n">sort</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unbounded_val_max_cols</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">unbounded_val_max_cols</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+        <span class="c1"># Keep track of metadata per column</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span> <span class="o">=</span> <span class="n">info_keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span> <span class="o">=</span> <span class="n">filter_keys</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span> <span class="o">=</span> <span class="n">format_keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header_number</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Parse the VCF</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_parse_vcf</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">samples</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get list of samples names in VCF file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get Variant instance in location.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx: Variant index</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Variant instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_df_row_to_variant</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">,</span>
+                                  <span class="n">idx</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_vcf</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_bams</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return number of Varint objects.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get variant list as a CPU pandas dataframe.</span>
+
+<span class="sd">        Each row in the returned dataframe represents a variant entry.</span>
+<span class="sd">        For each variant entry, the following metrics are currently tracked -</span>
+<span class="sd">        1. chrom - Chromosome</span>
+<span class="sd">        2. start_pos - Start position of variant (inclusive)</span>
+<span class="sd">        3. end_pos - End position of variant (exclusive)</span>
+<span class="sd">        4. ref - Reference base(s)</span>
+<span class="sd">        5. alt - Alternate base(s)</span>
+<span class="sd">        6. variant_type - VariantType enum specifying SNP/INSERTION/DELETION as an int</span>
+<span class="sd">        7. quality - Quality of variant call</span>
+<span class="sd">        8. filter - VCF FILTER column [if requested]</span>
+<span class="sd">        9. info - VCF INFO column [if requested]</span>
+<span class="sd">        10. format - VCF FORMAT column [if requested]. GT is converted to an int \</span>
+<span class="sd">                representation of VariantZygosity enum.</span>
+
+<span class="sd">        For any entries where a value is missing or cannot be inferred, the following</span>
+<span class="sd">        default values are used:</span>
+<span class="sd">        float = numpy.nan</span>
+<span class="sd">        int = numpy.int32.min</span>
+<span class="sd">        str = empty str</span>
+<span class="sd">        flag = numpy.bool_(False)</span>
+
+<span class="sd">        This dataframe can be easily converted to cuDF for large scale</span>
+<span class="sd">        variant processing.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parsed variants as pandas DataFrame.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">extend_exception</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="s2">&quot;VCF data frame should be available.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span>
+
+    <span class="k">def</span> <span class="nf">_detect_variant_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get variant type enum.</span>
+
+<span class="sd">        Given ref and alt alleles, determine type of variant.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ref : ref bases</span>
+<span class="sd">            alt : alt bases</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            VariantType enum</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">VariantType</span><span class="o">.</span><span class="n">SNP</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">VariantType</span><span class="o">.</span><span class="n">INSERTION</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">VariantType</span><span class="o">.</span><span class="n">DELETION</span>
+
+    <span class="k">def</span> <span class="nf">_detect_zygosity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get variant zygosity as enum.</span>
+
+<span class="sd">        Given a diploid genotype type with genotype information per</span>
+<span class="sd">        haploid, determine the zygosity of the sample. If the variant is known</span>
+<span class="sd">        false positive, returns NO_VARIANT. If any of the alts are -1, then returns</span>
+<span class="sd">        NONE (e.g. in multi allele cases that were split).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            gt : Diploid genotype in the format [haploid 1 alt num, haploid 2 alt num]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Relevant VariantZygosity enum.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NO_VARIANT</span>
+
+        <span class="k">if</span> <span class="n">gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NONE</span>
+        <span class="k">elif</span> <span class="n">gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NO_VARIANT</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HOMOZYGOUS</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HETEROZYGOUS</span>
+
+    <span class="k">def</span> <span class="nf">_get_normalized_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header_number</span><span class="p">,</span> <span class="n">num_alts</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate number of values for a VCF key based.</span>
+
+<span class="sd">        Determine number of values based on header number, alt count and sample</span>
+<span class="sd">        count.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            header_number : VCF header number</span>
+<span class="sd">            num_alts : Number of alt alleles for variant</span>
+<span class="sd">            num_samples : Number of samples in VCF</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Integer number of values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">num_alts</span>
+        <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">num_alts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">num_samples</span>
+        <span class="k">elif</span> <span class="n">header_number</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="c1"># Number = 0 implies one entry of boolean. So force min number to be 1.</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">header_number</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unbounded_val_max_cols</span>
+
+    <span class="k">def</span> <span class="nf">_get_python_header_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert VCF header type to python type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            header_type : Header type string from VCF.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Python data type corresponding to string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">header_type</span> <span class="o">==</span> <span class="s2">&quot;Integer&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span>
+        <span class="k">elif</span> <span class="n">header_type</span> <span class="o">==</span> <span class="s2">&quot;Float&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span>
+        <span class="k">elif</span> <span class="n">header_type</span> <span class="o">==</span> <span class="s2">&quot;Flag&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">bool</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get default value for VCF header type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            header_type : Header type string from VCF.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Default value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">header_type</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">iinfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">min</span>
+        <span class="k">elif</span> <span class="n">header_type</span> <span class="o">==</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">elif</span> <span class="n">header_type</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_create_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vcf</span><span class="p">,</span> <span class="n">variant_list</span><span class="p">,</span> <span class="n">num_variants</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create dataframe from list of cyvcf2.Variant objects.</span>
+
+<span class="sd">        Process each cyvcf2.Variant object in the variant list and generate a dict</span>
+<span class="sd">        with all the user specified VCF columns and their values. To simplify downstream</span>
+<span class="sd">        processing, also split multi alleles into separate rows and update relevant info/format</span>
+<span class="sd">        columns to account for the multi allele change.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vcf : cyvcf2 object for VCF</span>
+<span class="sd">            variant_list : List of cyvcf2.Variant objects to convert to dataframe</span>
+<span class="sd">            num_variants : Number of variants in list. This is needed because variant_list</span>
+<span class="sd">                           is pre-allocated for perf reasons and some elements may be None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame for entries in variant_list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">vcf</span><span class="o">.</span><span class="n">samples</span>
+
+        <span class="c1"># Iterate over all variants in variant list.</span>
+        <span class="k">for</span> <span class="n">var_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_variants</span><span class="p">):</span>
+            <span class="n">variant</span> <span class="o">=</span> <span class="n">variant_list</span><span class="p">[</span><span class="n">var_idx</span><span class="p">]</span>
+            <span class="c1"># Iterate over each allele in variant to split up multi alleles.</span>
+            <span class="n">alts</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">ALT</span>
+            <span class="k">for</span> <span class="n">alt_idx</span><span class="p">,</span> <span class="n">alt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alts</span><span class="p">):</span>
+                <span class="c1"># This parser currently doesn&#39;t support gVCF files completely, hence any</span>
+                <span class="c1"># gVCF entries are ignored.</span>
+                <span class="k">if</span> <span class="n">alt</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span> <span class="ow">or</span> <span class="n">alt</span> <span class="o">==</span> <span class="s2">&quot;&lt;NON_REF&gt;&quot;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Add standard DF entries for each variant.</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;chrom&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">CHROM</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;start_pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;end_pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">REF</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;alt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">alt</span><span class="p">)</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;variant_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detect_variant_type</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">REF</span><span class="p">,</span> <span class="n">alt</span><span class="p">)))</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;quality&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">QUAL</span><span class="p">)</span>
+
+                <span class="c1"># Process variant filter columns. If filter is present in entry, store True else False.</span>
+                <span class="n">variant_filter</span> <span class="o">=</span> <span class="s2">&quot;PASS&quot;</span> <span class="k">if</span> <span class="n">variant</span><span class="o">.</span><span class="n">FILTER</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">variant</span><span class="o">.</span><span class="n">FILTER</span>
+                <span class="n">filter_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">variant_filter</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">filter_col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="p">:</span>
+                    <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;FILTER_&quot;</span> <span class="o">+</span> <span class="n">filter_col</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filter_col</span> <span class="ow">in</span> <span class="n">filter_set</span><span class="p">)</span>
+
+                <span class="c1"># Process INFO columns. INFO column values need to be handled specially based on header number</span>
+                <span class="c1"># and header type. Since multi alleles are split up, the right filter values need to go to the</span>
+                <span class="c1"># right variant row.</span>
+                <span class="k">for</span> <span class="n">info_col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span><span class="p">:</span>
+                    <span class="c1"># Get header type</span>
+                    <span class="n">header_number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_number</span><span class="p">[</span><span class="n">info_col</span><span class="p">]</span>
+
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">INFO</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">info_col</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># Generate a tuple with default values.</span>
+                        <span class="n">default_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">info_col</span><span class="p">])</span>
+                        <span class="n">num_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">alts</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">default_val</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_vals</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span>
+                        <span class="c1"># If some values in tuple are None, replace those with default values.</span>
+                        <span class="n">default_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">info_col</span><span class="p">])</span>
+                        <span class="n">temp_val_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_val</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">val</span><span class="p">]</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">temp_val_list</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Make value a tuple to reduce special case handling later.</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                            <span class="n">val</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">val</span><span class="p">,))</span>
+
+                    <span class="n">df_key</span> <span class="o">=</span> <span class="n">info_col</span>
+
+                    <span class="k">if</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                        <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">alt_idx</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                        <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;_REF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;_ALT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">alt_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">header_number</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                        <span class="n">header_number</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">header_number</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">header_number</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">header_number</span><span class="p">)):</span>
+                                <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+                        <span class="n">num_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">alts</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_vals</span><span class="p">:</span>
+                            <span class="n">temp_val</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">info_col</span><span class="p">])]</span> <span class="o">*</span> <span class="n">num_vals</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)):</span>
+                                <span class="n">temp_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                            <span class="n">val</span> <span class="o">=</span> <span class="n">temp_val</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_vals</span><span class="p">):</span>
+                            <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+                <span class="c1"># Process format columns. Handle GT specially, and the rest can be handled like INFO columns.</span>
+                <span class="k">for</span> <span class="n">format_col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">sample_idx</span><span class="p">,</span> <span class="n">sample_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">format_col</span> <span class="o">==</span> <span class="s2">&quot;GT&quot;</span><span class="p">:</span>
+                            <span class="k">def</span> <span class="nf">fix_gt</span><span class="p">(</span><span class="n">gt_alt_id</span><span class="p">,</span> <span class="n">loop_alt_id</span><span class="p">):</span>
+                                <span class="sd">&quot;&quot;&quot;Fix up genotype.</span>
+
+<span class="sd">                                If gt alt id and loop alt id are the same, return 1 for alt.</span>
+<span class="sd">                                If they&#39;re not 0, then it represents a split multi allele that&#39;s not handled in</span>
+<span class="sd">                                the current loop.</span>
+<span class="sd">                                If gt is 0, then return 0 as ref.</span>
+
+<span class="sd">                                Args:</span>
+<span class="sd">                                    gt_alt_id : ID of alt allele</span>
+<span class="sd">                                    loop_alt_id : ID of current alt in loop</span>
+
+<span class="sd">                                Returns:</span>
+<span class="sd">                                    Fixed up ID of alt.</span>
+<span class="sd">                                &quot;&quot;&quot;</span>
+                                <span class="k">if</span> <span class="n">gt_alt_id</span> <span class="o">==</span> <span class="n">loop_alt_id</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="mi">1</span>
+                                <span class="k">elif</span> <span class="n">gt_alt_id</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="mi">0</span>
+                            <span class="c1"># Handle GT column specially</span>
+                            <span class="n">gt</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">genotypes</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">]</span>
+                            <span class="c1"># Fixup haplotype number based on multi allele split.</span>
+                            <span class="n">alt_id</span> <span class="o">=</span> <span class="n">alt_idx</span> <span class="o">+</span> <span class="mi">1</span>
+                            <span class="n">new_gt</span> <span class="o">=</span> <span class="p">[</span><span class="n">gt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+                            <span class="n">new_gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">fix_gt</span><span class="p">(</span><span class="n">gt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">alt_id</span><span class="p">)</span>
+                            <span class="n">new_gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">fix_gt</span><span class="p">(</span><span class="n">gt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">alt_id</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">new_gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">new_gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                                <span class="n">new_gt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_gt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                            <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_GT&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_name</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detect_zygosity</span><span class="p">(</span><span class="n">new_gt</span><span class="p">)))</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># Get header type</span>
+                            <span class="n">header_number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_header_number</span><span class="p">[</span><span class="n">format_col</span><span class="p">]</span>
+
+                            <span class="n">val</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">format_col</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">]</span>
+                                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">):</span>
+                                    <span class="n">val</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">default_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">format_col</span><span class="p">])</span>
+                                <span class="n">num_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">alts</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+                                <span class="n">val</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_val</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_vals</span>
+
+                            <span class="n">df_key</span> <span class="o">=</span> <span class="n">sample_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">format_col</span>
+
+                            <span class="k">if</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                                <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">alt_idx</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                                <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;_REF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                                <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;_ALT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">alt_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="n">header_number</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                                <span class="n">header_number</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">header_number</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">header_number</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                                    <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">header_number</span><span class="p">)):</span>
+                                        <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="n">header_number</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+                                <span class="n">num_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">alts</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+                                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_vals</span><span class="p">:</span>
+                                    <span class="n">temp_val</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_default_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">format_col</span><span class="p">])]</span> <span class="o">*</span> <span class="n">num_vals</span>
+                                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)):</span>
+                                        <span class="n">temp_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                                    <span class="n">val</span> <span class="o">=</span> <span class="n">temp_val</span>
+                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_vals</span><span class="p">):</span>
+                                    <span class="n">df_dict</span><span class="p">[</span><span class="n">df_key</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Downcast all dataframe types to 32bit.</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_dict</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="c1"># Convert local dictionary of k/v to DataFrame.</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">df_dict</span><span class="p">)</span>
+
+        <span class="c1"># Add custom tags to DataFrame</span>
+        <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span> <span class="nf">_parse_vcf_cyvcf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thread_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse portions of a VCF file as determined by chunk size and thread id.</span>
+
+<span class="sd">        Based on the thread ID, split up a VCF file into equal sized chunks and distribute</span>
+<span class="sd">        chunks in a round robin fashion to various threads. Each thread only processes</span>
+<span class="sd">        variants that occur within its chunk. This distribution is handled within each</span>
+<span class="sd">        thread indepdently. Each thread goes through all variants, and only processes the</span>
+<span class="sd">        ones that fall in the variant index range determined by its thread id.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">           thread_id : Thead ID of VCF processing thread.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           List of DataFrames for chunks assigned to thread.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Global is to track which variants are to be processed</span>
+        <span class="c1"># by current thread id across all regions</span>
+        <span class="n">global_variant_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Go through all regions assigned to reader</span>
+        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_regions</span><span class="p">:</span>
+            <span class="c1"># Go through variants and add to list</span>
+            <span class="n">vcf</span> <span class="o">=</span> <span class="n">cyvcf2</span><span class="o">.</span><span class="n">VCF</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vcf</span><span class="p">)</span>
+            <span class="n">generator</span> <span class="o">=</span> <span class="n">vcf</span><span class="p">(</span><span class="n">region</span><span class="p">)</span> <span class="k">if</span> <span class="n">region</span> <span class="k">else</span> <span class="n">vcf</span>
+
+            <span class="c1"># Pre-allocate variant list to chunk size to prevent list extension</span>
+            <span class="n">variant_list</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chunksize</span>
+
+            <span class="c1"># Local idx is to track number of variants currently in the</span>
+            <span class="c1"># variant list</span>
+            <span class="n">local_variant_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="c1"># Loop through all variants in cyvcf2 object.</span>
+            <span class="k">for</span> <span class="n">variant</span> <span class="ow">in</span> <span class="n">generator</span><span class="p">:</span>
+                <span class="c1"># Check if a variant maps to this thread.</span>
+                <span class="k">if</span> <span class="p">((</span><span class="n">global_variant_idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chunksize</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span> <span class="o">==</span> <span class="n">thread_id</span><span class="p">):</span>
+                    <span class="n">variant_list</span><span class="p">[</span><span class="n">local_variant_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">variant</span>
+                    <span class="n">local_variant_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">local_variant_idx</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chunksize</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">df_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_df</span><span class="p">(</span><span class="n">vcf</span><span class="p">,</span> <span class="n">variant_list</span><span class="p">,</span> <span class="n">local_variant_idx</span><span class="p">))</span>
+                        <span class="n">variant_list</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chunksize</span>  <span class="c1"># Reset list</span>
+                        <span class="n">local_variant_idx</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">global_variant_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">variant_list</span><span class="p">:</span>
+                <span class="n">df_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_df</span><span class="p">(</span><span class="n">vcf</span><span class="p">,</span> <span class="n">variant_list</span><span class="p">,</span> <span class="n">local_variant_idx</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">df_list</span>
+
+    <span class="k">def</span> <span class="nf">_parallel_parse_vcf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse VCF file in multi threaded fashion.</span>
+
+<span class="sd">        Split the work of parsing a VCF file among multiple threads each of which</span>
+<span class="sd">        generate a DataFrame with subsections of the main VCF, and then concatenate them</span>
+<span class="sd">        together to form the final VCF.</span>
+
+<span class="sd">        The final DataFrame does now guarantee any ordering of the variants. It only guarantees</span>
+<span class="sd">        the presence of all variants from the VCF.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vcf</span> <span class="o">=</span> <span class="n">cyvcf2</span><span class="o">.</span><span class="n">VCF</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vcf</span><span class="p">)</span>
+
+        <span class="c1"># Populate column keys and the number of values for them. Do this for INFO, FILTER</span>
+        <span class="c1"># and FORMAT keys.</span>
+        <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">vcf</span><span class="o">.</span><span class="n">header_iter</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s1">&#39;HeaderType&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;INFO&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_keys</span><span class="p">:</span>
+            <span class="n">header_number</span> <span class="o">=</span> <span class="n">vcf</span><span class="o">.</span><span class="n">get_header_type</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="s1">&#39;Number&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">vcf</span><span class="o">.</span><span class="n">samples</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_header_number</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">header_number</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_python_header_type</span><span class="p">(</span><span class="n">vcf</span><span class="o">.</span><span class="n">get_header_type</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="s1">&#39;Type&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">vcf</span><span class="o">.</span><span class="n">header_iter</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s1">&#39;HeaderType&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;FILTER&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">vcf</span><span class="o">.</span><span class="n">header_iter</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s1">&#39;HeaderType&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;FORMAT&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Make sure format columns have &quot;GT&quot; if genotype requested</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_genotype</span> <span class="ow">and</span> <span class="s2">&quot;GT&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">vcf</span><span class="o">.</span><span class="n">header_iter</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s1">&#39;HeaderType&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;FORMAT&#39;</span> <span class="ow">and</span> <span class="n">h</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;GT&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s2">&quot;GT&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Required genotype key GT not available in VCF file.&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_keys</span><span class="p">:</span>
+            <span class="n">header_number</span> <span class="o">=</span> <span class="n">vcf</span><span class="o">.</span><span class="n">get_header_type</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="s1">&#39;Number&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_normalized_count</span><span class="p">(</span><span class="n">header_number</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">vcf</span><span class="o">.</span><span class="n">samples</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_header_number</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">header_number</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_python_header_type</span><span class="p">(</span><span class="n">vcf</span><span class="o">.</span><span class="n">get_header_type</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="s1">&#39;Type&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Store name of samples in VCF.</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">vcf</span><span class="o">.</span><span class="n">samples</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+
+        <span class="c1"># Create a pool of threads and distribute parsing to multiple threads.</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span><span class="p">)</span>
+        <span class="n">df_lists</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parse_vcf_cyvcf</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">pool</span><span class="o">.</span><span class="n">imap</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span><span class="p">)):</span>
+            <span class="n">df_lists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">df_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">df_lists</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sublist</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Generate final DataFrame from intermediate DataFrames computed by</span>
+        <span class="c1"># individual threads.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">df_list</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Manually set strict data types of specific fields</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;chrom&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;chrom&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;start_pos&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;start_pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int32&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;end_pos&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;end_pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int32&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;variant_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="p">[</span><span class="s2">&quot;variant_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int32&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Sort dataframe by chromosome and start_position if requested</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sort</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dataframe</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;chrom&quot;</span><span class="p">,</span> <span class="s2">&quot;start_pos&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VCFWriter"><a class="viewcode-back" href="../../../apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter">[docs]</a><span class="k">class</span> <span class="nc">VCFWriter</span><span class="p">(</span><span class="n">BaseWriter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Writer for VCF dataframe.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VCFWriter.__init__"><a class="viewcode-back" href="../../../apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vcf_df</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">sample_names</span><span class="o">=</span><span class="p">[],</span> <span class="n">num_threads</span><span class="o">=</span><span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor VCFWriter class.</span>
+
+<span class="sd">        Writes a VCF dataframe into a VCF file. Determines the header string</span>
+<span class="sd">        for the VCF file based on the available columns in the dataframe.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vcf_df : VCF Dataframe to generate header from.</span>
+<span class="sd">            output_path : Output path for VCF output file.</span>
+<span class="sd">            sample_names : List with names of samples in dataframe. Required to</span>
+<span class="sd">                           distinguish between info and sample format columns. If not</span>
+<span class="sd">                           provided, all non-filter columns are stored as INFO.</span>
+<span class="sd">            num_threads : Number of parallel threads to use for VCFWriter.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vcf_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span> <span class="o">=</span> <span class="n">output_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span> <span class="o">=</span> <span class="n">sample_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span> <span class="o">=</span> <span class="n">num_threads</span>
+
+        <span class="c1"># Members needed for proper header generation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_standard_headers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;chrom&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;start_pos&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;end_pos&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;ref&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;alt&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+                                      <span class="s2">&quot;id&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignore_headers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;variant_type&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Create and write header.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_categorize_df_headers</span><span class="p">(</span><span class="n">vcf_df</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_writer</span><span class="p">:</span>
+            <span class="n">file_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_generate_header</span><span class="p">())</span>
+            <span class="n">file_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_determine_header_type</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine type of header from value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            val : Value to determine type for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Python type (int, float, bool, str)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">bool</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">_categorize_df_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vcf_df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Categorize the headers in the dataframe into VCF header types.</span>
+
+<span class="sd">        For each column name, determine if column is a standard, INFO, FILTER</span>
+<span class="sd">        or FORMAT column. Then determine the type and number for values in that</span>
+<span class="sd">        column. This method fills internal member data structures to maintain this</span>
+<span class="sd">        information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vcf_df : VCF Dataframe to read headers from.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">vcf_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+        <span class="n">temp_row_dict</span> <span class="o">=</span> <span class="n">vcf_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_keys</span><span class="p">:</span>
+            <span class="n">data_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_header_type</span><span class="p">(</span><span class="n">temp_row_dict</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_standard_headers</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># Do nothing as they are accessed directly</span>
+            <span class="k">elif</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignore_headers</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># Do nothing as these headers are not to be written out</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Check for FILTER headers</span>
+                <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^FILTER_(.*)&quot;</span><span class="p">)</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                    <span class="c1"># Found FILTER key</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span>
+                    <span class="k">continue</span>
+                <span class="c1"># Check for sample format columns</span>
+                <span class="n">key_in_format</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="p">:</span>
+                    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^</span><span class="si">{}</span><span class="s2">_(.*)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                        <span class="n">key_in_format</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="n">key_name</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(.*)-(\d+)$&quot;</span><span class="p">)</span>
+                        <span class="n">m</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">key_name</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                            <span class="n">key</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                            <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_type</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">[</span><span class="n">key_name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_type</span>
+                <span class="k">if</span> <span class="n">key_in_format</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c1"># Rest go to info columns</span>
+                <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(.*)-(\d+)$&quot;</span><span class="p">)</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                    <span class="c1"># Found a column with multiple indices</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_type</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_type</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_data_type_to_header_vcf_header_type</span><span class="p">(</span><span class="n">data_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert python data type to VCF header type string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_type : Python type</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            VCF data type string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data_type</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Integer&quot;</span>
+        <span class="k">elif</span> <span class="n">data_type</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Float&quot;</span>
+        <span class="k">elif</span> <span class="n">data_type</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Flag&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;String&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_generate_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate header lines for output VCF file.</span>
+
+<span class="sd">        Determine INFO and FORMAT header lines based on the header columns available in the</span>
+<span class="sd">        input dataframe.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Fully formatted header as a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;##fileformat=VCFv4.2&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;##FILTER=&lt;ID=</span><span class="si">{}</span><span class="s2">,Description=</span><span class="se">\&quot;</span><span class="s2">Generated by NVIDIA VCF I/O</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">header_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_type_to_header_vcf_header_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;##INFO=&lt;ID=</span><span class="si">{}</span><span class="s2">,Number=</span><span class="si">{}</span><span class="s2">,Type=</span><span class="si">{}</span><span class="s2">,Description=</span><span class="se">\&quot;</span><span class="s2">Generated by NVIDIA VCF I/O</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span>
+                                                                                                         <span class="n">count</span><span class="p">,</span>
+                                                                                                         <span class="n">header_type</span><span class="p">,</span>
+                                                                                                         <span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">header_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_type_to_header_vcf_header_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;GT&quot;</span><span class="p">:</span>
+                <span class="n">header_type</span> <span class="o">=</span> <span class="s2">&quot;String&quot;</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;##FORMAT=&lt;ID=</span><span class="si">{}</span><span class="s2">,Number=</span><span class="si">{}</span><span class="s2">,Type=</span><span class="si">{}</span><span class="s2">,Description=</span><span class="se">\&quot;</span><span class="s2">Generated by NVIDIA VCF I/O</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span>
+                                                                                                           <span class="n">count</span><span class="p">,</span>
+                                                                                                           <span class="n">header_type</span><span class="p">,</span>
+                                                                                                           <span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;#CHROM&quot;</span><span class="p">,</span> <span class="s2">&quot;POS&quot;</span><span class="p">,</span> <span class="s2">&quot;ID&quot;</span><span class="p">,</span> <span class="s2">&quot;REF&quot;</span><span class="p">,</span> <span class="s2">&quot;ALT&quot;</span><span class="p">,</span> <span class="s2">&quot;QUAL&quot;</span><span class="p">,</span> <span class="s2">&quot;FILTER&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="p">:</span>
+            <span class="c1"># Add the format and sample columns</span>
+            <span class="n">col_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;FORMAT&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="p">:</span>
+                <span class="n">col_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">col_names</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_serialize_record_info</span><span class="p">(</span><span class="n">info_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert info dict to INFO column entry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            info_dict : Dictionary with info keys and values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Formatted string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">info_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">k</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{:.4f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">v</span><span class="p">))))</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+                    <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{:.4f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">ret_list</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_serialize_record_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">gt_idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert sample data into sample column entry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sample : List with sample format values.</span>
+<span class="sd">            gt_idx : Position of GT data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Formatted string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zyg_to_gt</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span> <span class="s2">&quot;./.&quot;</span><span class="p">,</span>
+                <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NO_VARIANT</span><span class="p">:</span> <span class="s2">&quot;0/0&quot;</span><span class="p">,</span>
+                <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HOMOZYGOUS</span><span class="p">:</span> <span class="s2">&quot;1/1&quot;</span><span class="p">,</span>
+                <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HETEROZYGOUS</span><span class="p">:</span> <span class="s2">&quot;0/1&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+        <span class="k">if</span> <span class="n">gt_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample</span><span class="p">[</span><span class="n">gt_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">zyg_to_gt</span><span class="p">[</span><span class="n">sample</span><span class="p">[</span><span class="n">gt_idx</span><span class="p">]]</span>
+        <span class="n">ret_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">field_value</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">field_value</span> <span class="ow">or</span> <span class="n">field_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">field_value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">field_value</span><span class="p">)):</span>
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">field_value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{:.4f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">field_value</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">field_value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">&quot;:&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">ret_list</span> <span class="k">else</span> <span class="s2">&quot;.&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_serialize_record_filter</span><span class="p">(</span><span class="n">var_filter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert filter data into FILTER column entry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            var_filter : List of filter entries.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Formatted string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">var_filter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.&quot;</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">var_filter</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_filter</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;PASS&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">var_filter</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_filter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_serialized_vcf_record_for_variant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate formatted string for a variant entry in VCF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx : Index of variant entry in dataframe to be formatted.i</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Formatted variant entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">variant</span> <span class="o">=</span> <span class="n">_df_row_to_variant</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vcf_df</span><span class="p">,</span>
+                                     <span class="n">idx</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_format_vcf_key_counts</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_sample_names</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_filter_vcf_keys</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_info_vcf_key_counts</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">_header_type</span><span class="p">,</span>
+                                     <span class="kc">None</span><span class="p">,</span>
+                                     <span class="kc">None</span><span class="p">)</span>
+        <span class="n">output_line</span> <span class="o">=</span> <span class="p">[</span><span class="n">variant</span><span class="o">.</span><span class="n">chrom</span><span class="p">,</span>
+                       <span class="n">variant</span><span class="o">.</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                       <span class="n">variant</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                       <span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                       <span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">,</span>
+                       <span class="n">variant</span><span class="o">.</span><span class="n">quality</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">_serialize_record_filter</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">filter</span><span class="p">),</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">_serialize_record_info</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">info</span><span class="p">),</span>
+                       <span class="s1">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">format</span><span class="p">)]</span>
+        <span class="n">gt_idx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">gt_idx</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;GT&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">output_line</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;.&#39;</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">output_line</span><span class="p">]</span>
+        <span class="n">variant</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_serialize_record_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">gt_idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">variant</span><span class="o">.</span><span class="n">samples</span><span class="p">]</span>
+        <span class="n">output_line</span> <span class="o">+=</span> <span class="n">variant</span><span class="o">.</span><span class="n">samples</span>
+        <span class="k">return</span> <span class="n">output_line</span>
+
+<div class="viewcode-block" id="VCFWriter.write_output"><a class="viewcode-back" href="../../../apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vcf_df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write dataframe to VCF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vcf_df : VCF dataframe whose entries are to be serialized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vcf_df</span> <span class="o">=</span> <span class="n">vcf_df</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_writer</span><span class="p">:</span>
+            <span class="c1"># Process variant entries in parallel fashion.</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_threads</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">pool</span><span class="o">.</span><span class="n">imap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_serialized_vcf_record_for_variant</span><span class="p">,</span>
+                                  <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vcf_df</span><span class="p">)),</span>
+                                  <span class="n">chunksize</span><span class="o">=</span><span class="mi">50000</span><span class="p">):</span>
+                <span class="n">file_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

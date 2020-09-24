@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>variantworks.dataloader &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Core Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>variantworks.dataloader</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for variantworks.dataloader</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># Copyright 2020 NVIDIA CORPORATION.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="c1">#</span>
+
+<span class="sd">&quot;&quot;&quot;A class for creating a dataset from BAM and VCF files.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span> <span class="k">as</span> <span class="n">TorchDataset</span><span class="p">,</span> <span class="n">DataLoader</span> <span class="k">as</span> <span class="n">TorchDataLoader</span>
+
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">nemo.backends.pytorch.nm</span> <span class="kn">import</span> <span class="n">DataLayerNM</span>
+<span class="kn">from</span> <span class="nn">nemo.utils.decorators</span> <span class="kn">import</span> <span class="n">add_port_docs</span>
+<span class="kn">from</span> <span class="nn">nemo.core.neural_types</span> <span class="kn">import</span> <span class="n">NeuralType</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">variantworks.encoders</span> <span class="kn">import</span> <span class="n">PileupEncoder</span><span class="p">,</span> <span class="n">ZygosityLabelEncoder</span>
+<span class="kn">from</span> <span class="nn">variantworks.neural_types</span> <span class="kn">import</span> <span class="n">ReadPileupNeuralType</span><span class="p">,</span> <span class="n">VariantZygosityNeuralType</span>
+
+
+<div class="viewcode-block" id="HDFDataLoader"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader">[docs]</a><span class="k">class</span> <span class="nc">HDFDataLoader</span><span class="p">(</span><span class="n">DataLayerNM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Dataloader class to load pileup encodings and zygosity labels from HDF5 file.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@add_port_docs</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">output_ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns definitions of module output ports.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            NeMo output port.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Generate output ports from requested tensors.</span>
+        <span class="n">port_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span><span class="p">):</span>
+            <span class="n">port_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">NeuralType</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tensor_dims</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor_neural_types</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">port_dict</span>
+
+<div class="viewcode-block" id="HDFDataLoader.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdf_file</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">tensor_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;encodings&quot;</span><span class="p">,</span> <span class="s2">&quot;labels&quot;</span><span class="p">],</span>
+                 <span class="n">tensor_dtypes</span><span class="o">=</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">],</span>
+                 <span class="n">tensor_dims</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)],</span>
+                 <span class="n">tensor_neural_types</span><span class="o">=</span><span class="p">[</span><span class="n">ReadPileupNeuralType</span><span class="p">(),</span> <span class="n">VariantZygosityNeuralType</span><span class="p">()],</span>
+                 <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for data loader.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hdf_file : Path to HDF file with pileup encodings</span>
+<span class="sd">            batch_size : batch size for data loader [32]</span>
+<span class="sd">            shuffle : shuffle dataset [True]</span>
+<span class="sd">            num_workers : numbers of parallel data loader threads [4]</span>
+<span class="sd">            tensor_keys : List with keys of tensors to load. [&quot;encodings&quot;, &quot;labels&quot;]</span>
+<span class="sd">            tensor_dtypes : torch data types for tensor. [torch.float32, torch.int64]</span>
+<span class="sd">            tensor_dims : NeuralModule axes for tensors. [(&#39;B&#39;, &#39;C&#39;, &#39;W&#39;, &#39;H&#39;), (&#39;B&#39;)]</span>
+<span class="sd">            tensor_neural_types : NeuralTypes for tensors. [SummaryPileupNeuralType(), HaploidNeuralType()]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdf_file</span> <span class="o">=</span> <span class="n">hdf_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span> <span class="o">=</span> <span class="n">tensor_keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensor_dtypes</span> <span class="o">=</span> <span class="n">tensor_dtypes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensor_dims</span> <span class="o">=</span> <span class="n">tensor_dims</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tensor_neural_types</span> <span class="o">=</span> <span class="n">tensor_neural_types</span>
+
+        <span class="k">class</span> <span class="nc">DatasetWrapper</span><span class="p">(</span><span class="n">TorchDataset</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;A wrapper around Torch dataset class to generate individual samples.&quot;&quot;&quot;</span>
+
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdf_file</span><span class="p">,</span> <span class="n">tensor_dtypes</span><span class="p">,</span> <span class="n">tensor_keys</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;Constructor for dataset wrapper.</span>
+
+<span class="sd">                Args:</span>
+<span class="sd">                    hdf_file : Path to HDF5 file.</span>
+<span class="sd">                    tensor_keys : List with keys of tensors to load.</span>
+<span class="sd">                    tensor_dtypes : torch data types for tensor.</span>
+
+<span class="sd">                Returns:</span>
+<span class="sd">                    Instance of class.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hdf_file</span> <span class="o">=</span> <span class="n">hdf_file</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tensor_dtypes</span> <span class="o">=</span> <span class="n">tensor_dtypes</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span> <span class="o">=</span> <span class="n">tensor_keys</span>
+
+            <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="n">hdf</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">hdf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+            <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+                <span class="n">hdf</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+
+                <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">hdf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tensor_dtypes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor_dtypes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor_keys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span> <span class="o">=</span> <span class="n">TorchDataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span>
+                                          <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+                                          <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return length of data loader.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Torch dataloader instance.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not used.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ReadPileupDataLoader"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader">[docs]</a><span class="k">class</span> <span class="nc">ReadPileupDataLoader</span><span class="p">(</span><span class="n">DataLayerNM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Data loader class to train zygosity predictions from variant pileup encodings.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ReadPileupDataLoader.Type"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type">[docs]</a>    <span class="k">class</span> <span class="nc">Type</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Type of data loader.&quot;&quot;&quot;</span>
+
+        <span class="n">TRAIN</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">EVAL</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">TEST</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+    <span class="nd">@property</span>
+    <span class="nd">@add_port_docs</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">output_ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return definitions of module output ports.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            NeMo output port.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_loader_type</span> <span class="o">==</span> <span class="n">ReadPileupDataLoader</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;encoding&quot;</span><span class="p">:</span> <span class="n">NeuralType</span><span class="p">((</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">),</span> <span class="n">ReadPileupNeuralType</span><span class="p">()),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">NeuralType</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">),</span> <span class="n">VariantZygosityNeuralType</span><span class="p">()),</span>
+                <span class="s2">&quot;encoding&quot;</span><span class="p">:</span> <span class="n">NeuralType</span><span class="p">((</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">),</span> <span class="n">ReadPileupNeuralType</span><span class="p">()),</span>
+            <span class="p">}</span>
+
+<div class="viewcode-block" id="ReadPileupDataLoader.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_loader_type</span><span class="p">,</span> <span class="n">variant_loaders</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">sample_encoder</span><span class="o">=</span><span class="n">PileupEncoder</span><span class="p">(</span><span class="n">window_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">]),</span>
+                 <span class="n">label_encoder</span><span class="o">=</span><span class="n">ZygosityLabelEncoder</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a data loader.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_loader_type : Type of data loader (ReadPileupDataLoader.Type.TRAIN/EVAL/TEST)</span>
+<span class="sd">            variant_loaders : A list of loader classes for variants</span>
+<span class="sd">            batch_size : batch size for data loader [32]</span>
+<span class="sd">            shuffle : shuffle dataset [True]</span>
+<span class="sd">            num_workers : numbers of parallel data loader threads [4]</span>
+<span class="sd">            sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]</span>
+<span class="sd">            label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable</span>
+<span class="sd">            when type=TRAIN/EVAL)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_loader_type</span> <span class="o">=</span> <span class="n">data_loader_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span> <span class="o">=</span> <span class="n">variant_loaders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sample_encoder</span> <span class="o">=</span> <span class="n">sample_encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_encoder</span> <span class="o">=</span> <span class="n">label_encoder</span>
+
+        <span class="k">class</span> <span class="nc">DatasetWrapper</span><span class="p">(</span><span class="n">TorchDataset</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;A wrapper around Torch dataset class to generate individual samples.&quot;&quot;&quot;</span>
+
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_loader_type</span><span class="p">,</span> <span class="n">sample_encoder</span><span class="p">,</span> <span class="n">variant_loaders</span><span class="p">,</span> <span class="n">label_encoder</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;Construct a dataset wrapper.</span>
+
+<span class="sd">                Args:</span>
+<span class="sd">                    data_loader_type : Type of data loader</span>
+<span class="sd">                    sample_encoder : Custom pileup encoder for variant</span>
+<span class="sd">                    variant_loaders : A list of loader classes for variants</span>
+<span class="sd">                    label_encoder : Custom label encoder for variant</span>
+
+<span class="sd">                Returns:</span>
+<span class="sd">                    Instance of class.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span> <span class="o">=</span> <span class="n">variant_loaders</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">label_encoder</span> <span class="o">=</span> <span class="n">label_encoder</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sample_encoder</span> <span class="o">=</span> <span class="n">sample_encoder</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_loader_type</span> <span class="o">=</span> <span class="n">data_loader_type</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">loader</span><span class="p">)</span> <span class="k">for</span> <span class="n">loader</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">])</span>
+
+            <span class="k">def</span> <span class="nf">_map_idx_to_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">):</span>
+                <span class="n">file_idx</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span><span class="p">(</span><span class="n">file_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">sample_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">[</span><span class="n">file_idx</span><span class="p">]):</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">[</span><span class="n">file_idx</span><span class="p">][</span><span class="n">sample_idx</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sample_idx</span> <span class="o">-=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">[</span><span class="n">file_idx</span><span class="p">])</span>
+                        <span class="n">file_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Could not map sample index to file. This is a bug.&quot;</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span>
+
+            <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+                <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map_idx_to_sample</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_loader_type</span> <span class="o">==</span> <span class="n">ReadPileupDataLoader</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEST</span><span class="p">:</span>
+                    <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_encoder</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+
+                    <span class="k">return</span> <span class="n">sample</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_encoder</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_encoder</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+
+                    <span class="k">return</span> <span class="n">label</span><span class="p">,</span> <span class="n">encoding</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetWrapper</span><span class="p">(</span>
+            <span class="n">data_loader_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_encoder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variant_loaders</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_encoder</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span> <span class="o">=</span> <span class="n">TorchDataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span>
+                                          <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+                                          <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return number of items in dataloader instance.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Torch dataloader instance.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Not used.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

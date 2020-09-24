@@ -188,6 +188,8 @@
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.encoders.Encoder.__call__">(variantworks.encoders.Encoder method)</a>
 </li>
+        <li><a href="apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder.__call__">(variantworks.encoders.HaploidLabelEncoder method)</a>
+</li>
         <li><a href="apidocs/variantworks.html#variantworks.encoders.PileupEncoder.__call__">(variantworks.encoders.PileupEncoder method)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__call__">(variantworks.encoders.SummaryEncoder method)</a>
@@ -199,7 +201,7 @@
         <li><a href="apidocs/variantworks.html#variantworks.encoders.ZygosityLabelEncoder.__call__">(variantworks.encoders.ZygosityLabelEncoder method)</a>
 </li>
       </ul></li>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.__init__">__init__() (variantworks.dataloader.HDFPileupDataLoader method)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader.__init__">__init__() (variantworks.dataloader.HDFDataLoader method)</a>
 
       <ul>
         <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.__init__">(variantworks.dataloader.ReadPileupDataLoader method)</a>
@@ -209,6 +211,8 @@
         <li><a href="apidocs/variantworks.html#variantworks.encoders.BaseUnicodeEncoder.__init__">(variantworks.encoders.BaseUnicodeEncoder method)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.encoders.Encoder.__init__">(variantworks.encoders.Encoder method)</a>
+</li>
+        <li><a href="apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder.__init__">(variantworks.encoders.HaploidLabelEncoder method)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.encoders.PileupEncoder.__init__">(variantworks.encoders.PileupEncoder method)</a>
 </li>
@@ -224,13 +228,15 @@
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.io.baseio.BaseReaderIterator.__init__">(variantworks.io.baseio.BaseReaderIterator method)</a>
 </li>
+        <li><a href="apidocs/variantworks.html#variantworks.io.baseio.BaseWriter.__init__">(variantworks.io.baseio.BaseWriter method)</a>
+</li>
         <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFReader.__init__">(variantworks.io.vcfio.VCFReader method)</a>
+</li>
+        <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter.__init__">(variantworks.io.vcfio.VCFWriter method)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.networks.AlexNet.__init__">(variantworks.networks.AlexNet method)</a>
 </li>
-        <li><a href="apidocs/variantworks.html#variantworks.result_writer.ResultWriter.__init__">(variantworks.result_writer.ResultWriter method)</a>
-</li>
-        <li><a href="apidocs/variantworks.html#variantworks.result_writer.VCFResultWriter.__init__">(variantworks.result_writer.VCFResultWriter method)</a>
+        <li><a href="apidocs/variantworks.html#variantworks.networks.ConsensusRNN.__init__">(variantworks.networks.ConsensusRNN method)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.types.FileRegion.__init__">(variantworks.types.FileRegion method)</a>
 </li>
@@ -271,6 +277,8 @@
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.encoders.BaseUnicodeEncoder">BaseUnicodeEncoder (class in variantworks.encoders)</a>
 </li>
+      <li><a href="apidocs/variantworks.html#variantworks.io.baseio.BaseWriter">BaseWriter (class in variantworks.io.baseio)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -280,12 +288,16 @@
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.chrom">chrom (variantworks.types.Variant attribute)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidocs/variantworks.html#variantworks.networks.ConsensusRNN">ConsensusRNN (class in variantworks.networks)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.data_iterator">data_iterator() (variantworks.dataloader.HDFPileupDataLoader property)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader.data_iterator">data_iterator() (variantworks.dataloader.HDFDataLoader property)</a>
 
       <ul>
         <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.data_iterator">(variantworks.dataloader.ReadPileupDataLoader property)</a>
@@ -299,7 +311,7 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.dataset">dataset() (variantworks.dataloader.HDFPileupDataLoader property)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader.dataset">dataset() (variantworks.dataloader.HDFDataLoader property)</a>
 
       <ul>
         <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.dataset">(variantworks.dataloader.ReadPileupDataLoader property)</a>
@@ -317,16 +329,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.encoders.Encoder">Encoder (class in variantworks.encoders)</a>
 </li>
-      <li><a href="apidocs/variantworks.html#variantworks.types.FileRegion.end_pos">end_pos (variantworks.types.FileRegion attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.Type.EVAL">EVAL (variantworks.dataloader.HDFPileupDataLoader.Type attribute)</a>
-
-      <ul>
-        <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.EVAL">(variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.types.FileRegion.end_pos">end_pos (variantworks.types.FileRegion attribute)</a>
 </li>
-      </ul></li>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.EVAL">EVAL (variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -337,14 +345,18 @@
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.types.FileRegion">FileRegion (class in variantworks.types)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.filter">filter (variantworks.types.Variant attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.format">format (variantworks.types.Variant attribute)</a>
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.networks.AlexNet.forward">forward() (variantworks.networks.AlexNet method)</a>
+
+      <ul>
+        <li><a href="apidocs/variantworks.html#variantworks.networks.ConsensusRNN.forward">(variantworks.networks.ConsensusRNN method)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -363,9 +375,11 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader">HDFPileupDataLoader (class in variantworks.dataloader)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder">HaploidLabelEncoder (class in variantworks.encoders)</a>
 </li>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.Type">HDFPileupDataLoader.Type (class in variantworks.dataloader)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.neural_types.HaploidNeuralType">HaploidNeuralType (class in variantworks.neural_types)</a>
+</li>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader">HDFDataLoader (class in variantworks.dataloader)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -388,7 +402,11 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.networks.AlexNet.input_ports">input_ports() (variantworks.networks.AlexNet property)</a>
+
+      <ul>
+        <li><a href="apidocs/variantworks.html#variantworks.networks.ConsensusRNN.input_ports">(variantworks.networks.ConsensusRNN property)</a>
 </li>
+      </ul></li>
       <li><a href="apidocs/variantworks.html#variantworks.types.VariantType.INSERTION">INSERTION (variantworks.types.VariantType attribute)</a>
 </li>
   </ul></td>
@@ -415,8 +433,6 @@
 </li>
         <li><a href="apidocs/variantworks.html#module-variantworks.neural_types">variantworks.neural_types</a>
 </li>
-        <li><a href="apidocs/variantworks.html#module-variantworks.result_writer">variantworks.result_writer</a>
-</li>
         <li><a href="apidocs/variantworks.html#module-variantworks.types">variantworks.types</a>
 </li>
       </ul></li>
@@ -442,12 +458,14 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.output_ports">output_ports() (variantworks.dataloader.HDFPileupDataLoader property)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFDataLoader.output_ports">output_ports() (variantworks.dataloader.HDFDataLoader property)</a>
 
       <ul>
         <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.output_ports">(variantworks.dataloader.ReadPileupDataLoader property)</a>
 </li>
         <li><a href="apidocs/variantworks.html#variantworks.networks.AlexNet.output_ports">(variantworks.networks.AlexNet property)</a>
+</li>
+        <li><a href="apidocs/variantworks.html#variantworks.networks.ConsensusRNN.output_ports">(variantworks.networks.ConsensusRNN property)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -492,8 +510,6 @@
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.encoders.PileupEncoder.Layer.REFERENCE">REFERENCE (variantworks.encoders.PileupEncoder.Layer attribute)</a>
 </li>
-      <li><a href="apidocs/variantworks.html#variantworks.result_writer.ResultWriter">ResultWriter (class in variantworks.result_writer)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -501,6 +517,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.samples">samples (variantworks.types.Variant attribute)</a>
+</li>
+      <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFReader.samples">samples() (variantworks.io.vcfio.VCFReader property)</a>
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.types.VariantType.SNP">SNP (variantworks.types.VariantType attribute)</a>
 </li>
@@ -510,26 +528,20 @@
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.encoders.SummaryEncoder">SummaryEncoder (class in variantworks.encoders)</a>
 </li>
+      <li><a href="apidocs/variantworks.html#variantworks.neural_types.SummaryPileupNeuralType">SummaryPileupNeuralType (class in variantworks.neural_types)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.Type.TEST">TEST (variantworks.dataloader.HDFPileupDataLoader.Type attribute)</a>
-
-      <ul>
-        <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.TEST">(variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.TEST">TEST (variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
 </li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.dataloader.HDFPileupDataLoader.Type.TRAIN">TRAIN (variantworks.dataloader.HDFPileupDataLoader.Type attribute)</a>
-
-      <ul>
-        <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.TRAIN">(variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.dataloader.ReadPileupDataLoader.Type.TRAIN">TRAIN (variantworks.dataloader.ReadPileupDataLoader.Type attribute)</a>
 </li>
-      </ul></li>
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.type">type (variantworks.types.Variant attribute)</a>
 </li>
   </ul></td>
@@ -595,13 +607,6 @@
 </li>
       </ul></li>
       <li>
-    variantworks.result_writer
-
-      <ul>
-        <li><a href="apidocs/variantworks.html#module-variantworks.result_writer">module</a>
-</li>
-      </ul></li>
-      <li>
     variantworks.types
 
       <ul>
@@ -616,7 +621,7 @@
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFReader">VCFReader (class in variantworks.io.vcfio)</a>
 </li>
-      <li><a href="apidocs/variantworks.html#variantworks.result_writer.VCFResultWriter">VCFResultWriter (class in variantworks.result_writer)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter">VCFWriter (class in variantworks.io.vcfio)</a>
 </li>
       <li><a href="apidocs/variantworks.html#variantworks.encoders.PileupEncoder.visualize">visualize() (variantworks.encoders.PileupEncoder method)</a>
 </li>
@@ -630,10 +635,10 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/variantworks.html#variantworks.result_writer.ResultWriter.write_output">write_output() (variantworks.result_writer.ResultWriter method)</a>
+      <li><a href="apidocs/variantworks.html#variantworks.io.baseio.BaseWriter.write_output">write_output() (variantworks.io.baseio.BaseWriter method)</a>
 
       <ul>
-        <li><a href="apidocs/variantworks.html#variantworks.result_writer.VCFResultWriter.write_output">(variantworks.result_writer.VCFResultWriter method)</a>
+        <li><a href="apidocs/variantworks.html#variantworks.io.vcfio.VCFWriter.write_output">(variantworks.io.vcfio.VCFWriter method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -643,8 +648,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/variantworks.html#variantworks.types.Variant.zygosity">zygosity (variantworks.types.Variant attribute)</a>
-</li>
-      <li><a href="apidocs/variantworks.html#variantworks.result_writer.VCFResultWriter.zygosity_to_vcf_genotype">zygosity_to_vcf_genotype (variantworks.result_writer.VCFResultWriter attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>

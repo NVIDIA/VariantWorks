@@ -36,11 +36,6 @@ IO
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: variantworks.result_writer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Types
 -----
 

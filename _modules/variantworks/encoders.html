@@ -1,0 +1,890 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>variantworks.encoders &mdash; VariantWorks SDK 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> VariantWorks SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Core Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">VariantWorks SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>variantworks.encoders</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for variantworks.encoders</h1><div class="highlight"><pre>
+<span></span><span class="c1">#</span>
+<span class="c1"># Copyright 2020 NVIDIA CORPORATION.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="c1">#</span>
+<span class="sd">&quot;&quot;&quot;Classes and functions for encoding samples.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">mpatches</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pysam</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">variantworks.types</span> <span class="kn">import</span> <span class="n">FileRegion</span><span class="p">,</span> <span class="n">Variant</span><span class="p">,</span> <span class="n">VariantZygosity</span>
+<span class="kn">from</span> <span class="nn">variantworks.utils.visualization</span> <span class="kn">import</span> <span class="n">rgb_to_hex</span>
+<span class="kn">from</span> <span class="nn">variantworks.utils.encoders</span> <span class="kn">import</span> <span class="n">find_insertions</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="p">,</span> <span class="n">calculate_positions</span>
+
+
+<span class="c1"># Torch multiprocessing limits interferes with python mp module. Using this helps resolve</span>
+<span class="c1"># error as described in https://forums.fast.ai/t/runtimeerror-received-0-items-of-ancdata/48935/2</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">set_sharing_strategy</span><span class="p">(</span><span class="s1">&#39;file_system&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Encoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.Encoder">[docs]</a><span class="k">class</span> <span class="nc">Encoder</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;An abstract class defining the interface to an encoder implementation.</span>
+
+<span class="sd">    Encoder could be used for encoding inputs to network, as well as encoding target labels for prediction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Encoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.Encoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Encoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.Encoder.__call__">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">sample</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the encoding of a sample.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="SummaryEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder">[docs]</a><span class="k">class</span> <span class="nc">SummaryEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A summary count encoder for pileups.</span>
+
+<span class="sd">    For a given pileup of reads (e.g. output from samtools mpileup), the encoder generates</span>
+<span class="sd">    tensor for each pileup column. The encoder counts the number of DNA bases (A, G, G, T, deletion)</span>
+<span class="sd">    for each pileup column on both the forward and reverse strands. Insertions are handled by encoding</span>
+<span class="sd">    new pileup columns. Therefore, the output of the encoder is a tensor of shape (num_pileup_col, 10).</span>
+<span class="sd">    The output of this encoder can be used to train a sequence aware model such such as an RNN.</span>
+
+<span class="sd">    This encoding is inspired by a featurizer used in Medaka</span>
+<span class="sd">    (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SummaryEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for the class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            exclude_no_coverage_positions : Flag to determine if pileup columns with 0</span>
+<span class="sd">                                            coverage should be dropped.</span>
+<span class="sd">            normalize_counts : Flag to determine if summary counts in encoding should</span>
+<span class="sd">                               be normalized.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_no_coverage_positions</span> <span class="o">=</span> <span class="n">exclude_no_coverage_positions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_counts</span> <span class="o">=</span> <span class="n">normalize_counts</span>
+
+        <span class="c1"># Supported alphabet when building summary encoder.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;c&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;g&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;t&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;A&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;C&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;G&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;T&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;#&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;*&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="SummaryEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a torch tensor with summary encoding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            region : Region dataclass specifying region within a pileup to generate</span>
+<span class="sd">                     an encoding for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (count_matrix, positions) tuple</span>
+<span class="sd">            count_matrix : A torch tensor encoding the summary count for the pileup</span>
+<span class="sd">            positions : A torch tensor encoding reference and inserted positions in pileup</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">FileRegion</span><span class="p">))</span>
+        <span class="n">start_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">start_pos</span>
+        <span class="n">end_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">end_pos</span>
+        <span class="n">pileup_file</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">file_path</span>
+
+        <span class="c1"># Load pileup file into a dataframe</span>
+        <span class="n">pileup</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pileup_file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quoting</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">end_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">end_pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">end_pos</span><span class="p">):</span>
+            <span class="n">end_pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span>
+
+        <span class="n">subreads</span> <span class="o">=</span> <span class="n">pileup</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span>
+        <span class="n">truth_coverage</span> <span class="o">=</span> <span class="n">pileup</span><span class="p">[:,</span> <span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">calculate_positions</span><span class="p">(</span><span class="n">start_pos</span><span class="p">,</span> <span class="n">end_pos</span><span class="p">,</span> <span class="n">subreads</span><span class="p">,</span> <span class="n">truth_coverage</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_no_coverage_positions</span><span class="p">)</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="c1"># Using positions, calculate pileup counts</span>
+        <span class="n">pileup_counts</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)):</span>
+            <span class="n">ref_position</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">insert_position</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">base_pileup</span> <span class="o">=</span> <span class="n">subreads</span><span class="p">[</span><span class="n">ref_position</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;^]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">)</span>
+            <span class="n">insertions</span><span class="p">,</span> <span class="n">next_to_del</span> <span class="o">=</span> <span class="n">find_insertions</span><span class="p">(</span><span class="n">base_pileup</span><span class="p">)</span>
+            <span class="n">insertions_to_keep</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Remove all insertions which are next to delete positions in pileup</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">insertions</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">next_to_del</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">insertions_to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">insertions</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+            <span class="c1"># Replace all occurrences of insertions from the pileup string</span>
+            <span class="k">for</span> <span class="n">insertion</span> <span class="ow">in</span> <span class="n">insertions</span><span class="p">:</span>
+                <span class="n">base_pileup</span> <span class="o">=</span> <span class="n">base_pileup</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">insertion</span><span class="p">))</span> <span class="o">+</span> <span class="n">insertion</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">insert_position</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>  <span class="c1"># No insertions for this position</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">)):</span>
+                    <span class="n">pileup_counts</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_pileup</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">insert_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="c1"># Remove all insertions which are smaller than minor position being considered</span>
+                <span class="c1"># so we only count inserted bases at positions longer than the minor position</span>
+                <span class="n">insertions_minor</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">insertions_to_keep</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">insert_position</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">insertions_minor</span><span class="p">)):</span>
+                    <span class="n">inserted_base</span> <span class="o">=</span> <span class="n">insertions_minor</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">insert_position</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">pileup_counts</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">inserted_base</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_counts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">pileup_counts</span><span class="p">,</span> <span class="n">positions</span><span class="p">),</span> <span class="n">positions</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pileup_counts</span><span class="p">,</span> <span class="n">positions</span></div></div>
+
+
+<div class="viewcode-block" id="HaploidLabelEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder">[docs]</a><span class="k">class</span> <span class="nc">HaploidLabelEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A haploid label encoder for pileups containing truth sequence.</span>
+
+<span class="sd">    Given a pileup generated from a truth sequence aligned to the draft sequence,</span>
+<span class="sd">    generate one-hot encoded labels for each pileup column. The possible labels</span>
+<span class="sd">    should be one of: [A, C, G, T, deletion], in both the forward and reverse strand.</span>
+<span class="sd">    Therefore, given a pileup file as input, the output labels should be of shape</span>
+<span class="sd">    (num_pileup_col, 10).</span>
+
+<span class="sd">    This encoding is inspired by a label encoder used in Medaka</span>
+<span class="sd">    (https://github.com/nanoporetech/medaka/blob/master/medaka/labels.py)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="HaploidLabelEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for the class.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_no_coverage_positions</span> <span class="o">=</span> <span class="n">exclude_no_coverage_positions</span>
+
+        <span class="c1"># Supported alphabet when building haploid label encoder.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;A&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;C&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;G&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;T&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="HaploidLabelEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.HaploidLabelEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a torch tensor with summary encoding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            region : Region dataclass specifying region within a pileup to generate</span>
+<span class="sd">                     an encoding for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (labels, positions) tuple</span>
+<span class="sd">            labels : A torch tensor encoding the labels for the pileup</span>
+<span class="sd">            positions : A torch tensor encoding reference and inserted positions in labels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">FileRegion</span><span class="p">))</span>
+        <span class="n">start_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">start_pos</span>
+        <span class="n">end_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">end_pos</span>
+        <span class="n">pileup_file</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">file_path</span>
+
+        <span class="c1"># Load pileup file into a dataframe</span>
+        <span class="n">pileup</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pileup_file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quoting</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">end_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">end_pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">end_pos</span><span class="p">):</span>
+            <span class="n">end_pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pileup</span><span class="p">)</span>
+
+        <span class="n">subreads</span> <span class="o">=</span> <span class="n">pileup</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span>
+        <span class="n">truth_coverage</span> <span class="o">=</span> <span class="n">pileup</span><span class="p">[:,</span> <span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">calculate_positions</span><span class="p">(</span><span class="n">start_pos</span><span class="p">,</span> <span class="n">end_pos</span><span class="p">,</span> <span class="n">subreads</span><span class="p">,</span> <span class="n">truth_coverage</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_no_coverage_positions</span><span class="p">)</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="c1"># Using positions, calculate pileup counts</span>
+        <span class="n">truth</span> <span class="o">=</span> <span class="n">pileup</span><span class="p">[:,</span> <span class="mi">8</span><span class="p">]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),))</span>  <span class="c1"># gap, A, C, G, T (sparse format)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)):</span>
+            <span class="n">reference_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inserted_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">truth_base</span> <span class="o">=</span> <span class="n">truth</span><span class="p">[</span><span class="n">reference_pos</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;^]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="c1"># Handle minor position label (no insertion)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">inserted_pos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="ow">in</span> <span class="n">truth_base</span><span class="p">):</span>
+                    <span class="n">ref_base</span> <span class="o">=</span> <span class="n">truth_base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ref_base</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="ow">in</span> <span class="n">truth_base</span><span class="p">):</span>
+                    <span class="n">ref_base</span> <span class="o">=</span> <span class="n">truth_base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ref_base</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">truth_base</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">):</span>
+                    <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">truth_base</span><span class="p">)</span>
+            <span class="c1"># Handle major position label (with insertion)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">inserted_pos</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="ow">in</span> <span class="n">truth_base</span><span class="p">):</span>
+                    <span class="n">inserted_bases</span> <span class="o">=</span> <span class="n">truth_base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">inserted_bases</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inserted_bases</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inserted_bases</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">inserted_pos</span><span class="p">):</span>
+                        <span class="n">inserted_truth_base</span> <span class="o">=</span> <span class="n">inserted_bases</span><span class="p">[</span><span class="n">inserted_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                        <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">inserted_truth_base</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Encode labels error - inserted position should be &gt;= 0.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">positions</span></div></div>
+
+
+<div class="viewcode-block" id="BaseEnumEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseEnumEncoder">[docs]</a><span class="k">class</span> <span class="nc">BaseEnumEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An Enum encoder that returns an output encoding for Nucleotide base.</span>
+
+<span class="sd">    Converts Nucleotide base char type to a class number.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BaseEnumEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseEnumEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;T&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;G&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s1">&#39;N&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="BaseEnumEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseEnumEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nucleotide</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Encode Nucleotide base to Enum.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           Nucleotide base encoded as number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">nucleotide</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">nucleotide</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="BaseUnicodeEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseUnicodeEncoder">[docs]</a><span class="k">class</span> <span class="nc">BaseUnicodeEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A Unicode code encoder that returns an output encoding for Nucleotide base.</span>
+
+<span class="sd">    Converts Nucleotide base char type to a Unicode numeric value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BaseUnicodeEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseUnicodeEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nucleotides</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BaseUnicodeEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.BaseUnicodeEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nucleotide</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Encode Nucleotide base to Unicode code.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           Nucleotide base encoded as Unicode code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">nucleotide</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nucleotides</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">ord</span><span class="p">(</span><span class="n">nucleotide</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="UnicodeRGBEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.UnicodeRGBEncoder">[docs]</a><span class="k">class</span> <span class="nc">UnicodeRGBEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A encoder that returns an RGB color encoding for Nucleotide base Unicode value.</span>
+
+<span class="sd">    Converts Nucleotide base unicode value type to a RGB color list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UnicodeRGBEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.UnicodeRGBEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\0</span><span class="s1">&#39;</span><span class="p">):</span>  <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">],</span>    <span class="c1"># white (null char for cells initiated to &#39;zero&#39; )</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>        <span class="c1"># green</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>        <span class="c1"># green</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>        <span class="c1"># red</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;t&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>        <span class="c1"># red</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">],</span>        <span class="c1"># blue</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;c&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">],</span>        <span class="c1"># blue</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;G&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>      <span class="c1"># yellow</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>      <span class="c1"># yellow</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;N&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>          <span class="c1"># black</span>
+            <span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">):</span>   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>           <span class="c1"># black</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="UnicodeRGBEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.UnicodeRGBEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nucleotide_unicode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Encode Nucleotide base to Unicode code.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           Nucleotide base encoded as Unicode code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">nucleotide_unicode</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">nucleotide_unicode</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="UnicodeRGBEncoder.get_keys"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.UnicodeRGBEncoder.get_keys">[docs]</a>    <span class="k">def</span> <span class="nf">get_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get nucleotide bases unicode keys.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="nb">chr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;</span><span class="se">\0</span><span class="s1">&#39;</span> <span class="ow">and</span> <span class="nb">chr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="nb">chr</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="UnicodeRGBEncoder.get_key_legend_label"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.UnicodeRGBEncoder.get_key_legend_label">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_key_legend_label</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get keys corresponding name for legend .&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">k</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PileupEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.PileupEncoder">[docs]</a><span class="k">class</span> <span class="nc">PileupEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A pileup encoder for BAMs.</span>
+
+<span class="sd">    For a given SNP position and nucleotide context, the encoder generates a pileup</span>
+<span class="sd">    tensor around the variant position. The pileup can have configurable depth based on</span>
+<span class="sd">    the type of information that is selected to be embedded.</span>
+
+<span class="sd">    The variant location of interest is kept centered in the pileup, and the layers input in</span>
+<span class="sd">    the constructor define the channels created in the encoding. For more details on available</span>
+<span class="sd">    channels, please check the documentation for the Layers enum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PileupEncoder.Layer"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.PileupEncoder.Layer">[docs]</a>    <span class="k">class</span> <span class="nc">Layer</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Layers that can be added to the pileup encoding.</span>
+
+<span class="sd">        Values:</span>
+<span class="sd">            READ : Encode each aligned read as a row of the pileup. The bases in the</span>
+<span class="sd">            read are encoded using a base_encoder dict passed into the class. The reads</span>
+<span class="sd">            in the row are positioned according to the pileup alignment.</span>
+
+<span class="sd">            BASE_QUALITY : Encode the base quality of each aligned read in the pileup. Base</span>
+<span class="sd">            qualities of each read are added to a new row, following the same positioning as for READS. The base</span>
+<span class="sd">            qualities are normalized to [0,1] (using max value of 93 per SAM format).</span>
+<span class="sd">            Missing base quality is set to 0.</span>
+
+<span class="sd">            MAPPING_QUALITY : Mapping quality of a read is encoded at each nucleotide position of the read. Mapping</span>
+<span class="sd">            quality values are noramlize to [0,1] (assuming max value of 50).</span>
+<span class="sd">            Missing mapping quality is set to 0.</span>
+
+<span class="sd">            REFERENCE : Only the reference allele location is encoded in each row.</span>
+
+<span class="sd">            ALLELE : Only the alt allele location is encoded in each row.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">READ</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">BASE_QUALITY</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">MAPPING_QUALITY</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">REFERENCE</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">ALLELE</span> <span class="o">=</span> <span class="mi">4</span></div>
+
+<div class="viewcode-block" id="PileupEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.PileupEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">max_reads</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">],</span> <span class="n">base_encoder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">print_encoding</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct class instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            window_size : A nucleotide context size on either side of variant position [50].</span>
+<span class="sd">            max_reads : Max number of reads to consider in the pileip. If reads fewer than max_reads</span>
+<span class="sd">            are available, the entries are all masked to 0. [50]</span>
+<span class="sd">            layers : A list defining the layers to add to the encoding. The ordering of channels in the</span>
+<span class="sd">            encoding follows the ordering of layers in the list. [Layer.READ]</span>
+<span class="sd">            base_encoder : A class which inherits from `Encoder` defining conversion of nucleotide string chars to</span>
+<span class="sd">            numeric representation in its __call__ method. [BaseEnumEncoder]</span>
+<span class="sd">            print_encoding : Print ASCII representation of each encoding that&#39;s converted to a tensor. [False]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_reads</span> <span class="o">=</span> <span class="n">max_reads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bams</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_encoder</span> <span class="o">=</span> <span class="n">base_encoder</span> <span class="k">if</span> <span class="n">base_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">BaseEnumEncoder</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_tensors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+            <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_tensors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_dict</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span> <span class="o">=</span> <span class="n">tensor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">print_encoding</span> <span class="o">=</span> <span class="n">print_encoding</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return width of pileup.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">height</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return height of pileup.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_reads</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return number of layers in pileup.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fill_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">pileupread</span><span class="p">,</span> <span class="n">left_offset</span><span class="p">,</span> <span class="n">right_offset</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos_range</span><span class="p">,</span> <span class="n">variant</span><span class="p">):</span>
+        <span class="c1"># print(len(pileupread.alignment.get_reference_sequence()))</span>
+        <span class="n">tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_dict</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>
+
+        <span class="n">query_pos</span> <span class="o">=</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">query_position</span>
+
+        <span class="c1"># Currently only support adding reads</span>
+        <span class="k">if</span> <span class="n">layer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">:</span>
+            <span class="c1"># Fetch the subsequence based on the offsets</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">alignment</span><span class="o">.</span><span class="n">query_sequence</span><span class="p">[</span><span class="n">query_pos</span> <span class="o">-</span>
+                                                      <span class="n">left_offset</span><span class="p">:</span> <span class="n">query_pos</span> <span class="o">+</span> <span class="n">right_offset</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">print_encoding</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">seq</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span>
+                                      <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span> <span class="o">-</span> <span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+            <span class="k">for</span> <span class="n">seq_pos</span><span class="p">,</span> <span class="n">pileup_pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
+                <span class="c1"># Encode base characters to enum</span>
+                <span class="n">tensor</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_encoder</span><span class="p">(</span><span class="n">seq</span><span class="p">[</span><span class="n">seq_pos</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">layer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">BASE_QUALITY</span><span class="p">:</span>
+            <span class="c1"># From SAM format docs.</span>
+            <span class="n">MAX_BASE_QUALITY</span> <span class="o">=</span> <span class="mf">93.0</span>
+            <span class="c1"># Fetch the subsequence based on the offsets</span>
+            <span class="n">seq_qual</span> <span class="o">=</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">alignment</span><span class="o">.</span><span class="n">query_qualities</span><span class="p">[</span><span class="n">query_pos</span> <span class="o">-</span>
+                                                            <span class="n">left_offset</span><span class="p">:</span> <span class="n">query_pos</span> <span class="o">+</span> <span class="n">right_offset</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">seq_pos</span><span class="p">,</span> <span class="n">pileup_pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
+                <span class="c1"># Encode base characters to enum</span>
+                <span class="n">qual</span> <span class="o">=</span> <span class="n">seq_qual</span><span class="p">[</span><span class="n">seq_pos</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">qual</span> <span class="o">==</span> <span class="mi">255</span><span class="p">:</span>
+                    <span class="n">qual</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">qual</span> <span class="o">=</span> <span class="n">qual</span> <span class="o">/</span> <span class="n">MAX_BASE_QUALITY</span>
+                <span class="n">tensor</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">qual</span>
+        <span class="k">elif</span> <span class="n">layer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">MAPPING_QUALITY</span><span class="p">:</span>
+            <span class="n">MAX_MAPPING_QUALITY</span> <span class="o">=</span> <span class="mf">100.0</span>
+            <span class="c1"># Getch mapping quality of alignment</span>
+            <span class="n">map_qual</span> <span class="o">=</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">alignment</span><span class="o">.</span><span class="n">mapping_quality</span>
+            <span class="c1"># Missing mapiping quality is 255</span>
+            <span class="k">if</span> <span class="n">map_qual</span> <span class="o">==</span> <span class="mi">255</span><span class="p">:</span>
+                <span class="n">map_qual</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">map_qual</span> <span class="o">=</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">alignment</span><span class="o">.</span><span class="n">mapping_quality</span> <span class="o">/</span> <span class="n">MAX_MAPPING_QUALITY</span>
+            <span class="k">for</span> <span class="n">pileup_pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pileup_pos_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="c1"># Encode base characters to enum</span>
+                <span class="n">tensor</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_qual</span>
+        <span class="k">elif</span> <span class="n">layer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">REFERENCE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">print_encoding</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span>
+                                      <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)))</span>
+            <span class="c1"># Only encode the reference at the variant position, rest all 0</span>
+            <span class="k">for</span> <span class="n">seq_pos</span><span class="p">,</span> <span class="n">pileup_pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                    <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">),</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))):</span>
+                <span class="n">tensor</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_encoder</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">[</span><span class="n">seq_pos</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">layer</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">ALLELE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">print_encoding</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span>
+                                      <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)))</span>
+            <span class="c1"># Only encode the allele at the variant position, rest all 0</span>
+            <span class="k">for</span> <span class="n">seq_pos</span><span class="p">,</span> <span class="n">pileup_pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                    <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">),</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))):</span>
+                <span class="n">tensor</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_encoder</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">[</span><span class="n">seq_pos</span><span class="p">])</span>
+
+<div class="viewcode-block" id="PileupEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.PileupEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a torch Tensor pileup queried from a BAM file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variant : Variant struct holding information about variant locus.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This encoding supports only single sample encoding.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> only supports single sample VCFs.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+
+        <span class="c1"># Locus information</span>
+        <span class="n">chrom</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">chrom</span>
+        <span class="n">variant_pos</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">pos</span>
+        <span class="n">bam_file</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">bams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Check that the ref and alt alleles all fit in the window context.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Ref allele </span><span class="si">{}</span><span class="s2"> too large for window </span><span class="si">{}</span><span class="s2">. Please increase window size.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">variant</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Alt allele </span><span class="si">{}</span><span class="s2"> too large for window </span><span class="si">{}</span><span class="s2">. Please increase window size.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">variant</span><span class="o">.</span><span class="n">allele</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">))</span>
+
+        <span class="c1"># Create BAM object if one hasn&#39;t been opened before.</span>
+        <span class="k">if</span> <span class="n">bam_file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bams</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bams</span><span class="p">[</span><span class="n">bam_file</span><span class="p">]</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">AlignmentFile</span><span class="p">(</span><span class="n">bam_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+
+        <span class="n">bam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bams</span><span class="p">[</span><span class="n">bam_file</span><span class="p">]</span>
+
+        <span class="c1"># Get pileups from BAM.</span>
+        <span class="c1"># Note that VCF positions are 1 based, but pysam pileup regions are 0 based.</span>
+        <span class="c1"># So subtract one from position.</span>
+        <span class="n">pileups</span> <span class="o">=</span> <span class="n">bam</span><span class="o">.</span><span class="n">pileup</span><span class="p">(</span><span class="n">chrom</span><span class="p">,</span>
+                             <span class="n">variant_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">variant_pos</span><span class="p">,</span>
+                             <span class="n">truncate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">max_depth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_reads</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">print_encoding</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Encoding for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">variant</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Order of rows : </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">pileup_col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pileups</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">pileupread</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pileup_col</span><span class="o">.</span><span class="n">pileups</span><span class="p">):</span>
+                <span class="c1"># Skip rows beyond the max depth</span>
+                <span class="k">if</span> <span class="n">row</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_reads</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="c1"># Check if reference base is missing (either deleted or skipped).</span>
+                <span class="k">if</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">is_del</span> <span class="ow">or</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">is_refskip</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">is_head</span> <span class="ow">or</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">is_tail</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Using the variant locus as the center, find the left and right offset</span>
+                <span class="c1"># from that locus to use as bounds for fetching bases from reads.</span>
+                <span class="c1">#</span>
+                <span class="c1">#      |------V------|</span>
+                <span class="c1">#  ATCGATCGATCGATCG</span>
+                <span class="c1">#        ATCGATCGATCGATCGATCG</span>
+                <span class="c1">#</span>
+                <span class="c1"># 1st read - Left offset is window size, and right offset is 4 bases</span>
+                <span class="c1"># 2nd read - Left offset is 5 bases, and right offset is window size</span>
+                <span class="n">left_offset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">pileupread</span><span class="o">.</span><span class="n">query_position</span><span class="p">)</span>
+                <span class="n">right_offset</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pileupread</span><span class="o">.</span><span class="n">alignment</span><span class="o">.</span><span class="n">query_sequence</span><span class="p">)</span> <span class="o">-</span>
+                                   <span class="n">pileupread</span><span class="o">.</span><span class="n">query_position</span><span class="p">)</span>
+
+                <span class="n">pileup_pos_range</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">-</span> <span class="n">left_offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="n">right_offset</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_fill_layer</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">pileupread</span><span class="p">,</span> <span class="n">left_offset</span><span class="p">,</span>
+                                     <span class="n">right_offset</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">pileup_pos_range</span><span class="p">,</span> <span class="n">variant</span><span class="p">)</span>
+
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_tensors</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">tensor</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span> <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_tensors</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">encoding</span></div>
+
+<div class="viewcode-block" id="PileupEncoder.visualize"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.PileupEncoder.visualize">[docs]</a>    <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant</span><span class="p">,</span> <span class="n">save_to_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_subplots_per_line</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">visual_decoder</span><span class="o">=</span><span class="n">UnicodeRGBEncoder</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;Visualize variant encoded pileup.</span>
+
+<span class="sd">        Outputs variant pileup visualization to a figure.</span>
+<span class="sd">        Execute `tensorboard --logdir=&#39;&lt;save_to_path&gt;&#39; --port=6006` in the background to view the images over</span>
+<span class="sd">        TensorBoard.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variant: Variant struct holding information about variant locus.</span>
+<span class="sd">            save_to_path: Path to figure output direcoty. [None]</span>
+<span class="sd">            max_subplots_per_line: maximal number of plots per row in the figure. [3]</span>
+<span class="sd">            visual_decoder: a decoder for a visualized representation of PileupEncoder.base_encoder</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            figure_title: figure title</span>
+<span class="sd">            figure: matplotlib.pyplot.figure object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">_get_subplots_axes</span><span class="p">():</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_subplots_per_line</span> <span class="k">else</span> <span class="n">max_subplots_per_line</span>
+            <span class="c1"># Calculate the ceil() value of len(self.layers) divided by max_subplots_per_line</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">max_subplots_per_line</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="n">max_subplots_per_line</span>
+            <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span>
+
+        <span class="k">def</span> <span class="nf">_create_subplot</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nrow</span><span class="p">,</span> <span class="n">ncol</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">sample_dim</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">nrow</span><span class="p">,</span> <span class="n">ncol</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+            <span class="n">plt_name</span> <span class="o">=</span> <span class="s1">&#39;Layer: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">plt_name</span><span class="p">,</span>
+                      <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span>
+                      <span class="n">fontdict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Read number&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Read window size&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">layer</span> <span class="ow">in</span> <span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span>
+                         <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">REFERENCE</span><span class="p">,</span>
+                         <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">ALLELE</span><span class="p">]:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">sample_dim</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="n">rgb_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">sample_dim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sample_dim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                        <span class="n">rgb_img</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">visual_decoder</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgb_img</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
+                    <span class="n">handles</span><span class="o">=</span><span class="p">[</span>
+                        <span class="n">mpatches</span><span class="o">.</span><span class="n">Patch</span><span class="p">(</span>
+                            <span class="n">facecolor</span><span class="o">=</span><span class="n">rgb_to_hex</span><span class="p">(</span><span class="n">visual_decoder</span><span class="p">(</span><span class="n">nucleotide_unicode</span><span class="p">)),</span>
+                            <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span>
+                            <span class="n">label</span><span class="o">=</span><span class="n">visual_decoder</span><span class="o">.</span><span class="n">get_key_legend_label</span><span class="p">(</span><span class="n">nucleotide_unicode</span><span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">nucleotide_unicode</span> <span class="ow">in</span> <span class="n">visual_decoder</span><span class="o">.</span><span class="n">get_keys</span><span class="p">()</span>
+                    <span class="p">],</span>
+                    <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.05</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">layer</span> <span class="ow">in</span> <span class="p">[</span><span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">MAPPING_QUALITY</span><span class="p">,</span> <span class="n">PileupEncoder</span><span class="o">.</span><span class="n">Layer</span><span class="o">.</span><span class="n">BASE_QUALITY</span><span class="p">]:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">sample_dim</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Purples&#39;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+
+        <span class="n">encoded_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">variant</span><span class="p">)</span>  <span class="c1"># Build variant pileup encoding</span>
+        <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="n">figure_title</span> <span class="o">=</span> <span class="s1">&#39;chrom-</span><span class="si">{}</span><span class="s1">_pos-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">chrom</span><span class="p">,</span> <span class="n">variant</span><span class="o">.</span><span class="n">pos</span><span class="p">)</span> <span class="o">+</span> \
+                       <span class="p">(</span><span class="s1">&#39;_id-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">variant</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="s1">&#39;.&#39;</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">figure_title</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Determine the number of rows and cols in multiple subplots figure</span>
+        <span class="n">number_rows</span><span class="p">,</span> <span class="n">number_column</span> <span class="o">=</span> <span class="n">_get_subplots_axes</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">sample_layer</span><span class="p">,</span> <span class="n">encoded_sample_layer</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">encoded_sample</span><span class="p">):</span>
+            <span class="n">_create_subplot</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">number_rows</span><span class="p">,</span> <span class="n">number_column</span><span class="p">,</span> <span class="n">sample_layer</span><span class="p">,</span> <span class="n">encoded_sample_layer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save_to_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">save_to_path</span><span class="p">,</span> <span class="n">figure_title</span> <span class="o">+</span> <span class="s1">&#39;_</span><span class="si">{}</span><span class="s1">.png&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">))</span>
+                <span class="p">))</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">return</span> <span class="n">figure_title</span><span class="p">,</span> <span class="n">figure</span></div></div>
+
+
+<div class="viewcode-block" id="ZygosityLabelEncoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelEncoder">[docs]</a><span class="k">class</span> <span class="nc">ZygosityLabelEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A label encoder that returns an output label encoding for zygosity only.</span>
+
+<span class="sd">    Converts zygosity type to a class number.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ZygosityLabelEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NO_VARIANT</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HOMOZYGOUS</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HETEROZYGOUS</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ZygosityLabelEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Encode variant to class for zygosity.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           Zygosity encoded as number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This encoding supports only single sample encoding.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">variant</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> only supports single sample VCFs.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">variant</span><span class="p">,</span> <span class="n">Variant</span><span class="p">))</span>
+        <span class="n">var_zyg</span> <span class="o">=</span> <span class="n">variant</span><span class="o">.</span><span class="n">zygosity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">var_zyg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">var_zyg</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="ZygosityLabelDecoder"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelDecoder">[docs]</a><span class="k">class</span> <span class="nc">ZygosityLabelDecoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A decoder to convert a class to a zygosity enum.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ZygosityLabelDecoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelDecoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a class instance.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="mi">0</span><span class="p">:</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">NO_VARIANT</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">:</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HOMOZYGOUS</span><span class="p">,</span>
+            <span class="mi">2</span><span class="p">:</span> <span class="n">VariantZygosity</span><span class="o">.</span><span class="n">HETEROZYGOUS</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ZygosityLabelDecoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.ZygosityLabelDecoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decode class to variant zygosity enum.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Variant zygosity.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">class_id</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">class_id</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NVIDIA Corportation
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
