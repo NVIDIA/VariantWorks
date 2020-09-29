@@ -173,7 +173,7 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Simple SNP caller based on VariantWorks.")
 
-    parser.add_argument("--local-rank", type=int,
+    parser.add_argument("--local_rank", type=int,
                         help="Local rank for multi GPU training. Do not set directly.",
                         default=os.getenv('LOCAL_RANK', None))
     parser.add_argument("--train-hdf",
