@@ -18,11 +18,14 @@
 
 import argparse
 
+import os
 import nemo
+import torch
 
-from variantworks.dataloader import HDFDataLoader
+from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.encoders import PileupEncoder, ZygosityLabelDecoder
+from variantworks.io.vcfio import VCFReader, VCFWriter
 from variantworks.networks import AlexNet
-from variantworks.neural_types import ReadPileupNeuralType, VariantZygosityNeuralType
 
 
 def create_model():
@@ -37,39 +40,69 @@ def infer(parsed_args):
     """Infer a sample model."""
     # Create neural factory as per NeMo requirements.
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=parsed_args.model_dir)
+        placement=nemo.core.neural_factory.DeviceType.GPU,
+        checkpoint_dir=parsed_args.model_dir)
+
+    vcf_readers = []
+    for tp_file in parsed_args.tp_vcf_files:
+        vcf_readers.append(VCFReader(vcf=tp_file, bams=[parsed_args.bam], is_fp=False))
+    for fp_file in parsed_args.fp_vcf_files:
+        vcf_readers.append(VCFReader(vcf=fp_file, bams=[parsed_args.bam], is_fp=True))
+
+    # Setup encoder for samples and labels.
+    sample_encoder = PileupEncoder(window_size=100, max_reads=100,
+                                   layers=[PileupEncoder.Layer.READ, PileupEncoder.Layer.BASE_QUALITY])
+    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, vcf_readers,
+                                        batch_size=32, shuffle=False, sample_encoder=sample_encoder)
 
     model = create_model()
 
-    # Create test DAG
-    test_dataset = HDFDataLoader(args.test_hdf, batch_size=32,
-                                 shuffle=True, num_workers=args.threads,
-                                 tensor_keys=["encodings", "labels"],
-                                 tensor_dims=[('B', 'C', 'H', 'W'), tuple('B')],
-                                 tensor_neural_types=[ReadPileupNeuralType(), VariantZygosityNeuralType()])
-    encoding, vz_labels = test_dataset()
+    encoding = test_dataset()
 
+    # Execute inference
     vz = model(encoding=encoding)
 
-    nf.infer([vz], checkpoint_dir=parsed_args.model_dir, verbose=True)
+    inferred_results = nf.infer([vz], checkpoint_dir=parsed_args.model_dir, verbose=True)
+
+    # Decode inference results to labels
+    inferred_zygosity = list()
+    zyg_decoder = ZygosityLabelDecoder()
+    for tensor_batches in inferred_results:
+        for batch in tensor_batches:
+            predicted_classes = torch.argmax(batch, dim=1)
+            inferred_zygosity.extend([zyg_decoder(pred)
+                                      for pred in predicted_classes])
+
+    # Create output file for each vcf reader
+    start_reader_idx = 0
+    for vcf_reader in vcf_readers:
+        input_vcf_df = vcf_reader.dataframe
+        gt_col = "{}_GT".format(vcf_reader.samples[0])
+        assert (gt_col in input_vcf_df)
+        # Update GT column data
+        reader_len = len(input_vcf_df[gt_col])
+        input_vcf_df[gt_col] = inferred_zygosity[start_reader_idx:start_reader_idx+reader_len]
+        start_reader_idx += reader_len
+        output_path = '{}_{}.{}'.format(
+            "inferred", "".join(os.path.basename(vcf_reader.file_path).split('.')[0:-1]), 'vcf')
+        vcf_writer = VCFWriter(input_vcf_df, output_path=output_path, sample_names=vcf_reader.samples)
+        vcf_writer.write_output(input_vcf_df)
 
 
 def build_parser():
     """Build parser object with options for sample."""
-    import multiprocessing
-
-    parser = argparse.ArgumentParser(
+    args_parser = argparse.ArgumentParser(
         description="Simple model inference SNP caller based on VariantWorks.")
-    parser.add_argument("--test-hdf",
-                        help="HDF with examples for testing.",
-                        required=True)
-    parser.add_argument("-t", "--threads", type=int,
-                        help="Threads to use for parallel loading.",
-                        required=False, default=multiprocessing.cpu_count())
-    parser.add_argument("--model-dir", type=str,
-                        help="Directory for loading saved trained model checkpoints.",
-                        required=False, default="./models")
-    return parser
+    args_parser.add_argument("--tp-vcf-files", nargs="+",
+                             help="List of TP VCF files to infer.", default=[], required=True)
+    args_parser.add_argument("--fp-vcf-files", nargs="+",
+                             help="List of FP VCF files to infer.", default=[])
+    args_parser.add_argument("--bam", type=str,
+                             help="BAM file with reads.", required=True)
+    args_parser.add_argument("--model-dir", type=str,
+                             help="Directory for loading saved trained model checkpoints.",
+                             required=False, default="./models")
+    return args_parser
 
 
 if __name__ == "__main__":
