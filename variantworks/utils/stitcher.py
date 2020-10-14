@@ -18,10 +18,13 @@
 Combine chunk predictions into a sequence.
 """
 
+from collections import namedtuple
 import numpy as np
 
+NucleotideCertainty = namedtuple('NucleotideCertainty', ['nucleotide_literal', 'nucleotide_certainty'])
 
-def decode_consensus(probs):
+
+def decode_consensus(probs, include_certainty_score=True):
     """Decode probabilities into sequence by choosing the Nucleotide base with the highest probability.
 
     Returns:
@@ -29,12 +32,16 @@ def decode_consensus(probs):
     """
     label_symbols = ["*", "A", "C", "G", "T"]  # Corresponding labels for each network output channel
     seq = ''
+    seq_quality = list()
     for i in range(len(probs)):
         base = probs[i, :]
-        mp = np.argmax(base)
-        seq += label_symbols[mp]
-    seq = seq.replace('*', '')
-    return seq
+        mp = np.argmax(base).item()
+        nuc = label_symbols[mp]
+        if nuc != '*':
+            seq += nuc
+            if include_certainty_score:
+                seq_quality.append(base[mp].item())
+    return seq, seq_quality if include_certainty_score else list()
 
 
 def overlap_indices(first_positions_chunk, second_positions_chunk):
@@ -75,7 +82,8 @@ def stitch(probs, positions, decode_consensus_func):
     Returns:
         seq: Stitched consensus sequence
     """
-    sequece_parts = []
+    nucleotides_sequece_parts = list()
+    certainty_sequence_parts = list()
     first_start_idx = 0
     for i in range(1, len(positions), 1):
         probabilities_chunk = probs[i - 1]
@@ -88,11 +96,14 @@ def stitch(probs, positions, decode_consensus_func):
         # found by the overlap_indices function.
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
         # Decoding chunk in i-1 position and adding to sequence
-        prev_chunk_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
-        sequece_parts.append(prev_chunk_seq)
+        prev_chunk_seq, prev_chunk_certainties = \
+            decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
+        nucleotides_sequece_parts.append(prev_chunk_seq)
+        certainty_sequence_parts.extend(prev_chunk_certainties)
         # Handling last sequence
         if i == len(positions) - 1:
-            current_chunk_seq = decode_consensus_func(probs[i][second_start_idx:])
-            sequece_parts.append(current_chunk_seq)
+            current_chunk_seq, current_chunk_certainties = decode_consensus_func(probs[i][second_start_idx:])
+            nucleotides_sequece_parts.append(current_chunk_seq)
+            certainty_sequence_parts.extend(current_chunk_certainties)
         first_start_idx = second_start_idx
-    return "".join(sequece_parts)
+    return "".join(nucleotides_sequece_parts), certainty_sequence_parts
