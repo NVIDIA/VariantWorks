@@ -21,7 +21,7 @@ import argparse
 import nemo
 
 from variantworks.dataloader import HDFDataLoader
-from variantworks.io import fastqio
+from variantworks.io import fastxio
 from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 from variantworks.utils.stitcher import stitch, decode_consensus
@@ -65,10 +65,10 @@ def infer(args):
         all_pos += pos
 
     # Generate consensus sequence.
-    consensus = stitch(all_preds, all_pos, decode_consensus)
+    nucleotides_sequence, nucleotides_certainty = stitch(all_preds, all_pos, decode_consensus)
 
     # Write out fasta sequence.
-    fastq_writer = fastqio.FastqWriter(args.out_file, ["dl_consensus"], [consensus[0]], [consensus[1]])
+    fastq_writer = fastxio.FastqWriter(args.out_file, ["dl_consensus"], [nucleotides_sequence], [nucleotides_certainty])
     fastq_writer.write_output()
 
 

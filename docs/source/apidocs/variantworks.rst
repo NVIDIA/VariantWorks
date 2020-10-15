@@ -36,7 +36,7 @@ IO
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: variantworks.io.fastqio
+.. automodule:: variantworks.io.fastxio
    :members:
    :undoc-members:
    :show-inheritance:

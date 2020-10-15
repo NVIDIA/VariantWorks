@@ -19,9 +19,9 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 import itertools
-import numpy as np
 
 from variantworks.io.baseio import BaseWriter
+from variantworks.utils.metrics import convert_error_probability_arr_to_phred
 
 
 class FastqWriter(BaseWriter):
@@ -47,12 +47,6 @@ class FastqWriter(BaseWriter):
         self.records_seqs = records_seqs
         self.records_qualities = records_qualities
 
-    @staticmethod
-    def _convert_error_probability_arr_to_phred(err_prob_arr):
-        if any(i < 0 or i > 1 for i in err_prob_arr):
-            raise ValueError("all values in error probability array must be between 0 and 1")
-        return np.trunc(-10 * np.log10(err_prob_arr))
-
     def write_output(self):
         """Write dataframe to VCF."""
         output_records = list()
@@ -61,7 +55,7 @@ class FastqWriter(BaseWriter):
                                id=name,
                                description="Generated consensus sequence by NVIDIA VariantWorks")
             record.letter_annotations["phred_quality"] = \
-                self._convert_error_probability_arr_to_phred([1 - val for val in q_score])
+                convert_error_probability_arr_to_phred([1 - val for val in q_score])
             output_records.append(record)
 
         with open(self.output_path, "w") as fd:
