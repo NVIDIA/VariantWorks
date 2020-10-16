@@ -96,13 +96,15 @@ def test_overlap_stitch(pos_chunk1, pos_chunk2, output):
                       dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
          ],
          decode_consensus,
-         ("".join(['AGCAG', 'GTCA', 'ATCAT']),
-          [1.0, 1.0, 1.0, 1.0, 0.999999881,
-           1.0, 0.999999523, 0.999999523, 0.999993801,
-           1.0, 1.0, 1.0, 0.99999988, 0.99999964])
+         [
+             ('AGCAG', [1.0, 1.0, 1.0, 1.0, 0.999999881]),
+             ('GTCA', [1.0, 0.999999523, 0.999999523, 0.999993801]),
+             ('ATCAT', [1.0, 1.0, 1.0, 0.99999988, 0.99999964])
+         ]
         )
     ],
 )
 def test_stitch(probs, positions, decode_consensus_function, expected_output):
-    stitched_seq, seq_certainty = stitch(probs, positions, decode_consensus_function)
-    assert expected_output[0] == stitched_seq and np.array_equal(expected_output[1], seq_certainty)
+    decoded_output_parts = stitch(probs, positions, decode_consensus_function)
+    for expected_part, decoded_part in zip(expected_output, decoded_output_parts):
+        assert expected_part[0] == decoded_part[0] and np.array_equal(expected_part[1], decoded_part[1])

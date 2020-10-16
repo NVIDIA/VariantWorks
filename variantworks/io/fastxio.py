@@ -27,30 +27,30 @@ from variantworks.utils.metrics import convert_error_probability_arr_to_phred
 class FastqWriter(BaseWriter):
     """Writer for FASTQ files."""
 
-    def __init__(self, output_path, records_ids, records_seqs, records_qualities):
+    def __init__(self, output_path):
         """Constructor VCFWriter class.
 
         Writes a FASTQ records into a file using Biopython.
 
         Args:
             output_path : Output path for VCF output file.
-            records_ids : List of records' id numbers.
-            records_seqs : Corresponding list with records' sequence literals.
-            records_qualities : Corresponding records' list of lists with each nucleotide certainty score.
 
         Returns:
             Instance of object.
         """
         super().__init__()
         self.output_path = output_path
-        self.records_ids = records_ids
-        self.records_seqs = records_seqs
-        self.records_qualities = records_qualities
 
-    def write_output(self):
-        """Write dataframe to VCF."""
+    def write_output(self, records_ids, records_seqs, records_qualities):
+        """Write dataframe to VCF.
+
+        Args:
+            records_ids : List of records' id numbers.
+            records_seqs : Corresponding list with records' sequence literals.
+            records_qualities : Corresponding records' list of lists with each nucleotide certainty score.
+        """
         output_records = list()
-        for name, seq, q_score in itertools.zip_longest(self.records_ids, self.records_seqs, self.records_qualities):
+        for name, seq, q_score in itertools.zip_longest(records_ids, records_seqs, records_qualities):
             record = SeqRecord(Seq(seq),
                                id=name,
                                description="Generated consensus sequence by NVIDIA VariantWorks")

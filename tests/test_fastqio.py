@@ -27,7 +27,7 @@ from variantworks.utils.metrics import convert_error_probability_arr_to_phred
     ]
 )
 def test_err_prob_to_phred_score(err_prob_values, err_prob_values_with_exception):
-    """Test conversion between err prob to phred score."""
+    """Test conversion between error probability to Phred quality score."""
     output = convert_error_probability_arr_to_phred(err_prob_values)
     assert np.array_equal(output, [6, 8, 0, 15, 29, 39, 50])
     with pytest.raises(ValueError):

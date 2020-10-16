@@ -17,6 +17,7 @@
 """A sample program highlighting usage of VariantWorks SDK to write a simple consensus inference tool."""
 
 import argparse
+import itertools
 
 import nemo
 
@@ -64,12 +65,17 @@ def infer(args):
         all_preds += pred
         all_pos += pos
 
-    # Generate consensus sequence.
-    nucleotides_sequence, nucleotides_certainty = stitch(all_preds, all_pos, decode_consensus)
+    # Generate a lists of stitched consensus sequences.
+    stitched_consensus_seq_parts = stitch(all_preds, all_pos, decode_consensus)
 
-    # Write out fasta sequence.
-    fastq_writer = fastxio.FastqWriter(args.out_file, ["dl_consensus"], [nucleotides_sequence], [nucleotides_certainty])
-    fastq_writer.write_output()
+    # unpack the list of tuples into two lists
+    nucleotides_sequence, nucleotides_certainty = map(list, zip(*stitched_consensus_seq_parts))
+    nucleotides_sequence = "".join(nucleotides_sequence)
+    nucleotides_certainty = itertools.chain.from_iterable(nucleotides_certainty)
+
+    # Write out fastq sequence.
+    fastq_writer = fastxio.FastqWriter(args.out_file)
+    fastq_writer.write_output(["dl_consensus"], [nucleotides_sequence], [nucleotides_certainty])
 
 
 def build_parser():

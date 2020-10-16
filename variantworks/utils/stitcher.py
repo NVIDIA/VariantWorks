@@ -82,8 +82,7 @@ def stitch(probs, positions, decode_consensus_func):
     Returns:
         seq: Stitched consensus sequence
     """
-    nucleotides_sequece_parts = list()
-    certainty_sequence_parts = list()
+    decoded_sequece_parts = list()
     first_start_idx = 0
     for i in range(1, len(positions), 1):
         probabilities_chunk = probs[i - 1]
@@ -92,18 +91,15 @@ def stitch(probs, positions, decode_consensus_func):
                                          dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
         second_positions_chunk = np.array([(pos[0], pos[1]) for pos in positions[i]],
                                           dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
-        # end1 and start2 are the new breaking points between two consecutive overlaps
+        # first_end_idx and second_start_idx are the new breaking points between two consecutive overlaps
         # found by the overlap_indices function.
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
         # Decoding chunk in i-1 position and adding to sequence
-        prev_chunk_seq, prev_chunk_certainties = \
-            decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
-        nucleotides_sequece_parts.append(prev_chunk_seq)
-        certainty_sequence_parts.extend(prev_chunk_certainties)
+        prev_decoded_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
+        decoded_sequece_parts.append(prev_decoded_seq)
         # Handling last sequence
         if i == len(positions) - 1:
-            current_chunk_seq, current_chunk_certainties = decode_consensus_func(probs[i][second_start_idx:])
-            nucleotides_sequece_parts.append(current_chunk_seq)
-            certainty_sequence_parts.extend(current_chunk_certainties)
+            current_decoded_seq = decode_consensus_func(probs[i][second_start_idx:])
+            decoded_sequece_parts.append(current_decoded_seq)
         first_start_idx = second_start_idx
-    return "".join(nucleotides_sequece_parts), certainty_sequence_parts
+    return decoded_sequece_parts
