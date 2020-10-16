@@ -18,45 +18,55 @@
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
-import itertools
 
 from variantworks.io.baseio import BaseWriter
 from variantworks.utils.metrics import convert_error_probability_arr_to_phred
 
 
 class FastqWriter(BaseWriter):
-    """Writer for FASTQ files."""
+    """Writer for FASTQ files.
 
-    def __init__(self, output_path):
+    Should be used with a context manager.
+    """
+
+    def __init__(self, output_path, mode):
         """Constructor VCFWriter class.
 
         Writes a FASTQ records into a file using Biopython.
 
         Args:
             output_path : Output path for VCF output file.
+            mode: Write mode for opening the output file.
 
         Returns:
             Instance of object.
         """
         super().__init__()
         self.output_path = output_path
+        self.mode = mode
+        self.file_obj = None
 
-    def write_output(self, records_ids, records_seqs, records_qualities):
+    def __enter__(self):
+        """For contextmanager support."""
+        self.file_obj = open(self.output_path, self.mode)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """For contextmanager support."""
+        self.file_obj.close()
+
+    def write_output(self, record_id, record_sequence, record_quality):
         """Write dataframe to VCF.
 
         Args:
-            records_ids : List of records' id numbers.
-            records_seqs : Corresponding list with records' sequence literals.
-            records_qualities : Corresponding records' list of lists with each nucleotide certainty score.
+            record_id : sequence record id.
+            record_sequence : sequence data.
+            record_quality : Corresponding records' sequence quality.
         """
-        output_records = list()
-        for name, seq, q_score in itertools.zip_longest(records_ids, records_seqs, records_qualities):
-            record = SeqRecord(Seq(seq),
-                               id=name,
-                               description="Generated consensus sequence by NVIDIA VariantWorks")
-            record.letter_annotations["phred_quality"] = \
-                convert_error_probability_arr_to_phred([1 - val for val in q_score])
-            output_records.append(record)
+        record = SeqRecord(Seq(record_sequence),
+                           id=record_id,
+                           description="Generated consensus sequence by NVIDIA VariantWorks")
+        record.letter_annotations["phred_quality"] = \
+            convert_error_probability_arr_to_phred([1 - val for val in record_quality])
 
-        with open(self.output_path, "w") as fd:
-            SeqIO.write(output_records, fd, "fastq")
+        SeqIO.write(record, self.file_obj, "fastq")

@@ -71,11 +71,11 @@ def infer(args):
     # unpack the list of tuples into two lists
     nucleotides_sequence, nucleotides_certainty = map(list, zip(*stitched_consensus_seq_parts))
     nucleotides_sequence = "".join(nucleotides_sequence)
-    nucleotides_certainty = itertools.chain.from_iterable(nucleotides_certainty)
+    nucleotides_certainty = list(itertools.chain.from_iterable(nucleotides_certainty))
 
-    # Write out fastq sequence.
-    fastq_writer = fastxio.FastqWriter(args.out_file)
-    fastq_writer.write_output(["dl_consensus"], [nucleotides_sequence], [nucleotides_certainty])
+    # Write out FASTQ sequence.
+    with fastxio.FastqWriter(output_path=args.out_file, mode='w') as fastq_file:
+        fastq_file.write_output("dl_consensus", nucleotides_sequence, nucleotides_certainty)
 
 
 def build_parser():
