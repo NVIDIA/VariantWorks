@@ -17,7 +17,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
@@ -175,6 +174,4 @@ class ConsensusRNN(TrainableNM):
         """
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)
-        # Softmax along the logits dimension
-        outputs = F.softmax(encoding, dim=2)
-        return outputs
+        return encoding
