@@ -25,7 +25,6 @@ set -e
 START_TIME=$(date +%s)
 
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-
 # Set home to the job's workspace
 export HOME=$WORKSPACE
 cd "${WORKSPACE}"
@@ -37,7 +36,7 @@ cd "${WORKSPACE}"
 source ci/utilities/logger.sh
 
 logger "Calling prep-init-env..."
-source ci/utilities/prepare_env.sh "${WORKSPACE}" "${CONDA_ENV_NAME}"
+source ci/utilities/prepare_env.sh
 
 ################################################################################
 # VariantWorks tests

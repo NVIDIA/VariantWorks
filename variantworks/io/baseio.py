@@ -71,6 +71,6 @@ class BaseWriter(ABC):
         pass
 
     @abstractmethod
-    def write_output(self):
+    def write_output(self, *args, **kwargs):
         """Write format to disk."""
         return NotImplementedError
