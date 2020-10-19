@@ -41,7 +41,7 @@ Format Readers
 ``````````````
 
 Reading entries from common genomics file formats (such as BAM, VCF) is a precursor to almost all variant calling pipelines.
-VariantWorks provides parsing (based on pyVCF) for VCFs, and leverages pySAM for working with BAM files.
+VariantWorks provides parsing (based on cyvcf2) for VCFs, and leverages pySAM for working with BAM files.
 
 The Reader classes follow a similar structure to Encoders when it comes to inheritence. All readers must inherit from
 :class:`BaseReader<variantworks.io.baseio.BaseReader>` and implement the abstract methods `__len__` and `__getitem__` to make them
