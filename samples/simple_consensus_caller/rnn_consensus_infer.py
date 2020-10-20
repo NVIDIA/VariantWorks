@@ -57,21 +57,38 @@ def infer(args):
     results = nf.infer([vz, positions], checkpoint_dir=args.model_dir, verbose=True)
 
     prediction = results[0]
+    #print("len(prediction)",len(prediction)) # len(prediction) 1
+    #print("prediction[0].shape",prediction[0].shape) # prediction[0].shape torch.Size([20, 1000, 5])
+    #print("prediction[0:10]", prediction[0:10]) # these appear to be softmax not probs! [tensor([[[ 5.5893e-01, -8.1115e-02, -1.9324e+00,  3.5603e+00, -1.1685e+00],
+
     position = results[1]
     assert(len(prediction) == len(position))
+
+    #### same data just re-shapes. TODO: why? when is len(prediction)>1??
     all_preds = []
     all_pos = []
     for pred, pos in zip(prediction, position):
         all_preds += pred
         all_pos += pos
 
+    #print("len(all_preds)",len(all_preds)) # len(all_preds) 20
+    #print("all_preds[0].shape",all_preds[0].shape)  # all_preds[0].shape torch.Size([1000, 5])
+    #print("all_preds[0:10]", all_preds[0:10]) # these appear to be softmax not probs! [tensor([[ 0.5589, -0.0811, -1.9324,  3.5603, -1.1685],
+
     # Generate a lists of stitched consensus sequences.
+
+    # TODO: FIX bug. all_preds appear to be softmax values and not probabilities
+    # softmax = [ 0.5589, -0.0811, -1.9324,  3.5603, -1.1685]
+    # probs = exp(softmax) / sum( exp(softmax) )
+    # log10probs = (softmax - log( sum( exp(softmax) ) )) / log(10.0)
+
     stitched_consensus_seq_parts = stitch(all_preds, all_pos, decode_consensus)
 
     # unpack the list of tuples into two lists
     nucleotides_sequence, nucleotides_certainty = map(list, zip(*stitched_consensus_seq_parts))
     nucleotides_sequence = "".join(nucleotides_sequence)
     nucleotides_certainty = list(itertools.chain.from_iterable(nucleotides_certainty))
+
 
     # Write out FASTQ sequence.
     with fastxio.FastqWriter(output_path=args.out_file, mode='w') as fastq_file:
