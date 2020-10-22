@@ -17,10 +17,12 @@
 """A sample program highlighting usage of VariantWorks SDK to write a simple consensus inference tool."""
 
 import argparse
+import itertools
 
 import nemo
 
 from variantworks.dataloader import HDFDataLoader
+from variantworks.io import fastxio
 from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 from variantworks.utils.stitcher import stitch, decode_consensus
@@ -29,7 +31,7 @@ from variantworks.utils.stitcher import stitch, decode_consensus
 def create_model():
     """Return neural network to train."""
     # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
+    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5, apply_softmax=True)
 
     return rnn
 
@@ -63,13 +65,17 @@ def infer(args):
         all_preds += pred
         all_pos += pos
 
-    # Generate consensus sequence.
-    consensus = stitch(all_preds, all_pos, decode_consensus)
+    # Generate a lists of stitched consensus sequences.
+    stitched_consensus_seq_parts = stitch(all_preds, all_pos, decode_consensus)
 
-    # Write out fasta sequence.
-    with open(args.out_file, "w+") as fh:
-        fh.write(">dl_consensus\n")
-        fh.write(consensus)
+    # unpack the list of tuples into two lists
+    nucleotides_sequence, nucleotides_certainty = map(list, zip(*stitched_consensus_seq_parts))
+    nucleotides_sequence = "".join(nucleotides_sequence)
+    nucleotides_certainty = list(itertools.chain.from_iterable(nucleotides_certainty))
+
+    # Write out FASTQ sequence.
+    with fastxio.FastqWriter(output_path=args.out_file, mode='w') as fastq_file:
+        fastq_file.write_output("dl_consensus", nucleotides_sequence, nucleotides_certainty)
 
 
 def build_parser():

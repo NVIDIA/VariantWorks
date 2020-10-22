@@ -36,6 +36,11 @@ IO
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: variantworks.io.fastxio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Types
 -----
 

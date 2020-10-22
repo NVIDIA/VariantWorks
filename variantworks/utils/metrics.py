@@ -14,14 +14,13 @@
 # limitations under the License.
 #
 
-bgzip==0.3.3
-biopython==1.78
-cyvcf2==0.20.1
-h5py==2.10.0
-nemo-toolkit==0.10.1
-numpy==1.18.3
-matplotlib==3.2.2
-pandas==1.0.1
-pysam==0.15.4
-pytest==4.4.1
-pytest-depends==1.0.1
+"""Metrics Utilities."""
+
+import numpy as np
+
+
+def convert_error_probability_arr_to_phred(err_prob_arr):
+    """Convert error probability rate to quality (Phred) scores."""
+    if any(i < 0 or i > 1 for i in err_prob_arr):
+        raise ValueError("all values in error probability array must be between 0 and 1")
+    return np.trunc(-10 * np.log10(err_prob_arr))

@@ -18,10 +18,13 @@
 Combine chunk predictions into a sequence.
 """
 
+from collections import namedtuple
 import numpy as np
 
+NucleotideCertainty = namedtuple('NucleotideCertainty', ['nucleotide_literal', 'nucleotide_certainty'])
 
-def decode_consensus(probs):
+
+def decode_consensus(probs, include_certainty_score=True):
     """Decode probabilities into sequence by choosing the Nucleotide base with the highest probability.
 
     Returns:
@@ -29,12 +32,16 @@ def decode_consensus(probs):
     """
     label_symbols = ["*", "A", "C", "G", "T"]  # Corresponding labels for each network output channel
     seq = ''
+    seq_quality = list()
     for i in range(len(probs)):
         base = probs[i, :]
-        mp = np.argmax(base)
-        seq += label_symbols[mp]
-    seq = seq.replace('*', '')
-    return seq
+        mp = np.argmax(base).item()
+        nuc = label_symbols[mp]
+        if nuc != '*':
+            seq += nuc
+            if include_certainty_score:
+                seq_quality.append(base[mp].item())
+    return seq, seq_quality if include_certainty_score else list()
 
 
 def overlap_indices(first_positions_chunk, second_positions_chunk):
@@ -75,7 +82,7 @@ def stitch(probs, positions, decode_consensus_func):
     Returns:
         seq: Stitched consensus sequence
     """
-    sequece_parts = []
+    decoded_sequece_parts = list()
     first_start_idx = 0
     for i in range(1, len(positions), 1):
         probabilities_chunk = probs[i - 1]
@@ -84,15 +91,15 @@ def stitch(probs, positions, decode_consensus_func):
                                          dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
         second_positions_chunk = np.array([(pos[0], pos[1]) for pos in positions[i]],
                                           dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
-        # end1 and start2 are the new breaking points between two consecutive overlaps
+        # first_end_idx and second_start_idx are the new breaking points between two consecutive overlaps
         # found by the overlap_indices function.
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
         # Decoding chunk in i-1 position and adding to sequence
-        prev_chunk_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
-        sequece_parts.append(prev_chunk_seq)
+        prev_decoded_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
+        decoded_sequece_parts.append(prev_decoded_seq)
         # Handling last sequence
         if i == len(positions) - 1:
-            current_chunk_seq = decode_consensus_func(probs[i][second_start_idx:])
-            sequece_parts.append(current_chunk_seq)
+            current_decoded_seq = decode_consensus_func(probs[i][second_start_idx:])
+            decoded_sequece_parts.append(current_decoded_seq)
         first_start_idx = second_start_idx
-    return "".join(sequece_parts)
+    return decoded_sequece_parts

@@ -143,19 +143,21 @@ class ConsensusRNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, sequence_length, input_feature_size, num_output_logits):
+    def __init__(self, sequence_length, input_feature_size, num_output_logits, apply_softmax=False):
         """Construct an Consensus RNN NeMo instance.
 
         Args:
             sequence_length : Length of sequence to feed into RNN.
             input_feature_size : Length of input feature set.
             num_output_logits : Number of output classes of classifier.
+            apply_softmax : Apply softmax to the output of the classifier.
 
         Returns:
             Instance of class.
         """
         super().__init__()
         self.num_output_logits = num_output_logits
+        self.apply_softmax = apply_softmax
 
         self.gru = nn.GRU(input_feature_size, 128, 2, batch_first=True, bidirectional=True)
         self.classifier = nn.Linear(2 * 128, self.num_output_logits)
@@ -175,6 +177,6 @@ class ConsensusRNN(TrainableNM):
         """
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)
-        # Softmax along the logits dimension
-        outputs = F.softmax(encoding, dim=2)
-        return outputs
+        if self.apply_softmax:
+            encoding = F.softmax(encoding, dim=2)
+        return encoding

@@ -37,6 +37,7 @@ Getting Started
 
     git clone --recursive https://github.com/clara-parabricks/VariantWorks.git
     cd VariantWorks
+    pip install -r python-style-requirements.txt
     pip install -r requirements.txt
     pip install -e .
     # Install pre-push hooks to run tests
