@@ -15,7 +15,7 @@ The pre-processing of files done in this sample depend on several third-party
 softwares. Please make sure you have them available in your environment in the
 `$PATH` variable before continuing with this sample.
 
-1. `minimap2` >= 2.17 # 2.15 casues error non-zero exit status
+1. `minimap2` >= 2.17
 2. `samtools` >= 1.10
 
 ## Data Generation

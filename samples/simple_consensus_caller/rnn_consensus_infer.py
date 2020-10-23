@@ -27,13 +27,11 @@ from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 from variantworks.utils.stitcher import stitch, decode_consensus
 
-import torch.nn.functional as F
-
 
 def create_model():
     """Return neural network to train."""
     # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
+    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5, apply_softmax=True)
 
     return rnn
 
@@ -63,31 +61,19 @@ def infer(args):
     # DATA DESCRIPTION prediction:
     # print("len(prediction)",len(prediction)) # len(prediction) 1
     # print("prediction[0].shape",prediction[0].shape) # prediction[0].shape torch.Size([20, 1000, 5])
-    # print("prediction[0:10]", prediction[0:10]) # these appear to be softmax logits not probs!
-    # [tensor([[[ 5.5893e-01, -8.1115e-02, -1.9324e+00,  3.5603e+00, -1.1685e+00],
+    # print("prediction[0:10]", prediction[0:10])
+    # prediction[0:10] [tensor([[[4.5658e-02, 2.4074e-02, 3.7805e-03, 9.1837e-01, 8.1153e-03],
 
     position = results[1]
     assert(len(prediction) == len(position))
 
-    # TODO: when is len(prediction)>1??
     all_preds = []
     all_pos = []
     for pred, pos in zip(prediction, position):
         all_preds += pred
         all_pos += pos
 
-    # DATA DESCRIPTION all_preds::
-    # print("len(all_preds)",len(all_preds)) # len(all_preds) 20
-    # print("all_preds[0].shape",all_preds[0].shape)  # all_preds[0].shape torch.Size([1000, 5])
-    # print("all_preds[0:10]", all_preds[0:10]) # these appear to be softmax logits not probs!
-    # [tensor([[ 0.5589, -0.0811, -1.9324,  3.5603, -1.1685],
-
     # Generate a lists of stitched consensus sequences.
-
-    # convert softmax logits input to probabilties as required
-    for ii in range(len(all_preds)):
-        all_preds[ii] = F.softmax(all_preds[ii], dim=1)
-
     stitched_consensus_seq_parts = stitch(all_preds, all_pos, decode_consensus)
 
     # unpack the list of tuples into two lists
