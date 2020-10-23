@@ -31,7 +31,7 @@ from variantworks.utils.stitcher import stitch, decode_consensus
 def create_model():
     """Return neural network to train."""
     # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
+    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5, apply_softmax=True)
 
     return rnn
 
