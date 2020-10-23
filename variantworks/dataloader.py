@@ -152,7 +152,7 @@ class HDFDataLoader(DataLayerNM):
         return None
 
 
-class ReadPileupDataLoader(DataLayerNM):
+class VariantDataLoader(DataLayerNM):
     """Data loader class to train zygosity predictions from variant pileup encodings."""
 
     class Type(Enum):
@@ -170,50 +170,77 @@ class ReadPileupDataLoader(DataLayerNM):
         Returns:
             NeMo output port.
         """
-        if self.data_loader_type == ReadPileupDataLoader.Type.TEST:
-            return {
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
-            }
-        else:
-            return {
-                "label": NeuralType(tuple('B'), VariantZygosityNeuralType()),
-                "encoding": NeuralType(('B', 'C', 'H', 'W'), ReadPileupNeuralType()),
-            }
+        port_dict = {}
 
-    def __init__(self, data_loader_type, variant_loaders, batch_size=32, shuffle=True, num_workers=4,
-                 sample_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
-                 label_encoder=ZygosityLabelEncoder()):
-        """Construct a data loader.
+        # Add outut ports for encoding.
+        for i, key in enumerate(self.encoder_keys):
+            port_dict[key] = NeuralType(self.encoder_dims[i], self.encoder_neural_types[i])
+
+        # Add output ports for label if needed.
+        if self.data_loader_type != VariantDataLoader.Type.TEST:
+            for i, key in enumerate(self.label_keys):
+                port_dict[key] = NeuralType(self.label_dims[i], self.label_neural_types[i])
+
+        return port_dict
+
+    def __init__(self,
+                 data_loader_type,
+                 variant_loaders,
+                 batch_size=32,
+                 shuffle=True,
+                 num_workers=4,
+                 variant_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
+                 encoder_keys=["encodings"],
+                 encoder_dims=[('B', 'C', 'H', 'W')],
+                 encoder_neural_types=[ReadPileupNeuralType()],
+                 label_encoder=ZygosityLabelEncoder(),
+                 label_keys=["labels"],
+                 label_dims=[tuple('B')],
+                 label_neural_types=[VariantZygosityNeuralType()]):
+        """Construct a data loader that generates input and label encodings from Variant entries.
 
         Args:
-            data_loader_type : Type of data loader (ReadPileupDataLoader.Type.TRAIN/EVAL/TEST)
+            data_loader_type : Type of data loader (VariantDataLoader.Type.TRAIN/EVAL/TEST)
             variant_loaders : A list of loader classes for variants
             batch_size : batch size for data loader [32]
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
-            sample_encoder : Custom pileup encoder for variant [READ pileup encoding, window size 100]
+            variant_encoder : Custom input encoder for variant [READ pileup encoding, window size 100]
+            encoder_keys : Names for tensors returned by variant encoder. ["encodings"]
+            encoder_dims : NeuralType dimensions for tensors returned by variant encoder. [('B', 'C', 'H', 'W')]
+            encoder_neural_types : Neural types for variant encoder tensors. [ReadPileupNeuralType()]
             label_encoder : Custom label encoder for variant [ZygosityLabelEncoder] (Only applicable
             when type=TRAIN/EVAL)
+            label_keys : Names for tensors returned by label encoder. ["labels"]
+            label_dims : NeuralType dimensions for tensors returned by label encoder. [('B')]
+            label_neural_types : Neural types for variant label tensors. [VariantZygosityNeuralType()]
 
         Returns:
             Instance of class.
         """
         super().__init__()
         self.data_loader_type = data_loader_type
-        self.variant_loaders = variant_loaders
-        self.sample_encoder = sample_encoder
-        self.label_encoder = label_encoder
+        self.encoder_keys = encoder_keys
+        self.encoder_dims = encoder_dims
+        self.encoder_neural_types = encoder_neural_types
+        self.label_keys = label_keys
+        self.label_dims = label_dims
+        self.label_neural_types = label_neural_types
 
         class DatasetWrapper(TorchDataset):
             """A wrapper around Torch dataset class to generate individual samples."""
 
-            def __init__(self, data_loader_type, sample_encoder, variant_loaders, label_encoder):
+            def __init__(self,
+                         data_loader_type,
+                         variant_loaders,
+                         variant_encoder,
+                         label_encoder):
                 """Construct a dataset wrapper.
 
                 Args:
                     data_loader_type : Type of data loader
-                    sample_encoder : Custom pileup encoder for variant
                     variant_loaders : A list of loader classes for variants
+                    variant_encoder : Custom pileup encoder for variant
                     label_encoder : Custom label encoder for variant
 
                 Returns:
@@ -222,7 +249,7 @@ class ReadPileupDataLoader(DataLayerNM):
                 super().__init__()
                 self.variant_loaders = variant_loaders
                 self.label_encoder = label_encoder
-                self.sample_encoder = sample_encoder
+                self.variant_encoder = variant_encoder
                 self.data_loader_type = data_loader_type
 
                 self._len = sum([len(loader) for loader in self.variant_loaders])
@@ -243,18 +270,16 @@ class ReadPileupDataLoader(DataLayerNM):
             def __getitem__(self, idx):
                 sample = self._map_idx_to_sample(idx)
 
-                if self.data_loader_type == ReadPileupDataLoader.Type.TEST:
-                    sample = self.sample_encoder(sample)
-
-                    return sample
+                if self.data_loader_type == VariantDataLoader.Type.TEST:
+                    return self.variant_encoder(sample)
                 else:
-                    encoding = self.sample_encoder(sample)
+                    encoding = self.variant_encoder(sample)
                     label = self.label_encoder(sample)
 
-                    return label, encoding
+                    return encoding, label
 
         dataset = DatasetWrapper(
-            data_loader_type, self.sample_encoder, self.variant_loaders, self.label_encoder)
+            data_loader_type, variant_loaders, variant_encoder, label_encoder)
 
         sampler = None
         if self._placement == DeviceType.AllGpu:

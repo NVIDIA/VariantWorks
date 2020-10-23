@@ -21,7 +21,7 @@ import nemo
 import os
 import pathlib
 
-from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.dataloader import VariantDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
 from variantworks.encoders import PileupEncoder, ZygosityLabelEncoder
@@ -59,9 +59,9 @@ samples = os.path.join(data_folder, "candidates.vcf.gz")
 vcf_loader = VCFReader(vcf=samples, bams=[bam], is_fp=False)
 
 # Create a data loader with custom sample and label encoder.
-dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, [vcf_loader],
-                                     batch_size=32, shuffle=True,
-                                     sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
+dataset_train = VariantDataLoader(VariantDataLoader.Type.TRAIN, [vcf_loader],
+                                  batch_size=32, shuffle=True,
+                                  sample_encoder=pileup_encoder, label_encoder=zyg_encoder)
 
 # Use CrossEntropyLoss to train.
 vz_ce_loss = nemo.backends.pytorch.common.losses.CrossEntropyLossNM(logits_ndim=2)
