@@ -22,6 +22,7 @@ from nemo import logging
 from nemo.core.neural_types import VoidType, LabelsType
 from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
+import os
 
 from variantworks.encoders import ZygosityLabelEncoder
 from variantworks.dataloader import VariantDataLoader
@@ -31,7 +32,7 @@ from custom_encoder import CustomEncoder
 from custom_model import MLP
 
 
-def train():
+def main():
     """Training function."""
     nf = nemo.core.NeuralModuleFactory(
         placement=nemo.core.neural_factory.DeviceType.GPU)
@@ -44,8 +45,9 @@ def train():
     # for alt allele.
     model = MLP(5, 5, 3)
 
-    train_vcf = VCFReader("data/train.vcf", format_keys=["*"])
-    eval_vcf = VCFReader("data/eval.vcf", format_keys=["*"])
+    cwd = os.path.dirname(os.path.realpath(__file__))
+    train_vcf = VCFReader(os.path.join(cwd, "data", "train.vcf"), format_keys=["*"])
+    eval_vcf = VCFReader(os.path.join("data", "eval.vcf"), format_keys=["*"])
 
     encoder = CustomEncoder(vcf_format_keys=format_keys)
 
@@ -124,4 +126,5 @@ def train():
              optimizer="adam")
 
 
-train()
+if __name__ == "__main__":
+    main()
