@@ -44,7 +44,7 @@ logger "Run Copyright header check..."
 ./ci/checks/check_copyright.py
 
 logger "Run Python formatting check..."
-python -m pip install -r ./python-style-requirements.txt
+python -m pip install -r ./requirements-python-style.txt
 source ./style_check
 
 logger "Run documentation generation..."

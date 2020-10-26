@@ -31,15 +31,65 @@ Requirements
 Getting Started
 ---------------
 
-* Install latest development code from source
+#. Run the following command to install the required libraries:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    git clone --recursive https://github.com/clara-parabricks/VariantWorks.git
-    cd VariantWorks
-    pip install -r python-style-requirements.txt
-    pip install -r requirements.txt
-    pip install -e .
-    # Install pre-push hooks to run tests
-    ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
+        apt install zlib1g-dev libcurl4-gnutls-dev libssl-dev libbz2-dev liblzma-dev
 
+#. `htslib` is required and can be installed from source by following the instructions in: https://github.com/samtools/htslib#building-htslib
+
+
+#. Install latest development code from source:
+
+    .. code-block:: bash
+
+        git clone https://github.com/clara-parabricks/VariantWorks.git
+        cd VariantWorks
+        pip install -r requirements-python-style.txt
+        pip install -r requirements.txt
+        pip install -e .
+        # Install pre-push hooks to run tests
+        ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
+
+Alternative Anaconda Installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Clone VariantWorks repository and change directory:
+
+    .. code-block:: bash
+
+        git clone https://github.com/clara-parabricks/VariantWorks.git
+        cd VariantWorks
+
+
+#. Create & activate a new environment with the required OS libraries:
+
+    .. code-block:: bash
+
+        conda env create --name <ENVIRONMENT_NAME> -f ./environment.yml
+        conda activate <ENVIRONMENT_NAME>
+
+#. Some Python packages depends on the headers and shared libraries which were installed in the previous step,
+   therefore before executing `pip`, run the following command:
+
+    .. code-block:: bash
+
+        export LDFLAGS=-L<ENVIRONMENT_PATH>/lib
+        export CPPFLAGS=-I<ENVIRONMENT_PATH>/include
+
+   The environment path can be queried by running:
+
+    .. code-block:: bash
+
+        conda info --envs
+
+#. Install Python requirements and VariantWorks package from source
+
+    .. code-block:: bash
+
+        pip install -r requirements-python-style.txt
+        pip install -r requirements.txt
+        pip install -e .
+        # Install pre-push hooks to run tests
+        ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
