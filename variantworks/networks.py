@@ -143,13 +143,15 @@ class ConsensusRNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, sequence_length, input_feature_size, num_output_logits, apply_softmax=False):
+    def __init__(self, sequence_length, input_feature_size, num_output_logits, gru_size=128, gru_layers=2, apply_softmax=False):
         """Construct an Consensus RNN NeMo instance.
 
         Args:
-            sequence_length : Length of sequence to feed into RNN.
+            sequence_length : Length of sequence to feed into RNN. NOTE: not used here. Input data determines it.
             input_feature_size : Length of input feature set.
             num_output_logits : Number of output classes of classifier.
+            gru_size : Number of units in RNN
+            gru_layers : Number of layers in RNN
             apply_softmax : Apply softmax to the output of the classifier.
 
         Returns:
@@ -158,9 +160,11 @@ class ConsensusRNN(TrainableNM):
         super().__init__()
         self.num_output_logits = num_output_logits
         self.apply_softmax = apply_softmax
+        self.gru_size = gru_size
+        self.gru_layers = gru_layers
 
-        self.gru = nn.GRU(input_feature_size, 128, 2, batch_first=True, bidirectional=True)
-        self.classifier = nn.Linear(2 * 128, self.num_output_logits)
+        self.gru = nn.GRU(input_feature_size, gru_size, gru_layers, batch_first=True, bidirectional=True)
+        self.classifier = nn.Linear(2 * gru_size, self.num_output_logits) # 2* for bidirectional
 
         self._device = torch.device(
             "cuda" if self.placement == DeviceType.GPU else "cpu")

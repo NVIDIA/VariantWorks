@@ -23,4 +23,8 @@ def convert_error_probability_arr_to_phred(err_prob_arr):
     """Convert error probability rate to quality (Phred) scores."""
     if any(i < 0 or i > 1 for i in err_prob_arr):
         raise ValueError("all values in error probability array must be between 0 and 1")
+    # replace zeros with eps (when softmax is REALLY sure)
+    zz = np.power(10,-9.3) # QV93
+    err_prob_arr = np.array(err_prob_arr)
+    err_prob_arr[err_prob_arr < zz] = zz
     return np.trunc(-10 * np.log10(err_prob_arr))

@@ -26,9 +26,9 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback
 
 from variantworks.dataloader import HDFDataLoader
-from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 
+import create_model
 
 class CategoricalAccuracy(object):
     """Categorical accuracy metric."""
@@ -80,14 +80,6 @@ def generate_eval_callback(categorical_accuracy_func):
     return eval_iter_callback
 
 
-def create_model():
-    """Return neural network to train."""
-    # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
-
-    return rnn
-
-
 def train(args):
     """Train a sample model with test data."""
     # Create neural factory as per NeMo requirements.
@@ -95,7 +87,8 @@ def train(args):
         placement=nemo.core.neural_factory.DeviceType.GPU,
         local_rank=args.local_rank)
 
-    model = create_model()
+    model = create_model.create_model(args)
+
     encoding_dims = ('B', 'W', 'C')
     label_dims = ('B', 'W')
     encoding_neural_type = SummaryPileupNeuralType()
@@ -132,7 +125,7 @@ def train(args):
         # Checkpointing frequency in epochs
         epoch_freq=1,
         # Number of checkpoints to keep
-        checkpoints_to_keep=1,
+        checkpoints_to_keep=999,
         # If True, CheckpointCallback will raise an Error if restoring fails
         force_load=False
     )
@@ -192,6 +185,14 @@ def build_parser():
     parser.add_argument("--model-dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
+
+    parser.add_argument("--sequence_length", help="sequence_length : \
+    Length of sequence to feed into RNN. NOTE: not used here. Input \
+    data determines it.", type=int, default=1000)
+    parser.add_argument("--input_feature_size", type=int,default=10)
+    parser.add_argument("--num_output_logits", type=int,default=5)
+    parser.add_argument("--gru_size", help="Number of units in RNN", type=int,default=128)
+    parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int,default=2)
 
     return parser
 
