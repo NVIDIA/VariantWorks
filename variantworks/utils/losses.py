@@ -35,7 +35,6 @@ class CategoricalFocalLoss(LossNM):
         self.alpha: float = alpha
         self.gamma: Optional[float] = gamma
         self.reduction: Optional[str] = reduction
-        self.eps: float = 1e-10
         self._logits_dim = logits_dim
 
     @property
@@ -62,7 +61,7 @@ class CategoricalFocalLoss(LossNM):
             logits: torch.Tensor,
             labels: torch.Tensor) -> torch.Tensor:
         # compute log softmax of logits
-        log_probs = F.log_softmax(logits, dim=-1)
+        log_probs = F.log_softmax(logits, dim=self._logits_dim)
         probs = torch.exp(log_probs)
         return F.nll_loss(
             ((1 - probs) ** self.gamma) * log_probs, 
