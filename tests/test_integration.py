@@ -37,7 +37,10 @@ def test_simple_vc_trainer():
     # Create neural factory
     model_dir = os.path.join(get_data_folder(), ".test_model")
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
+        placement=(nemo.core.neural_factory.DeviceType.GPU
+                   if torch.cuda.is_available() else nemo.core.neural_factory.DeviceType.CPU),
+        checkpoint_dir=model_dir
+    )
 
     # Generate dataset
     bam = os.path.join(get_data_folder(), "small_bam.bam")
@@ -108,7 +111,10 @@ def test_simple_vc_infer():
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir)
+        placement=(nemo.core.neural_factory.DeviceType.GPU
+                   if torch.cuda.is_available() else nemo.core.neural_factory.DeviceType.CPU),
+        checkpoint_dir=model_dir
+    )
 
     # Generate dataset
     bam = os.path.join(test_data_dir, "small_bam.bam")
