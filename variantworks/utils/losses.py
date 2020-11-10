@@ -18,8 +18,10 @@
 
 
 import torch
+from torch.nn.functional import one_hot
 import torch.nn.functional as F
 from nemo.backends.pytorch.nm import LossNM
+from typing import Optional
 from nemo.core.neural_types import LabelsType, LogitsType, LossType, NeuralType
 from nemo.utils.decorators import add_port_docs
 
@@ -27,19 +29,19 @@ from nemo.utils.decorators import add_port_docs
 class CategoricalFocalLoss(LossNM):
     """Criterion that computes Categorical Focal Loss."""
 
-    def __init__(self, alpha: float, gamma=2.0,
-                 reduction="none", logits_dim=2) -> None:
-        """Constructor for Focal Loss."""
-        super(CategoricalFocalLoss, self).__init__()
+    def __init__(self, alpha: float, gamma: Optional[float] = 2.0,
+                 reduction: Optional[str] = 'none', logits_dim=2) -> None:
+        super(FocalLoss, self).__init__()
         self.alpha: float = alpha
-        self.gamma = gamma
-        self.reduction = reduction
+        self.gamma: Optional[float] = gamma
+        self.reduction: Optional[str] = reduction
         self._logits_dim = logits_dim
 
     @property
     @add_port_docs()
     def input_ports(self):
-        """Returns definitions of module input ports."""
+        """Returns definitions of module input ports.
+        """
         return {
             "logits": NeuralType(['B'] + ['ANY'] * (self._logits_dim - 1), LogitsType()),
             "labels": NeuralType(['B'] + ['ANY'] * (self._logits_dim - 2), LabelsType()),
@@ -49,7 +51,6 @@ class CategoricalFocalLoss(LossNM):
     @add_port_docs()
     def output_ports(self):
         """Returns definitions of module output ports.
-
         loss:
             NeuralType(None)
         """
@@ -63,8 +64,8 @@ class CategoricalFocalLoss(LossNM):
         log_probs = F.log_softmax(logits, dim=self._logits_dim)
         probs = torch.exp(log_probs)
         return F.nll_loss(
-            ((1 - probs) ** self.gamma) * log_probs,
-            labels,
+            ((1 - probs) ** self.gamma) * log_probs, 
+            labels, 
             weight=self.alpha,
-            reduction=self.reduction
+            reduction = self.reduction
         )
