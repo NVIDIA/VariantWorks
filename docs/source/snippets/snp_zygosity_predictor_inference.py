@@ -53,7 +53,7 @@ bam = os.path.join(data_folder, "small_bam.bam")
 labels = os.path.join(data_folder, "candidates.vcf.gz")
 vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
 test_dataset = VariantDataLoader(VariantDataLoader.Type.TEST, [vcf_loader], batch_size=32,
-                                 shuffle=False, variant_encoder=pileup_encoder)
+                                 shuffle=False, input_encoder=pileup_encoder)
 
 # Create inference DAG
 encoding = test_dataset()

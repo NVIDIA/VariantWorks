@@ -37,6 +37,14 @@ echo ""
 python $sdk_root_dir/ci/checks/check_copyright.py
 $sdk_root_dir/style_check
 
+echo ""
+echo "Running doc source checks..."
+echo ""
+for f in $(find docs/source/snippets/*.py | sort -r); do
+  logger "Executing \"${f}\""
+  python "${f}"
+done
+
 cd $tests_dir
 echo ""
 echo "Running pre-push tests from $PWD..."

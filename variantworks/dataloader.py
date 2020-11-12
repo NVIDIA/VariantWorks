@@ -189,7 +189,7 @@ class VariantDataLoader(DataLayerNM):
                  batch_size=32,
                  shuffle=True,
                  num_workers=4,
-                 variant_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
+                 input_encoder=PileupEncoder(window_size=100, max_reads=100, layers=[PileupEncoder.Layer.READ]),
                  encoder_keys=["encodings"],
                  encoder_dims=[('B', 'C', 'H', 'W')],
                  encoder_neural_types=[ReadPileupNeuralType()],
@@ -205,7 +205,7 @@ class VariantDataLoader(DataLayerNM):
             batch_size : batch size for data loader [32]
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
-            variant_encoder : Custom input encoder for variant [READ pileup encoding, window size 100]
+            input_encoder : Custom input encoder for variant [READ pileup encoding, window size 100]
             encoder_keys : Names for tensors returned by variant encoder. ["encodings"]
             encoder_dims : NeuralType dimensions for tensors returned by variant encoder. [('B', 'C', 'H', 'W')]
             encoder_neural_types : Neural types for variant encoder tensors. [ReadPileupNeuralType()]
@@ -233,14 +233,14 @@ class VariantDataLoader(DataLayerNM):
             def __init__(self,
                          data_loader_type,
                          variant_loaders,
-                         variant_encoder,
+                         input_encoder,
                          label_encoder):
                 """Construct a dataset wrapper.
 
                 Args:
                     data_loader_type : Type of data loader
                     variant_loaders : A list of loader classes for variants
-                    variant_encoder : Custom pileup encoder for variant
+                    input_encoder : Custom pileup encoder for variant
                     label_encoder : Custom label encoder for variant
 
                 Returns:
@@ -249,7 +249,7 @@ class VariantDataLoader(DataLayerNM):
                 super().__init__()
                 self.variant_loaders = variant_loaders
                 self.label_encoder = label_encoder
-                self.variant_encoder = variant_encoder
+                self.input_encoder = input_encoder
                 self.data_loader_type = data_loader_type
 
                 self._len = sum([len(loader) for loader in self.variant_loaders])
@@ -271,15 +271,15 @@ class VariantDataLoader(DataLayerNM):
                 sample = self._map_idx_to_sample(idx)
 
                 if self.data_loader_type == VariantDataLoader.Type.TEST:
-                    return self.variant_encoder(sample)
+                    return self.input_encoder(sample)
                 else:
-                    encoding = self.variant_encoder(sample)
+                    encoding = self.input_encoder(sample)
                     label = self.label_encoder(sample)
 
                     return encoding, label
 
         dataset = DatasetWrapper(
-            data_loader_type, variant_loaders, variant_encoder, label_encoder)
+            data_loader_type, variant_loaders, input_encoder, label_encoder)
 
         sampler = None
         if self._placement == DeviceType.AllGpu:
