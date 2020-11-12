@@ -17,10 +17,16 @@
 #
 
 
-logger "Run Tests..."
-python -m pytest -s tests/
 
-logger "Run Documentation Snippets..."
+if "${IS_GPU_AVAILABLE}"; then
+  logger "Run all tests"
+  python -m pytest -s tests/
+else
+  logger "Run CPU tests"
+  python -m pytest -s -m "not gpu" tests/
+fi
+
+logger "Run Documentation Snippets"
 # Reverse alphabetical order, so the training snippet will be executed before inference
 for f in $(find docs/source/snippets/*.py | sort -r); do
   logger "Executing \"${f}\""

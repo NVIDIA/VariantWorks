@@ -17,3 +17,4 @@
 #
 
 export CONDA_ENV_NAME="parabricks"
+export IS_GPU_AVAILABLE=false

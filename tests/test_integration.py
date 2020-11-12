@@ -31,15 +31,14 @@ from variantworks.encoders import ZygosityLabelDecoder
 from test_utils import get_data_folder
 
 
+@pytest.mark.gpu
 def test_simple_vc_trainer():
     # Train a sample model with test data
 
     # Create neural factory
     model_dir = os.path.join(get_data_folder(), ".test_model")
     nf = nemo.core.NeuralModuleFactory(
-        placement=(nemo.core.neural_factory.DeviceType.GPU
-                   if torch.cuda.is_available() else nemo.core.neural_factory.DeviceType.CPU),
-        checkpoint_dir=model_dir
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir
     )
 
     # Generate dataset
@@ -103,6 +102,7 @@ def test_simple_vc_trainer():
     assert(os.path.exists(os.path.join(model_dir, "AlexNet-EPOCH-1.pt")))
 
 
+@pytest.mark.gpu
 @pytest.mark.depends(on=['test_simple_vc_trainer'])
 def test_simple_vc_infer():
     # Load checkpointed model and run inference
@@ -111,9 +111,7 @@ def test_simple_vc_infer():
 
     # Create neural factory
     nf = nemo.core.NeuralModuleFactory(
-        placement=(nemo.core.neural_factory.DeviceType.GPU
-                   if torch.cuda.is_available() else nemo.core.neural_factory.DeviceType.CPU),
-        checkpoint_dir=model_dir
+        placement=nemo.core.neural_factory.DeviceType.GPU, checkpoint_dir=model_dir
     )
 
     # Generate dataset
