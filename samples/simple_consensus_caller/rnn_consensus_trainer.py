@@ -88,8 +88,7 @@ def train(args):
         placement=nemo.core.neural_factory.DeviceType.GPU,
         local_rank=args.local_rank)
 
-    model = create_model.create_rnn_model(args.sequence_length,
-                                          args.input_feature_size,
+    model = create_model.create_rnn_model(args.input_feature_size,
                                           args.num_output_logits,
                                           args.gru_size,
                                           args.gru_layers)
@@ -190,9 +189,6 @@ def build_parser():
     parser.add_argument("--model-dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
-    parser.add_argument("--sequence_length", help="sequence_length : Length of sequence to \
-            feed into RNN. NOTE: not used here. Input \
-            data determines it.", type=int, default=1000)
     parser.add_argument("--input_feature_size", type=int, default=10)
     parser.add_argument("--num_output_logits", type=int, default=5)
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)

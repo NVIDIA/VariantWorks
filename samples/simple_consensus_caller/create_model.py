@@ -18,15 +18,13 @@
 from variantworks.networks import ConsensusRNN
 
 
-def create_rnn_model(sequence_length,
-                     input_feature_size,
+def create_rnn_model(input_feature_size,
                      num_output_logits,
                      gru_size,
                      gru_layers):
     """Return neural network to train."""
     # Neural Network
-    rnn = ConsensusRNN(sequence_length=sequence_length,
-                       input_feature_size=input_feature_size,
+    rnn = ConsensusRNN(input_feature_size=input_feature_size,
                        num_output_logits=num_output_logits,
                        gru_size=gru_size,
                        gru_layers=gru_layers,

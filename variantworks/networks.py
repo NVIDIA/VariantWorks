@@ -143,12 +143,11 @@ class ConsensusRNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, sequence_length, input_feature_size, num_output_logits,
+    def __init__(self, input_feature_size, num_output_logits,
                  gru_size=128, gru_layers=2, apply_softmax=False):
         """Construct an Consensus RNN NeMo instance.
 
         Args:
-            sequence_length : Length of sequence to feed into RNN. NOTE: not used here. Input data determines it.
             input_feature_size : Length of input feature set.
             num_output_logits : Number of output classes of classifier.
             gru_size : Number of units in RNN
