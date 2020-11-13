@@ -54,4 +54,22 @@ source ci/utilities/test_variantworks.sh
 logger "Remove variantworks (editable mode)"
 pip uninstall -y variantworks
 
+################################################################################
+# Create & Test Wheel Package for VariantWorks
+################################################################################
+logger "Create Wheel package for VariantWorks"
+python3 -m pip wheel . --global-option sdist --wheel-dir "${WORKSPACE}"/variantworks_wheel --no-deps
+
+logger "Insalling VariantWorks from wheel..."
+pip install --ignore-installed "${WORKSPACE}"/variantworks_wheel/*
+
+logger "Test VariantWorks"
+source ci/utilities/test_variantworks.sh
+
+################################################################################
+# Upload VariantWorks to PyPI
+################################################################################
+logger "Upload Wheel to PyPI..."
+source ci/release/pypi_uploader.sh
+
 logger "Done"
