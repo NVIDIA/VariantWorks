@@ -16,15 +16,25 @@
 
 import os
 
+import pytest
+
 from variantworks.io.bedio import BEDReader
 
 from test_utils import get_data_folder
 
 
 def test_bedpe_reader():
+    """Test correct parsing of BEDPE format."""
     sample_bedpe = os.path.join(get_data_folder(), "sample_bedpe.txt")
-    reader = BEDReader(sample_bedpe)
+    reader = BEDReader(sample_bedpe, BEDReader.BEDType.BEDPE)
     assert(len(reader) == 4)
     assert(reader[1].start1 == 67685907)
     assert(reader[2].id == "DUP00000116")
     assert(reader[3].svtype == "TRA")
+
+
+def test_unknown_bed_type():
+    """Test failure to parse for unknown BED type."""
+    sample_bedpe = os.path.join(get_data_folder(), "sample_bedpe.txt")
+    with pytest.raises(AssertionError):
+        BEDReader(sample_bedpe, "blah")
