@@ -143,7 +143,8 @@ class ConsensusRNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, sequence_length, input_feature_size, num_output_logits, gru_size=128, gru_layers=2, apply_softmax=False):
+    def __init__(self, sequence_length, input_feature_size, num_output_logits,
+                 gru_size=128, gru_layers=2, apply_softmax=False):
         """Construct an Consensus RNN NeMo instance.
 
         Args:
@@ -164,7 +165,7 @@ class ConsensusRNN(TrainableNM):
         self.gru_layers = gru_layers
 
         self.gru = nn.GRU(input_feature_size, gru_size, gru_layers, batch_first=True, bidirectional=True)
-        self.classifier = nn.Linear(2 * gru_size, self.num_output_logits) # 2* for bidirectional
+        self.classifier = nn.Linear(2 * gru_size, self.num_output_logits)  # 2* for bidirectional
 
         self._device = torch.device(
             "cuda" if self.placement == DeviceType.GPU else "cpu")

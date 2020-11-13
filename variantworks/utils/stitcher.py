@@ -93,7 +93,6 @@ def stitch(probs, positions, decode_consensus_func):
                                           dtype=[('reference_pos', '<i8'), ('inserted_pos', '<i8')])
         # first_end_idx and second_start_idx are the new breaking points between two consecutive overlaps
         # found by the overlap_indices function.
-        #print("#### About To Stitch {} {}".format(first_positions_chunk, second_positions_chunk))
         first_end_idx, second_start_idx = overlap_indices(first_positions_chunk, second_positions_chunk)
         # Decoding chunk in i-1 position and adding to sequence
         prev_decoded_seq = decode_consensus_func(probabilities_chunk[first_start_idx:first_end_idx])
