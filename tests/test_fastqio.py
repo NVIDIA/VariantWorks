@@ -21,7 +21,7 @@ import os
 import pytest
 import tempfile
 
-from variantworks.io.fastxio import FastqWriter
+from variantworks.io.fastxio import FastxWriter
 from variantworks.utils.metrics import convert_error_probability_arr_to_phred
 
 
@@ -50,7 +50,7 @@ def test_fastq_writer():
 
     _, file_path = tempfile.mkstemp(prefix='vw_test_fastq_writer_', suffix='.fastq')
     try:
-        with FastqWriter(file_path, 'w') as fqout:
+        with FastxWriter(file_path, 'w') as fqout:
             for record_id, seq, q_score in \
                     itertools.zip_longest(record_ids, nucleotides_sequences, nucleotides_certainties):
                 fqout.write_output(record_id, seq, q_score)
@@ -63,5 +63,26 @@ def test_fastq_writer():
                 convert_error_probability_arr_to_phred([1 - val for val in nucleotides_certainties[idx]]),
                 record.letter_annotations["phred_quality"]
             )
+    finally:
+        os.remove(file_path)
+
+
+def test_fasta_writer():
+    """Test FASTA writer"""
+    nucleotides_sequences = ["ACTGATG",
+                             "ACAC"]
+
+    record_ids = ["dl_seq_1",
+                  "dl_seq_2"]
+
+    _, file_path = tempfile.mkstemp(prefix='vw_test_fastq_writer_', suffix='.fasta')
+    try:
+        with FastxWriter(file_path, 'w') as fqout:
+            for record_id, seq in itertools.zip_longest(record_ids, nucleotides_sequences):
+                fqout.write_output(record_id, seq)
+        # verify created FASTA file values
+        for idx, record in enumerate(SeqIO.parse(file_path, "fasta")):
+            assert record_ids[idx] == record.id
+            assert nucleotides_sequences[idx] == record.seq
     finally:
         os.remove(file_path)
