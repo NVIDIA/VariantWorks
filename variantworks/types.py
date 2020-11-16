@@ -65,3 +65,26 @@ class FileRegion:
     start_pos: int
     end_pos: int
     file_path: str
+
+
+class BEDEntry:
+    """A dataclass encapsulating a BED entry."""
+
+    def __init__(self, kv_dict):
+        """Constructor for generic BED Entry.
+
+        Args:
+            kv_dict : A dictionary with key-value pairs per column in BED.
+
+        Returns:
+            Instance of class.
+        """
+        self._dict = kv_dict
+
+    def __getattr__(self, attr):
+        """Accessor method for BED column."""
+        return self._dict[attr]
+
+    def __str__(self):
+        """String serializer for BED entry."""
+        return str(self._dict)
