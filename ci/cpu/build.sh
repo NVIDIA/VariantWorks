@@ -58,6 +58,9 @@ pip uninstall -y variantworks
 # Create & Test Wheel Package for VariantWorks
 ################################################################################
 logger "Create Wheel package for VariantWorks"
+if [ "${COMMIT_HASH}" != "master" ]; then
+  python ci/release/update_configuration.py --configuration_file ./setup.cfg --append-nightly-version-suffix
+fi
 python3 -m pip wheel . --global-option sdist --wheel-dir "${WORKSPACE}"/variantworks_wheel --no-deps
 
 logger "Insalling VariantWorks from wheel..."
