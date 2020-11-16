@@ -74,7 +74,7 @@ def infer(args):
     nucleotides_certainty = list(itertools.chain.from_iterable(nucleotides_certainty))
 
     # Write out FASTQ sequence.
-    with fastxio.FastqWriter(output_path=args.out_file, mode='w') as fastq_file:
+    with fastxio.FastxWriter(output_path=args.out_file, mode='w') as fastq_file:
         fastq_file.write_output("dl_consensus", nucleotides_sequence, nucleotides_certainty)
 
 
