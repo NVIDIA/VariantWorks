@@ -34,10 +34,15 @@ import create_model
 class CategoricalAccuracy(object):
     """Categorical accuracy metric."""
 
-    def __init__(self):
-        """Constructor for metric."""
+    def __init__(self, accumulate=False):
+        """Constructor for metric.
+
+        Args:
+            accumulate : Accumulate metrics over multiple calls.
+        """
         self._num_correct = 0.0
         self._num_examples = 0.0
+        self._accumulate = accumulate
 
     def __call__(self, y_true, y_pred):
         """Compute categorical accuracy."""
@@ -45,7 +50,16 @@ class CategoricalAccuracy(object):
         correct = torch.eq(indices, y_true).view(-1)
         self._num_correct += torch.sum(correct).item()
         self._num_examples += correct.shape[0]
-        return self._num_correct / self._num_examples
+        acc = self._num_correct / self._num_examples
+        if not self._accumulate:
+            self._num_correct = 0.0
+            self._num_examples = 0.0
+        return acc
+
+    def reset(self):
+        """Reset counters."""
+        self._num_correct = 0.0
+        self._num_examples = 0.0
 
 
 def generate_eval_callback(categorical_accuracy_func):
@@ -56,19 +70,17 @@ def generate_eval_callback(categorical_accuracy_func):
         for kv, v in tensors.items():
             if kv.startswith("loss"):
                 global_vars["eval_loss"].append(torch.mean(torch.stack(v)).item())
-                # global_vars['eval_loss'].append(v.item())
 
         if "top1" not in global_vars.keys():
-            global_vars["top1"] = []
+            global_vars["top1"] = [0.0]
+            categorical_accuracy_func.reset()
 
         output = None
         labels = None
         for kv, v in tensors.items():
             if kv.startswith("output"):
-                # output = tensors[kv]
                 output = torch.cat(tensors[kv])
             if kv.startswith("label"):
-                # labels = tensors[kv]
                 labels = torch.cat(tensors[kv])
 
         if output is None:
@@ -76,7 +88,7 @@ def generate_eval_callback(categorical_accuracy_func):
 
         with torch.no_grad():
             accuracy = categorical_accuracy_func(labels, output)
-            global_vars["top1"].append(accuracy)
+            global_vars["top1"][0] = accuracy
 
     return eval_iter_callback
 
@@ -105,7 +117,7 @@ def train(args):
                                   tensor_dims=[encoding_dims, label_dims],
                                   tensor_neural_types=[encoding_neural_type, label_neural_type])
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=3)
-    cat_acc = CategoricalAccuracy()
+    cat_acc = CategoricalAccuracy(accumulate=False)
     encoding, vz_labels = train_dataset()
     vz = model(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
@@ -150,7 +162,7 @@ def train(args):
         # Add evaluation callback
         evaluator_callback = nemo.core.EvaluatorCallback(
             eval_tensors=[eval_vz_loss, eval_vz, eval_vz_labels],
-            user_iter_callback=generate_eval_callback(CategoricalAccuracy()),
+            user_iter_callback=generate_eval_callback(CategoricalAccuracy(accumulate=True)),
             user_epochs_done_callback=eval_epochs_done_callback,
             eval_step=500,
             eval_epoch=1,
