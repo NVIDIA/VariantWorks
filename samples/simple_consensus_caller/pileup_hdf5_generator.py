@@ -127,6 +127,11 @@ def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
     try:
         encoding, encoding_positions = sample_encoder(region)
         label, label_positions = label_encoder(region)
+
+        # Generate read id per folder to help with bulk inference.
+        read_id = data_dir.split("/")[-1]
+        read_ids = np.array([read_id]*len(encoding))
+
         assert(len(encoding) == len(label)), print("Encoding and label dimensions not as expected:",
                                                    encoding.shape,
                                                    label.shape,
@@ -140,10 +145,11 @@ def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir):
         encoding_chunks = sliding_window(encoding, chunk_len, step=chunk_len - chunk_ovlp)
         position_chunks = sliding_window(encoding_positions, chunk_len, step=chunk_len - chunk_ovlp)
         label_chunks = sliding_window(label, chunk_len, step=chunk_len - chunk_ovlp)
-        return (encoding_chunks, position_chunks, label_chunks)
+        read_id_chunks = sliding_window(read_ids, chunk_len, step=chunk_len - chunk_ovlp)
+        return (encoding_chunks, position_chunks, label_chunks, read_id_chunks)
     except Exception:
         os.remove(region.file_path)
-        return ([], [], [])
+        return ([], [], [], [])
 
 
 def generate_hdf5(args):
@@ -168,15 +174,19 @@ def generate_hdf5(args):
 
     # Multi-processing
     pool = mp.Pool(args.threads)
-    features = []
-    labels = []
-    positions = []
+
+    # output data:
+    features = []    # features in column
+    labels = []      # correct labeling
+    positions = []   # track match/insert for stitching
+    read_ids = []    # track folder name and windows
+
     print('Serializing {} pileup files...'.format(len(data_dirs)))
     label_idx = 0
     for out in pool.imap(encode_func, data_dirs):
         if (label_idx + 1) % 100 == 0:
             print('Generated {} pileups'.format(label_idx + 1))
-        (encoding_chunks, position_chunks, label_chunks) = out
+        (encoding_chunks, position_chunks, label_chunks, read_id_chunks) = out
         if encoding_chunks and position_chunks and label_chunks:
             if encoding_chunks[0].shape[0] == args.chunk_len \
                     and label_chunks[0].shape[0] == args.chunk_len \
@@ -184,6 +194,7 @@ def generate_hdf5(args):
                 features += (encoding_chunks)
                 labels += (label_chunks)
                 positions += (position_chunks)
+                read_ids += (read_id_chunks)
                 label_idx += 1
     print('Generated {} pileup files'.format(len(data_dirs)))
     features = np.stack(features, axis=0)
@@ -193,6 +204,7 @@ def generate_hdf5(args):
     h5_file.create_dataset('features', data=features)
     h5_file.create_dataset('positions', data=positions)
     h5_file.create_dataset('labels', data=labels)
+    h5_file.create_dataset('read_ids', data=np.string_(read_ids))
     h5_file.close()
 
 

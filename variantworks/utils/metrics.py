@@ -19,8 +19,19 @@
 import numpy as np
 
 
-def convert_error_probability_arr_to_phred(err_prob_arr):
-    """Convert error probability rate to quality (Phred) scores."""
+def convert_error_probability_arr_to_phred(err_prob_arr, eps=np.power(10, -9.3)):
+    """Convert error probability rate to quality (Phred) scores.
+
+    Args:
+        err_prob_arr : Array with error probabilities
+        eps : Epsilon error value to use for stability when error is zero. [QV93]
+
+    Returns:
+        Array with error values converted to PHRED score.
+    """
     if any(i < 0 or i > 1 for i in err_prob_arr):
         raise ValueError("all values in error probability array must be between 0 and 1")
+    # replace zeros with eps (when softmax is REALLY sure)
+    err_prob_arr = np.array(err_prob_arr)
+    err_prob_arr[err_prob_arr < eps] = eps
     return np.trunc(-10 * np.log10(err_prob_arr))

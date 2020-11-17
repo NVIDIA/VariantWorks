@@ -23,8 +23,8 @@ from variantworks.io.baseio import BaseWriter
 from variantworks.utils.metrics import convert_error_probability_arr_to_phred
 
 
-class FastqWriter(BaseWriter):
-    """Writer for FASTQ files.
+class FastxWriter(BaseWriter):
+    """Writer for FASTQ/FASTA files.
 
     Should be used with a context manager.
     """
@@ -32,7 +32,7 @@ class FastqWriter(BaseWriter):
     def __init__(self, output_path, mode):
         """Constructor VCFWriter class.
 
-        Writes a FASTQ records into a file using Biopython.
+        Writes a FASTQ/FASTA records into a file using Biopython.
 
         Args:
             output_path : Output path for VCF output file.
@@ -55,8 +55,8 @@ class FastqWriter(BaseWriter):
         """For contextmanager support."""
         self.file_obj.close()
 
-    def write_output(self, record_id, record_sequence, record_quality):
-        """Write dataframe to VCF.
+    def write_output(self, record_id, record_sequence, record_quality=None):
+        """Write dataframe to FASTA or FASTQ in case record_quality is provided.
 
         Args:
             record_id : sequence record id.
@@ -66,7 +66,9 @@ class FastqWriter(BaseWriter):
         record = SeqRecord(Seq(record_sequence),
                            id=record_id,
                            description="Generated consensus sequence by NVIDIA VariantWorks")
-        record.letter_annotations["phred_quality"] = \
-            convert_error_probability_arr_to_phred([1 - val for val in record_quality])
-
-        SeqIO.write(record, self.file_obj, "fastq")
+        if record_quality:
+            record.letter_annotations["phred_quality"] = \
+                convert_error_probability_arr_to_phred([1 - val for val in record_quality])
+            SeqIO.write(record, self.file_obj, "fastq")
+        else:
+            SeqIO.write(record, self.file_obj, "fasta")
