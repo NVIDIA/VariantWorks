@@ -24,9 +24,9 @@ if [[ ${RUNNING_CI_LOCALLY} = true  ]]; then
     return 0
 fi
 
-# Skip upload if the merging branch is not master
-if [ "${COMMIT_HASH}" != "master" ]; then
-    echo "Skipping PyPI upload - merge branch is not master"
+# Skip upload if current branch is not master or starts with "dev-"
+if [ "${COMMIT_HASH}" != "master" ] && [[ ! "${COMMIT_HASH}" =~ ^dev-.+ ]]; then
+    echo "Skipping PyPI upload - not master or development branch"
     return 0
 fi
 
