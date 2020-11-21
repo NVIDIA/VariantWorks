@@ -55,17 +55,25 @@ class FastxWriter(BaseWriter):
         """For contextmanager support."""
         self.file_obj.close()
 
-    def write_output(self, record_id, record_sequence, record_quality=None):
+    def write_output(self, record_id, record_sequence, record_name=None, description=None, record_quality=None):
         """Write dataframe to FASTA or FASTQ in case record_quality is provided.
 
         Args:
             record_id : sequence record id.
             record_sequence : sequence data.
+            record_name : sequence record name (optional).
+            description : sequence record description (optional).
             record_quality : Corresponding records' sequence quality.
         """
-        record = SeqRecord(Seq(record_sequence),
-                           id=record_id,
-                           description="Generated consensus sequence by NVIDIA VariantWorks")
+        kargs = {
+            'seq': Seq(record_sequence),
+            'id': record_id,
+        }
+        if record_name:
+            kargs['name'] = record_name
+        if description:
+            kargs['description'] = description
+        record = SeqRecord(**kargs)
         if record_quality:
             record.letter_annotations["phred_quality"] = \
                 convert_error_probability_arr_to_phred([1 - val for val in record_quality])
