@@ -53,7 +53,7 @@ def test_fastq_writer():
         with FastxWriter(file_path, 'w') as fqout:
             for record_id, seq, q_score in \
                     itertools.zip_longest(record_ids, nucleotides_sequences, nucleotides_certainties):
-                fqout.write_output(record_id, seq, q_score)
+                fqout.write_output(record_id, seq, record_quality=q_score)
         # verify created FASTQ file values
         for idx, record in enumerate(SeqIO.parse(file_path, "fastq")):
             assert record_ids[idx] == record.id
@@ -79,7 +79,7 @@ def test_fasta_writer():
     try:
         with FastxWriter(file_path, 'w') as fqout:
             for record_id, seq in itertools.zip_longest(record_ids, nucleotides_sequences):
-                fqout.write_output(record_id, seq)
+                fqout.write_output(record_id, seq, description="VW test_fastqio:test_fasta_writer()")
         # verify created FASTA file values
         for idx, record in enumerate(SeqIO.parse(file_path, "fasta")):
             assert record_ids[idx] == record.id

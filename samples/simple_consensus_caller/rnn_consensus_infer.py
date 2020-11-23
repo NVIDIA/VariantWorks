@@ -82,7 +82,7 @@ def infer(args):
     # Convert boundaries into intervals.
     read_intervals = [(read_boundaries[idx], read_boundaries[idx + 1]) for idx in range(len(read_boundaries)-1)]
 
-    with fastxio.FastxWriter(output_path=args.out_file, mode='w+') as fastq_file:
+    with fastxio.FastxWriter(output_path=args.out_file, mode='w') as fastq_file:
         for begin, end in read_intervals:
             read_id = read_ids[begin].decode("utf-8")
 
@@ -95,7 +95,9 @@ def infer(args):
             nucleotides_certainty = list(itertools.chain.from_iterable(nucleotides_certainty))
 
             # Write out FASTQ sequence.
-            fastq_file.write_output(read_id, nucleotides_sequence, nucleotides_certainty)
+            fastq_file.write_output(read_id, nucleotides_sequence,
+                                    description="Generated consensus sequence by NVIDIA VariantWorks",
+                                    record_quality=nucleotides_certainty)
 
 
 def build_parser():
