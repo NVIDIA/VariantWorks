@@ -53,13 +53,13 @@ class BEDReader(BaseReader):
 
     def _enforce_bed_types(self):
         if self._bed_type == self.BEDType.BED or self._bed_type == self.BEDType.BEDPE:
-            self._df[0] = self._df.iloc[:, [0]].astype('object')  # chrom1
-            self._df[1] = self._df.iloc[:, [1]].astype('int64')  # start1
-            self._df[2] = self._df.iloc[:, [2]].astype('int64')  # end1
+            self._df.iloc[:, [0]] = self._df.iloc[:, [0]].astype('object')  # chrom1
+            self._df.iloc[:, [1]] = self._df.iloc[:, [1]].astype('int64')  # start1
+            self._df.iloc[:, [2]] = self._df.iloc[:, [2]].astype('int64')  # end1
         if self._bed_type == self.BEDType.BEDPE:
-            self._df[4] = self._df.iloc[:, [3]].astype('object')  # chrom2
-            self._df[5] = self._df.iloc[:, [4]].astype('int64')  # start2
-            self._df[6] = self._df.iloc[:, [5]].astype('int64')  # end2
+            self._df.iloc[:, [3]] = self._df.iloc[:, [3]].astype('object')  # chrom2
+            self._df.iloc[:, [4]] = self._df.iloc[:, [4]].astype('int64')  # start2
+            self._df.iloc[:, [5]] = self._df.iloc[:, [5]].astype('int64')  # end2
 
     def dataframe(self):
         """Return dataframe object for file."""
