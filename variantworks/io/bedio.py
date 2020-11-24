@@ -17,6 +17,8 @@
 
 from enum import Enum
 import pandas as pd
+import itertools
+from collections import Counter  # Counter counts the number of occurrences of each item
 
 from variantworks.types import BEDEntry
 from variantworks.io.baseio import BaseReader
@@ -32,14 +34,15 @@ class BEDReader(BaseReader):
         BED = 0
         BEDPE = 1
 
-    def __init__(self, bed_path, bed_type):
+    def __init__(self, bed_path, bed_type, header_is_comment=False):
         """Constructor BEDPEReader class.
 
         Reads BEDPE entries from a BEDPE file.
 
         Args:
             bed_path: Path to BEDPE file.
-            bed_type : Type of BED file (BEDType.BED or BEDType.BEDPE)
+            bed_type: Type of BED file (BEDType.BED or BEDType.BEDPE)
+            header_is_comment: Whether header prefixed by the comment character '#'? (default: False)
 
         Returns:
             Instance of object.
@@ -48,8 +51,46 @@ class BEDReader(BaseReader):
         self._bed_path = bed_path
         assert(isinstance(bed_type, self.BEDType)), "bed_type must be of BEDType enum."
         self._bed_type = bed_type
-        self._df = pd.read_csv(self._bed_path, delimiter="\t")
+        self._header_is_comment = header_is_comment
+        if self._header_is_comment is True:
+            self._df = self._read_data(self._bed_path)
+        else:
+            self._df = pd.read_csv(self._bed_path, delimiter="\t")
         self._enforce_bed_types()
+
+    # borrowed from: https://stackoverflow.com/a/36772979 CC BY-SA 3.0
+    def _read_data(self, path):
+        """Manually reads in column names if they are behind a comment."""
+        with open(path) as handle:
+            *_comments, names = itertools.takewhile(
+                lambda line: line.startswith('#'), handle)
+
+            # This is not the most robust way, adjust for your needs :)
+            names = names[2:].rstrip().split("\t")
+            self._uniquify(names)
+            return pd.read_table(path, header=None, names=names, comment='#', na_values='_')
+
+    # borrowed from: https://stackoverflow.com/a/30651963 CC BY-SA 3.0
+    def _uniquify(self, seq, suffs=itertools.count(1)):
+        """Add uniquifying suffix to duplicated strings in a list.
+
+        Make all the items unique by adding a suffix (1, 2, etc).
+
+        Args:
+            seq: is mutable sequence of strings.
+            suffs: is an optional alternative suffix iterable.
+        """
+        not_unique = [k for k, v in Counter(seq).items() if v > 1]  # so we have: ['name', 'zip']
+        # suffix generator dict - e.g., {'name': <my_gen>, 'zip': <my_gen>}
+        suff_gens = dict(zip(not_unique, itertools.tee(suffs, len(not_unique))))
+        for idx, s in enumerate(seq):
+            try:
+                suffix = str(next(suff_gens[s]))
+            except KeyError:
+                # s was unique
+                continue
+            else:
+                seq[idx] += suffix
 
     def _enforce_bed_types(self):
         if self._bed_type == self.BEDType.BED or self._bed_type == self.BEDType.BEDPE:
