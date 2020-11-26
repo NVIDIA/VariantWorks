@@ -18,10 +18,10 @@
 # Cleanup local git
 git clean -xdf
 
-logger "Get env..."
+logger "Get env"
 env
 
-logger "Activate anaconda enviroment..."
+logger "Activate anaconda enviroment"
 CONDA_NEW_ACTIVATION_CMD_VERSION="4.4"
 CONDA_VERSION=$(conda --version | awk '{print $2}')
 if [ "$CONDA_NEW_ACTIVATION_CMD_VERSION" == "$(echo -e "$CONDA_VERSION\n$CONDA_NEW_ACTIVATION_CMD_VERSION" | sort -V | head -1)" ]; then
@@ -37,7 +37,7 @@ conda info --envs
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
 
-logger "Check Python version..."
+logger "Check Python version"
 python --version
 
 
