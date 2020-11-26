@@ -420,8 +420,8 @@ class VCFReader(BaseReader):
                     if header_number == "A":
                         df_dict[df_key].append(val[alt_idx])
                     elif header_number == "R":
-                        df_dict[df_key + "_REF"].append(val[0])
-                        df_dict[df_key + "_ALT"].append(val[alt_idx + 1])
+                        df_dict[df_key + "-0"].append(val[0])
+                        df_dict[df_key + "-1"].append(val[alt_idx + 1])
                     elif header_number.isdigit():
                         header_number = int(header_number)
                         if header_number <= 1:
@@ -493,8 +493,8 @@ class VCFReader(BaseReader):
                             if header_number == "A":
                                 df_dict[df_key].append(val[alt_idx])
                             elif header_number == "R":
-                                df_dict[df_key + "_REF"].append(val[0])
-                                df_dict[df_key + "_ALT"].append(val[alt_idx + 1])
+                                df_dict[df_key + "-0"].append(val[0])
+                                df_dict[df_key + "-1"].append(val[alt_idx + 1])
                             elif header_number.isdigit():
                                 header_number = int(header_number)
                                 if header_number <= 1:

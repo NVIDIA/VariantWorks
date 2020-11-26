@@ -22,7 +22,7 @@ import os
 import pathlib
 import torch
 
-from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.dataloader import VariantDataLoader
 from variantworks.io.vcfio import VCFReader, VCFWriter
 from variantworks.networks import AlexNet
 from variantworks.encoders import PileupEncoder, ZygosityLabelDecoder
@@ -52,8 +52,8 @@ data_folder = os.path.join(repo_root_dir, "tests", "data")
 bam = os.path.join(data_folder, "small_bam.bam")
 labels = os.path.join(data_folder, "candidates.vcf.gz")
 vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
-test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, [vcf_loader], batch_size=32,
-                                    shuffle=False, sample_encoder=pileup_encoder)
+test_dataset = VariantDataLoader(VariantDataLoader.Type.TEST, [vcf_loader], batch_size=32,
+                                 shuffle=False, input_encoder=pileup_encoder)
 
 # Create inference DAG
 encoding = test_dataset()

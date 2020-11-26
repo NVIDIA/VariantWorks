@@ -62,8 +62,8 @@ NeMo toolkit, we leverage the data loader abstractions defined in
 
 Currently available data loaders - 
 
-* :class:`ReadPileupDataLoader<variantworks.dataloader.ReadPileupDataLoader>` - encapsulates loading samples from VCF and using PileupEncoders to generate training data.
-  This type of data loader is typically useful for variant calling tasks which process BAMs and VCFs simultaneously.
+* :class:`VariantDataLoader<variantworks.dataloader.VariantDataLoader>` - encapsulates a generalized loading for loading entries from VCF and applying
+  user defined input and label encoders to generate data training for training and test. This type of data loader is typically useful for tasks such as variant calling.
 * :class:`HDFDataLoader<variantworks.dataloader.HDFDataLoader>` - encapsulates a generalized, multi-threaded data loader for loading tensors from HDF files. This type
   of data loader is frequently used when data is prepared/serialized ahead of time into a HDF file and directly read from the HDF file during training/evaluation loops.
 

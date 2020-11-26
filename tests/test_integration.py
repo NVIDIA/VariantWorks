@@ -23,7 +23,7 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback, eval_iter_callback
 import torch
 
-from variantworks.dataloader import ReadPileupDataLoader
+from variantworks.dataloader import VariantDataLoader
 from variantworks.io.vcfio import VCFReader
 from variantworks.networks import AlexNet
 from variantworks.encoders import ZygosityLabelDecoder
@@ -50,18 +50,18 @@ def test_simple_vc_trainer():
     alexnet = AlexNet(num_input_channels=1, num_output_logits=3)
 
     # Create train DAG
-    dataset_train = ReadPileupDataLoader(ReadPileupDataLoader.Type.TRAIN, [vcf_loader],
-                                         batch_size=32, shuffle=True)
+    dataset_train = VariantDataLoader(VariantDataLoader.Type.TRAIN, [vcf_loader],
+                                      batch_size=32, shuffle=True)
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=2)
-    vz_labels, encoding = dataset_train()
+    encoding, vz_labels = dataset_train()
     vz = alexnet(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
 
     # Create evaluation DAG using same dataset as training
-    dataset_eval = ReadPileupDataLoader(ReadPileupDataLoader.Type.EVAL, [vcf_loader],
-                                        batch_size=32, shuffle=False)
+    dataset_eval = VariantDataLoader(VariantDataLoader.Type.EVAL, [vcf_loader],
+                                     batch_size=32, shuffle=False)
     vz_ce_loss_eval = CrossEntropyLossNM(logits_ndim=2)
-    vz_labels_eval, encoding_eval = dataset_eval()
+    encoding_eval, vz_labels_eval = dataset_eval()
     vz_eval = alexnet(encoding=encoding_eval)
     vz_loss_eval = vz_ce_loss_eval(logits=vz_eval, labels=vz_labels_eval)
 
@@ -118,8 +118,8 @@ def test_simple_vc_infer():
     bam = os.path.join(test_data_dir, "small_bam.bam")
     labels = os.path.join(test_data_dir, "candidates.vcf.gz")
     vcf_loader = VCFReader(vcf=labels, bams=[bam], is_fp=False)
-    test_dataset = ReadPileupDataLoader(ReadPileupDataLoader.Type.TEST, [vcf_loader], batch_size=32,
-                                        shuffle=False)
+    test_dataset = VariantDataLoader(VariantDataLoader.Type.TEST, [vcf_loader], batch_size=32,
+                                     shuffle=False)
 
     # Neural Network
     alexnet = AlexNet(num_input_channels=1, num_output_logits=3)
