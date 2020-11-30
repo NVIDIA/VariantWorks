@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #
 # Copyright 2020 NVIDIA CORPORATION.
 #
@@ -15,20 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Common model creation module."""
+
+from variantworks.networks import ConsensusRNN
 
 
+def create_rnn_model(input_feature_size,
+                     num_output_logits,
+                     gru_size,
+                     gru_layers):
+    """Return neural network to train."""
+    # Neural Network
+    rnn = ConsensusRNN(input_feature_size=input_feature_size,
+                       num_output_logits=num_output_logits,
+                       gru_size=gru_size,
+                       gru_layers=gru_layers,
+                       apply_softmax=True)
 
-if "${IS_GPU_AVAILABLE}"; then
-  logger "Run all tests"
-  python -m pytest -s tests/
-
-  logger "Run Documentation Snippets"
-  # Reverse alphabetical order, so the training snippet will be executed before inference
-  for f in $(find docs/source/snippets/*.py | sort -r); do
-    logger "Executing \"${f}\""
-    python "${f}"
-  done
-else
-  logger "Run CPU tests"
-  python -m pytest -s -m "not gpu" tests/
-fi
+    return rnn
