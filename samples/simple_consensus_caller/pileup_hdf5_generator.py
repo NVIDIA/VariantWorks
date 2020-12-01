@@ -19,6 +19,7 @@
 """Generation of HDF5 datasets with summary pileup encodings."""
 
 import argparse
+from datetime import datetime
 from functools import partial
 import glob
 import h5py
@@ -268,7 +269,8 @@ def generate_hdf5(args):
         print('Serializing {} pileup files...'.format(len(folders_to_encode)))
         to_remove_data_dir = False
     else:
-        working_dir = tempfile.mkdtemp(prefix="variantworks_consensus_caller_sample_pileup_hdf5_generation_")
+        working_dir = tempfile.mkdtemp(
+            prefix="variantworks_ccs_sample_pileup_hdf5_{}_".format(datetime.now().strftime("%m.%d.%Y-%H:%M:%S")))
         draft_to_ref_path = create_draft_to_ref_file(args.draft_file, args.reference, working_dir)
         # Folders generator function
         folders_to_encode = extract_bam_into_subfolders(
