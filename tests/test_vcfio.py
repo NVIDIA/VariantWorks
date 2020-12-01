@@ -28,7 +28,7 @@ def test_vcf_reader(get_created_vcf_tabix_files):
     """
     vcf_file_path, tabix_file_path = get_created_vcf_tabix_files(mock_file_input())
     vcf_reader = VCFReader(vcf_file_path, bams=[], is_fp=False)
-    assert(len(vcf_reader) == 17)
+    assert(len(vcf_reader) == 10)
 
 
 def test_vcf_fetch_variant(get_created_vcf_tabix_files):
