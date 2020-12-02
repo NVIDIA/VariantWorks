@@ -26,17 +26,23 @@ from nemo.backends.pytorch.common.losses import CrossEntropyLossNM
 from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback
 
 from variantworks.dataloader import HDFDataLoader
-from variantworks.networks import ConsensusRNN
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
+
+import create_model
 
 
 class CategoricalAccuracy(object):
     """Categorical accuracy metric."""
 
-    def __init__(self):
-        """Constructor for metric."""
+    def __init__(self, accumulate=False):
+        """Constructor for metric.
+
+        Args:
+            accumulate : Accumulate metrics over multiple calls.
+        """
         self._num_correct = 0.0
         self._num_examples = 0.0
+        self._accumulate = accumulate
 
     def __call__(self, y_true, y_pred):
         """Compute categorical accuracy."""
@@ -44,7 +50,16 @@ class CategoricalAccuracy(object):
         correct = torch.eq(indices, y_true).view(-1)
         self._num_correct += torch.sum(correct).item()
         self._num_examples += correct.shape[0]
-        return self._num_correct / self._num_examples
+        acc = self._num_correct / self._num_examples
+        if not self._accumulate:
+            self._num_correct = 0.0
+            self._num_examples = 0.0
+        return acc
+
+    def reset(self):
+        """Reset counters."""
+        self._num_correct = 0.0
+        self._num_examples = 0.0
 
 
 def generate_eval_callback(categorical_accuracy_func):
@@ -55,19 +70,17 @@ def generate_eval_callback(categorical_accuracy_func):
         for kv, v in tensors.items():
             if kv.startswith("loss"):
                 global_vars["eval_loss"].append(torch.mean(torch.stack(v)).item())
-                # global_vars['eval_loss'].append(v.item())
 
         if "top1" not in global_vars.keys():
-            global_vars["top1"] = []
+            global_vars["top1"] = [0.0]
+            categorical_accuracy_func.reset()
 
         output = None
         labels = None
         for kv, v in tensors.items():
             if kv.startswith("output"):
-                # output = tensors[kv]
                 output = torch.cat(tensors[kv])
             if kv.startswith("label"):
-                # labels = tensors[kv]
                 labels = torch.cat(tensors[kv])
 
         if output is None:
@@ -75,17 +88,9 @@ def generate_eval_callback(categorical_accuracy_func):
 
         with torch.no_grad():
             accuracy = categorical_accuracy_func(labels, output)
-            global_vars["top1"].append(accuracy)
+            global_vars["top1"][0] = accuracy
 
     return eval_iter_callback
-
-
-def create_model():
-    """Return neural network to train."""
-    # Neural Network
-    rnn = ConsensusRNN(sequence_length=1000, input_feature_size=10, num_output_logits=5)
-
-    return rnn
 
 
 def train(args):
@@ -95,7 +100,11 @@ def train(args):
         placement=nemo.core.neural_factory.DeviceType.GPU,
         local_rank=args.local_rank)
 
-    model = create_model()
+    model = create_model.create_rnn_model(args.input_feature_size,
+                                          args.num_output_logits,
+                                          args.gru_size,
+                                          args.gru_layers)
+
     encoding_dims = ('B', 'W', 'C')
     label_dims = ('B', 'W')
     encoding_neural_type = SummaryPileupNeuralType()
@@ -108,7 +117,7 @@ def train(args):
                                   tensor_dims=[encoding_dims, label_dims],
                                   tensor_neural_types=[encoding_neural_type, label_neural_type])
     vz_ce_loss = CrossEntropyLossNM(logits_ndim=3)
-    cat_acc = CategoricalAccuracy()
+    cat_acc = CategoricalAccuracy(accumulate=False)
     encoding, vz_labels = train_dataset()
     vz = model(encoding=encoding)
     vz_loss = vz_ce_loss(logits=vz, labels=vz_labels)
@@ -132,7 +141,7 @@ def train(args):
         # Checkpointing frequency in epochs
         epoch_freq=1,
         # Number of checkpoints to keep
-        checkpoints_to_keep=1,
+        checkpoints_to_keep=999,
         # If True, CheckpointCallback will raise an Error if restoring fails
         force_load=False
     )
@@ -153,7 +162,7 @@ def train(args):
         # Add evaluation callback
         evaluator_callback = nemo.core.EvaluatorCallback(
             eval_tensors=[eval_vz_loss, eval_vz, eval_vz_labels],
-            user_iter_callback=generate_eval_callback(CategoricalAccuracy()),
+            user_iter_callback=generate_eval_callback(CategoricalAccuracy(accumulate=True)),
             user_epochs_done_callback=eval_epochs_done_callback,
             eval_step=500,
             eval_epoch=1,
@@ -171,7 +180,7 @@ def train(args):
 def build_parser():
     """Build parser object with options for sample."""
     parser = argparse.ArgumentParser(
-        description="Simple SNP caller based on VariantWorks.")
+        description="Read consensus trainer based on VariantWorks.")
 
     parser.add_argument("--local_rank", type=int,
                         help="Local rank for multi GPU training. Do not set directly.",
@@ -192,6 +201,10 @@ def build_parser():
     parser.add_argument("--model-dir", type=str,
                         help="Directory for storing trained model checkpoints. Stored after every eppoch of training.",
                         required=False, default="./models")
+    parser.add_argument("--input_feature_size", type=int, default=10)
+    parser.add_argument("--num_output_logits", type=int, default=5)
+    parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
+    parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
 
     return parser
 
