@@ -29,6 +29,7 @@ from pysam import VariantFile
 from variantworks.io.baseio import BaseReader, BaseWriter
 from variantworks.types import VariantZygosity, VariantType, Variant
 from variantworks.utils.exceptions import extend_exception
+import warnings
 
 
 def _df_row_to_variant(dataframe,
@@ -107,6 +108,7 @@ class VCFReader(BaseReader):
 
     def __init__(self,
                  vcf,
+                 index_file=None,
                  bams=[],
                  is_fp=False,
                  require_genotype=True,
@@ -116,9 +118,10 @@ class VCFReader(BaseReader):
                  format_keys=["*"],
                  regions=[],
                  num_threads=mp.cpu_count(),
-                 chunksize=5000,
+                 chunk_size=5000,
                  sort=False,
-                 unbounded_val_max_cols=3):
+                 unbounded_val_max_cols=3,
+                 strict_mode=False):
         """Parse and extract variants from a vcf/bam tuple.
 
         Note VCFReader splits multi-allelic entries into separate variant
@@ -131,7 +134,8 @@ class VCFReader(BaseReader):
 
         Args:
             vcf : Path to VCF file.
-            bams : List of BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.
+            index_file : Tabix indec file for the vcf file.
+            bams : List of  BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.
             is_fp : Is the VCF for false positive variants.
             require_genotype : If all samples need genotype called.
             tags : A dictionary with custom tags for VCF dataframe.\
@@ -142,27 +146,35 @@ class VCFReader(BaseReader):
             regions : Region of VCF to parse. Needs tabix index (vcf name + .tbi).\
                 Format = ["chr:start-end", "chr2:s-e",...]. [None by default]
             num_threads : Number of threads to use for parallel parsing of VCF. [CPU count by default]
-            chunksize : Number of VCF rows to parse in a single threads. [5000 by default].
+            chunk_size : Number of VCF rows to parse in a single threads. [5000 by default].
             sort : Order DataFrame by chr and start position.
             unbounded_val_max_cols : Number of values to assume for unbounded VCF keys. [3 by default, minimum 2]
+            strict_mode : If in strict mode, VCF parsing fails when header specifications don't match with vcf records.
+                Otherwise, a warning is printed.
 
         Returns:
            Instance of class.
         """
         super().__init__()
         self._vcf = vcf
+        self._index_file = index_file
         self._bams = bams
         self._is_fp = is_fp
         self._require_genotype = require_genotype
         self._tags = tags
         self._regions = regions if regions else [None]
         self._num_threads = num_threads
-        self._chunksize = chunksize
+        self._chunk_size = chunk_size
         self._sort = sort
         self._unbounded_val_max_cols = max(2, unbounded_val_max_cols)
 
         self._dataframe = None
         self._sample_names = list()
+
+        # Throw warning once if the header specification for format
+        # field does not match the vcf records.
+        self._strict_mode = strict_mode
+        self._throw_warn = True
 
         # Keep track of metadata per column
         self._info_vcf_keys = info_keys
@@ -487,14 +499,23 @@ class VCFReader(BaseReader):
                         else:
                             # Get header type
                             header_number = self._header_number[format_col]
-                            val = variant.samples[sample_idx][format_col]
-                            if val is not None:
+
+                            try:
+                                val = variant.samples[sample_idx][format_col]
                                 if isinstance(val, np.str_) or isinstance(val, int):
                                     val = [val]
-                            else:
-                                default_val = self._get_default_val(self._header_type[format_col])
-                                num_vals = self._get_normalized_count(header_number, len(alts), len(samples))
-                                val = [default_val] * num_vals
+                            except KeyError as e:
+                                if self._strict_mode:
+                                    raise KeyError(e)
+                                else:
+                                    if self._throw_warn:
+                                        warnings.warn("Header format specifications do not match the vcf records")
+                                        warnings.warn(str(e))
+                                        # Don't throw warning for every line. Just once will suffice.
+                                        self._throw_warn = False
+                                    default_val = self._get_default_val(self._header_type[format_col])
+                                    num_vals = self._get_normalized_count(header_number, len(alts), len(samples))
+                                    val = [default_val] * num_vals
 
                             df_key = sample_name + "_" + format_col
 
@@ -555,11 +576,11 @@ class VCFReader(BaseReader):
         # Go through all regions assigned to reader
         for region in self._regions:
             # Go through variants and add to list
-            vcf = VariantFile(self._vcf)
+            vcf = VariantFile(self._vcf, index_filename=self._index_file)
             generator = vcf.fetch(region) if region else vcf.fetch()
 
             # Pre-allocate variant list to chunk size to prevent list extension
-            variant_list = [None] * self._chunksize
+            variant_list = [None] * self._chunk_size
 
             # Local idx is to track number of variants currently in the
             # variant list
@@ -568,12 +589,12 @@ class VCFReader(BaseReader):
             # Loop through all variants in cyvcf2 object.
             for variant in generator:
                 # Check if a variant maps to this thread.
-                if ((global_variant_idx // self._chunksize) % self._num_threads == thread_id):
+                if ((global_variant_idx // self._chunk_size) % self._num_threads == thread_id):
                     variant_list[local_variant_idx] = variant
                     local_variant_idx += 1
-                    if local_variant_idx % self._chunksize == 0:
+                    if local_variant_idx % self._chunk_size == 0:
                         df_list.append(self._create_df(vcf, variant_list, local_variant_idx))
-                        variant_list = [None] * self._chunksize  # Reset list
+                        variant_list = [None] * self._chunk_size  # Reset list
                         local_variant_idx = 0
                 global_variant_idx += 1
 
@@ -591,7 +612,7 @@ class VCFReader(BaseReader):
         The final DataFrame does now guarantee any ordering of the variants. It only guarantees
         the presence of all variants from the VCF.
         """
-        vcf = VariantFile(self._vcf)
+        vcf = VariantFile(self._vcf, index_filename=self._index_file)
 
         # Populate column keys and the number of values for them. Do this for INFO, FILTER
         # and FORMAT keys.
