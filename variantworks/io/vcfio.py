@@ -990,6 +990,6 @@ class VCFWriter(BaseWriter):
             pool = mp.Pool(self._num_threads)
             for line in pool.imap(self._get_serialized_vcf_record_for_variant,
                                   range(len(self._vcf_df)),
-                                  chunk_size=50000):
+                                  chunksize=50000):
                 file_writer.write('\t'.join(line) + '\n')
             pool.close()

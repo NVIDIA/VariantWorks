@@ -28,7 +28,9 @@ label encodings, respectively. Generated encodings are then serialize into an HD
 This kind of pre-training data generation is common practice in neural network pipelines as
 it yields more efficient usage of the GPU and overall better runtime performance.
 
-The `pileup_hdf5_generator.py` expects data to be organized in the following way for each sample -
+### Input Data Folders
+The `pileup_hdf5_generator.py` expects data to be organized in the following way for each sample when 
+using `--data-dir/-d` or `--single-dir/-r` arguments:
 ```
 -> example_folder
 ---> draft.fa
@@ -41,10 +43,28 @@ The following is a sample command line for running the script.
 python pileup_hdf5_generator.py -r `pwd`/data/samples/1 -o train.hdf -t 4
 python pileup_hdf5_generator.py -r `pwd`/data/samples/2 -o eval.hdf -t 4
 ```
-
 The `pileup_hdf5_generator.py` also has a `-d` option which can accept a folder with multiple
 data examples underneath it, i.e. a folder of folders each of which is in the format described
 above. This is added as a utility to enable processing of larger datasets.
+
+### Input BAM Files
+Alternatively, the `pileup_hdf5_generator.py` script also supports BAM files as input by providing the BAM file path for the
+subreads data (`--subreads-file`) and the drafts data (`--draft-file`) along with the reference genome file path (`--reference`) in FASTA format.
+```
+python pileup_hdf5_generator.py --draft-file <path to draft_file.bam> --subreads-file <path to subreads_file.bam> --reference <path to reference.fa> -o train.hdf -t 4
+```
+
+The expected format of the QNAME field of every read in the subreads BAM file is:
+
+```<subreads dataset id>/<molecule id>/<start position>_<end position>```
+e.g. ```m54238_180903_015530/4194990/6704_19829```
+
+Similarly, For the drafts BAM file the format of the QNAME filed must be:
+
+```<subreads dataset id>/<molecule id>/ccs```, for example  ```m54238_180903_015530/4456953/ccs```
+
+The entries in the subreads & drafts BAM files have to be sorted from the lower molecule id number to the higher molecule id before executing the above-mentioned script.
+
 
 For more details on the script usage, please refer to its help message.
 ```
