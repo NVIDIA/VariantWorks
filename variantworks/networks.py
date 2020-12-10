@@ -22,7 +22,8 @@ from nemo.backends.pytorch.nm import TrainableNM
 from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType, ChannelType, LogitsType
 from nemo.core.neural_factory import DeviceType
-from variantworks.attention import Attention
+
+from variantworks.layers.attention import Attention
 
 
 class AlexNet(TrainableNM):
