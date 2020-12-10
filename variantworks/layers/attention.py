@@ -13,24 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Attention related layers."""
 
 import torch
 import torch.nn as nn
 
 
 class Attention(nn.Module):
-    """ Applies attention mechanism on the `context` using the `query`.
+    """Applies attention mechanism on the `context` using the `query`.
 
     Implementation from: https://pytorchnlp.readthedocs.io/en/latest/_modules/torchnlp/nn/attention.html
-
-    Args:
-        dimensions (int): Dimensionality of the query and context.
-        attention_type (str, optional): How to compute the attention score:
-
-            * dot: :math:`score(H_j,q) = H_j^T q`
-            * general: :math:`score(H_j, q) = H_j^T W_a q`
     """
+
     def __init__(self, dimensions, attention_type='general'):
+        """Construct an Attention layer.
+
+        Args:
+            dimensions (int): Dimensionality of the query and context.
+            attention_type (str, optional): How to compute the attention score:
+
+                * dot: :math:`score(H_j,q) = H_j^T q`
+                * general: :math:`score(H_j, q) = H_j^T W_a q`
+        """
         super(Attention, self).__init__()
 
         if attention_type not in ['dot', 'general']:
@@ -45,19 +49,18 @@ class Attention(nn.Module):
         self.tanh = nn.Tanh()
 
     def forward(self, query, context):
-        """
+        """Forward method.
+
         Args:
-            query (:class:`torch.FloatTensor` [batch size, output length, dimensions]): Sequence of
-                queries to query the context.
-            context (:class:`torch.FloatTensor` [batch size, query length, dimensions]): Data
-                overwhich to apply the attention mechanism.
+            query : Sequence of queries to query the \
+                    context [batch size, output length, dimensions].
+            context : Data over which to apply the attention \
+                    mechanism [batch size, query length, dimensions].
 
         Returns:
-            :class:`tuple` with `output` and `weights`:
-            * **output** (:class:`torch.LongTensor` [batch size, output length, dimensions]):
-              Tensor containing the attended features.
-            * **weights** (:class:`torch.FloatTensor` [batch size, output length, query length]):
-              Tensor containing attention weights.
+            Tuple with output and weights:
+            * output : Tensor containing the attended features [batch size, output length, dimensions].
+            * weights : Tensor containing attention weights [batch size, output length, query length].
         """
         batch_size, output_len, dimensions = query.size()
         query_len = context.size(1)

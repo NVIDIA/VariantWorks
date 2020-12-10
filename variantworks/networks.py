@@ -238,7 +238,7 @@ class ConsensusAttention(TrainableNM):
         Returns:
             Output of forward pass.
         """
-        encoding, weights = self.attn(encoding, encoding)
-        encoding, h_n = self.gru(encoding)
+        encoding, _ = self.attn(encoding, encoding)
+        encoding, _ = self.gru(encoding)
         encoding = self.classifier(encoding)
         return encoding
