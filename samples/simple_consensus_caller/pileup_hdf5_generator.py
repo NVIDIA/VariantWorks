@@ -48,10 +48,10 @@ def validate_data_dir(directory):
         raise RuntimeError("truth.fa not present in all data folders.")
 
 
-def align_sequences(target, query, output_file):
+def align_sequences(target, query, output_file, threads=1):
     """Align query to target using minimap2."""
     query_to_target_align_cmd = [
-        "minimap2", "-x", "map-pb", "-t", "1", target, query, "--MD", "-a", "--secondary=no", "-o", output_file
+        "minimap2", "-x", "map-pb", "-t", str(threads), target, query, "--MD", "-a", "--secondary=no", "-o", output_file
     ]
     subprocess.check_call(query_to_target_align_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -59,9 +59,9 @@ def align_sequences(target, query, output_file):
 def create_pileup(data_dir):
     """Create a pileup file from subreads, draft, and truth."""
 
-    def sort_bam(intput_bam, output_bam):
+    def sort_bam(input_bam, output_bam):
         sort_cmd = [
-            "samtools", "sort", intput_bam, "-o", output_bam
+            "samtools", "sort", input_bam, "-o", output_bam
         ]
         subprocess.check_call(sort_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -92,7 +92,9 @@ def create_pileup(data_dir):
 
     mpileup_file = os.path.join(data_dir, "subreads_and_truth_{}.pileup".format(suffix))
     pileup_cmd = ["samtools", "mpileup", subreads_draft_sorted_bam,
-                  truth_draft_sorted_bam, "-s", "--reverse-del", "-o", mpileup_file]
+                  truth_draft_sorted_bam, "-s", "--reverse-del",
+                  "-f", draft_file,
+                  "-o", mpileup_file]
     subprocess.check_call(pileup_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Remove intermediate files
@@ -103,16 +105,23 @@ def create_pileup(data_dir):
     return FileRegion(start_pos=0, end_pos=None, file_path=mpileup_file)
 
 
-def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir, remove_data_dir=False):
+def encode(sample_encoder, label_encoder, chunk_len, chunk_ovlp, data_dir, remove_data_dir=False, add_quality=False):
     """Generate sample and label encoding for variant."""
     if remove_data_dir:
         validate_data_dir(data_dir)
 
     region = create_pileup(data_dir)
+    if add_quality:
+        draft_file = os.path.join(data_dir, "draft.fa")
+        from Bio import SeqIO
+        record = next(SeqIO.parse(draft_file, "fastq"))
+        qualities = record.letter_annotations["phred_quality"]
+    else:
+        qualities = None
 
     # Generate matrix and label encoding.
     try:
-        encoding, encoding_positions = sample_encoder(region)
+        encoding, encoding_positions = sample_encoder(region, ref_quality=qualities)
         label, label_positions = label_encoder(region)
 
         # Generate read id per folder to help with bulk inference.
@@ -151,12 +160,12 @@ def extract_bam_into_subfolders(draft_path, subreads_path, draft_to_ref_path, ou
                 dataset_1, dataset_2, dataset_3
             )
 
-    drafts_intput_file = pysam.AlignmentFile(draft_path, "rb", check_sq=False)
-    subreads_intput_file = pysam.AlignmentFile(subreads_path, "rb", check_sq=False)
-    draft2ref_intput_file = pysam.AlignmentFile(draft_to_ref_path, "rb", check_sq=False)
-    drafts_iter = drafts_intput_file.fetch(until_eof=True)
-    subreads_iter = subreads_intput_file.fetch(until_eof=True)
-    draft2ref_iter = draft2ref_intput_file.fetch(until_eof=True)
+    drafts_input_file = pysam.AlignmentFile(draft_path, "rb", check_sq=False)
+    subreads_input_file = pysam.AlignmentFile(subreads_path, "rb", check_sq=False)
+    draft2ref_input_file = pysam.AlignmentFile(draft_to_ref_path, "rb", check_sq=False)
+    drafts_iter = drafts_input_file.fetch(until_eof=True)
+    subreads_iter = subreads_input_file.fetch(until_eof=True)
+    draft2ref_iter = draft2ref_input_file.fetch(until_eof=True)
     draft = next(drafts_iter, None)
     subread = next(subreads_iter, None)
     draf2ref_aln = next(draft2ref_iter, None)
@@ -200,12 +209,15 @@ def extract_bam_into_subfolders(draft_path, subreads_path, draft_to_ref_path, ou
             draft_file_path = os.path.join(out_folder, 'draft.fa')
             draft_read = draf2ref_aln.query_sequence
             draft_seqid = draf2ref_aln.query_name
+            # Convert base quality to accuracy
+            draft_qual = list(1.0 - (10 ** (np.array(draf2ref_aln.query_qualities) / -10.0)))
             assert not os.path.isfile(draft_file_path),\
                 "A draft.fa file already exists under {}".format(out_folder)
             with FastxWriter(draft_file_path, "w") as draft_output_handle:
                 draft_output_handle.write_output(record_id=draft_seqid,
                                                  record_sequence=draft_read,
-                                                 record_name=draft_seqid)
+                                                 record_name=draft_seqid,
+                                                 record_quality=draft_qual)
             # Write subreads file output
             while subread and int(molecule_draft) == int(molecule_subread):
                 validate_same_dataset(dataset_draft, dataset_subread, dataset_draft2ref)
@@ -220,14 +232,15 @@ def extract_bam_into_subfolders(draft_path, subreads_path, draft_to_ref_path, ou
             # move to the next draft/draft2ref entry
             draft = next(drafts_iter, None)
             draf2ref_aln = next(draft2ref_iter, None)
-    drafts_intput_file.close()
-    subreads_intput_file.close()
+    drafts_input_file.close()
+    subreads_input_file.close()
 
 
 def create_draft_to_ref_file(draft_file_path, reference_file_path, working_dir):
     """Align draft to reference."""
     def bam_to_fasta(input_path, output_path):
-        bam_to_fasta_cmd = "samtools bam2fq {} | seqtk seq -A > {}".format(input_path, output_path)
+        bam_to_fasta_cmd = "samtools bam2fq {} | seqtk seq > {}".format(input_path, output_path)
+        print(bam_to_fasta_cmd)
         subprocess.check_call(bam_to_fasta_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def filter_alignments(input_bam, output_bam):
@@ -240,7 +253,7 @@ def create_draft_to_ref_file(draft_file_path, reference_file_path, working_dir):
     draft_to_ref_unfiltered_bam_path = os.path.join(working_dir, "draft2ref_all_unfiltered.bam")
     draft_to_ref_bam_path = os.path.join(working_dir, "draft2ref.bam")
     bam_to_fasta(draft_file_path, output_path=draft_fasta_path)
-    align_sequences(reference_file_path, draft_fasta_path, output_file=draft_to_ref_unfiltered_bam_path)
+    align_sequences(reference_file_path, draft_fasta_path, output_file=draft_to_ref_unfiltered_bam_path, threads=24)
     os.remove(draft_fasta_path)
     filter_alignments(input_bam=draft_to_ref_unfiltered_bam_path, output_bam=draft_to_ref_bam_path)
     os.remove(draft_to_ref_unfiltered_bam_path)
@@ -271,6 +284,7 @@ def generate_hdf5(args):
     else:
         working_dir = tempfile.mkdtemp(
             prefix="variantworks_ccs_sample_pileup_hdf5_{}_".format(datetime.now().strftime("%m.%d.%Y-%H:%M:%S")))
+        print('Working directory {}...'.format(working_dir))
         draft_to_ref_path = create_draft_to_ref_file(args.draft_file, args.reference, working_dir)
         # Folders generator function
         folders_to_encode = extract_bam_into_subfolders(
@@ -282,7 +296,8 @@ def generate_hdf5(args):
     sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True)
     label_encoder = HaploidLabelEncoder(exclude_no_coverage_positions=True)
     encode_func = partial(encode, sample_encoder, label_encoder,
-                          args.chunk_len, args.chunk_ovlp, remove_data_dir=to_remove_data_dir)
+                          args.chunk_len, args.chunk_ovlp, remove_data_dir=to_remove_data_dir,
+                          add_quality=args.add_quality)
 
     # output data
     features = []    # features in column
@@ -343,6 +358,8 @@ def build_parser():
                         help='Length of chunks to be created from pileups.', default=1000)
     parser.add_argument('--chunk-ovlp', type=int,
                         help='Length of overlaps between chunks.', default=200)
+    parser.add_argument('--add-quality', action="store_true",
+                        help='Add draft quality to encoding.')
 
     args = parser.parse_args()
 

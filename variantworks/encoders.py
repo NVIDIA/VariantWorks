@@ -28,7 +28,7 @@ import torch
 
 from variantworks.types import FileRegion, Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
-from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions
+from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions, reencode_base_pileup
 
 
 # Torch multiprocessing limits interferes with python mp module. Using this helps resolve
@@ -91,8 +91,13 @@ class SummaryEncoder(Encoder):
                         "T",
                         "#",
                         "*"]
+        self.draft_symbols = ["A",
+                              "C",
+                              "G",
+                              "T",
+                              "*"]
 
-    def __call__(self, region):
+    def __call__(self, region, ref_quality=None):
         """Generate a torch tensor with summary encoding.
 
         Args:
@@ -125,11 +130,15 @@ class SummaryEncoder(Encoder):
 
         positions = torch.IntTensor(positions)
         # Using positions, calculate pileup counts
-        pileup_counts = torch.zeros((len(positions), 10))
+        num_features = len(self.symbols)
+        if ref_quality:
+            num_features += len(self.draft_symbols) + 1  # Extra 1 for the base quality
+        pileup_counts = torch.zeros((len(positions), num_features))
         for i in range(len(positions)):
             ref_position = positions[i][0]
             insert_position = positions[i][1]
             base_pileup = subreads[ref_position].strip("^]").strip("$")
+            base_pileup = reencode_base_pileup(pileup[ref_position, 2], base_pileup)
             insertions, next_to_del = find_insertions(base_pileup)
             insertions_to_keep = []
 
@@ -145,6 +154,10 @@ class SummaryEncoder(Encoder):
             if (insert_position == 0):  # No insertions for this position
                 for j in range(len(self.symbols)):
                     pileup_counts[i, j] = base_pileup.count(self.symbols[j])
+                # Add draft base and base quality to encoding
+                if ref_quality:
+                    pileup_counts[i, len(self.symbols) + self.draft_symbols.index(pileup[ref_position, 2])] = 1
+                    pileup_counts[i, len(self.draft_symbols) + len(self.symbols)] = ref_quality[ref_position] / 93.0
             elif (insert_position > 0):
                 # Remove all insertions which are smaller than minor position being considered
                 # so we only count inserted bases at positions longer than the minor position
@@ -226,6 +239,7 @@ class HaploidLabelEncoder(Encoder):
             reference_pos = positions[i][0]
             inserted_pos = positions[i][1]
             truth_base = truth[reference_pos].strip("^]").strip("$").upper()
+            truth_base = reencode_base_pileup(pileup[reference_pos, 2], truth_base)
             # Handle minor position label (no insertion)
             if (inserted_pos == 0):
                 if ("+" in truth_base):
