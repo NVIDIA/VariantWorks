@@ -65,7 +65,7 @@ class SummaryEncoder(Encoder):
     (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)
     """
 
-    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True):
+    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True, use_quality=False):
         """Constructor for the class.
 
         Args:
@@ -73,12 +73,14 @@ class SummaryEncoder(Encoder):
                                             coverage should be dropped.
             normalize_counts : Flag to determine if summary counts in encoding should
                                be normalized.
+            use_quality : Flag to indicate if draft base and quality is to be encoded.
 
         Returns:
             Instance of class.
         """
         self._exclude_no_coverage_positions = exclude_no_coverage_positions
         self._normalize_counts = normalize_counts
+        self._use_quality = use_quality
 
         # Supported alphabet when building summary encoder.
         self.symbols = ["a",
@@ -103,13 +105,18 @@ class SummaryEncoder(Encoder):
         Args:
             region : Region dataclass specifying region within a pileup to generate
                      an encoding for.
+            ref_quality : A list with base quality values of draft sequence.
 
         Returns:
             (count_matrix, positions) tuple
-            count_matrix : A torch tensor encoding the summary count for the pileup
+            count_matrix : A torch tensor encoding the summary count for the pileup.
+                           If quality score is enabled, rows with draft base and draft base
+                           quality are encoded in count matrix as well.
             positions : A torch tensor encoding reference and inserted positions in pileup
         """
         assert(isinstance(region, FileRegion))
+        assert(not self._use_quality or ref_quality is not None),\
+            "Encoder initialized to use quality but not quality scores passes."
         start_pos = region.start_pos
         end_pos = region.end_pos
         pileup_file = region.file_path
