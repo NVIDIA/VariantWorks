@@ -108,10 +108,10 @@ class SummaryEncoder(Encoder):
             ref_quality : A list with base quality values of draft sequence.
 
         Returns:
-            (count_matrix, positions) tuple
+            Tuple of (count_matrix, positions)
             count_matrix : A torch tensor encoding the summary count for the pileup.
-                           If quality score is enabled, rows with draft base and draft base
-                           quality are encoded in count matrix as well.
+            If quality score is enabled, rows with draft base and draft base
+            quality are encoded in count matrix as well.
             positions : A torch tensor encoding reference and inserted positions in pileup
         """
         assert(isinstance(region, FileRegion))
