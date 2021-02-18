@@ -96,6 +96,13 @@ Details of the script usage can be found in its help message.
 python rnn_consensus_trainer.py -h
 ```
 
+The training script provides options to configure the model architecture as well. For example, if a model needs to be trained
+on encodings that include base quality scores and reference nucleotide information, then the input size of the RNN needs to match
+the dimensions of the encoding. So the following command line can be used to address that (assuming the input size is 16 channels) -
+```
+python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf --input_feature_size 16
+```
+
 ## Inference pipeline
 
 The inference script takes care of running a pre-trained model on unseen data, post-processesing
