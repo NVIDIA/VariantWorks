@@ -47,6 +47,10 @@ The `pileup_hdf5_generator.py` also has a `-d` option which can accept a folder 
 data examples underneath it, i.e. a folder of folders each of which is in the format described
 above. This is added as a utility to enable processing of larger datasets.
 
+To specify a different name for the draft_file, use the `--draft-name` to specify the name of the FASTA/FASTQ file containing the draft sequence.
+
+If the base quality score of the draft is to be extracted and encoded, please add the `--use-quality` flag.
+
 ### Input BAM Files
 Alternatively, the `pileup_hdf5_generator.py` script also supports BAM files as input by providing the BAM file path for the
 subreads data (`--subreads-file`) and the drafts data (`--draft-file`) along with the reference genome file path (`--reference`) in FASTA format.
@@ -61,10 +65,11 @@ e.g. ```m54238_180903_015530/4194990/6704_19829```
 
 Similarly, For the drafts BAM file the format of the QNAME filed must be:
 
-```<subreads dataset id>/<molecule id>/ccs```, for example  ```m54238_180903_015530/4456953/ccs```
+```<subreads dataset id>/<molecule id>/<string>```, for example  ```m54238_180903_015530/4456953/<string>```
 
 The entries in the subreads & drafts BAM files have to be sorted from the lower molecule id number to the higher molecule id before executing the above-mentioned script.
 
+To extract base quality scores of the draft add `--use-quality` flag to the pileup generation command line.
 
 For more details on the script usage, please refer to its help message.
 ```
@@ -89,6 +94,13 @@ python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `p
 Details of the script usage can be found in its help message.
 ```
 python rnn_consensus_trainer.py -h
+```
+
+The training script provides options to configure the model architecture as well. For example, if a model needs to be trained
+on encodings that include base quality scores and reference nucleotide information, then the input size of the RNN needs to match
+the dimensions of the encoding. So the following command line can be used to address that (assuming the input size is 16 channels) -
+```
+python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf --input_feature_size 16
 ```
 
 ## Inference pipeline

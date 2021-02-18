@@ -79,11 +79,11 @@ class HDFDataLoader(DataLayerNM):
         class DatasetWrapper(TorchDataset):
             """A wrapper around Torch dataset class to generate individual samples."""
 
-            def __init__(self, hdf_file, tensor_dtypes, tensor_keys):
+            def __init__(self, hdf_files, tensor_dtypes, tensor_keys):
                 """Constructor for dataset wrapper.
 
                 Args:
-                    hdf_file : Path to HDF5 file.
+                    hdf_files : List of paths to HDF5 files.
                     tensor_keys : List with keys of tensors to load.
                     tensor_dtypes : torch data types for tensor.
 
@@ -91,38 +91,37 @@ class HDFDataLoader(DataLayerNM):
                     Instance of class.
                 """
                 super().__init__()
-                self.hdf_file = hdf_file
+                if not isinstance(hdf_files, list):
+                    hdf_files = [hdf_files]
+                self.hdf_files = hdf_files
                 self.tensor_dtypes = tensor_dtypes
                 self.tensor_keys = tensor_keys
-                with h5py.File(self.hdf_file, "r") as hdf:
-                    self.len = len(hdf.get(self.tensor_keys[0]))
+                self.hdf_lengths = []
+                for f in self.hdf_files:
+                    with h5py.File(f, "r") as hdf:
+                        self.hdf_lengths.append(len(hdf.get(self.tensor_keys[0])))
+                self.total_len = sum(self.hdf_lengths)
                 self._h5_gen = None
 
             def __len__(self):
-                return self.len
+                return self.total_len
 
             def __getitem__(self, idx):
-                # Using generator to keep the file handle to HDF5
-                # file open during the life of the process.
-                if self._h5_gen is None:
-                    self._h5_gen = self._get_generator()
-                    next(self._h5_gen)
-                return self._h5_gen.send(idx)
+                # Find the file to which idx maps.
+                hdf_idx = 0
+                while self.hdf_lengths[hdf_idx] <= idx:
+                    idx -= self.hdf_lengths[hdf_idx]
+                    hdf_idx += 1
 
-            def _get_generator(self):
-                hrecs = {}
-                hdf = h5py.File(self.hdf_file, "r")
-                for key in hdf.keys():
-                    hrecs[key] = hdf.get(key)
+                # Use hdf_idx and updated item idx to find example.
+                hdf = h5py.File(self.hdf_files[hdf_idx], "r")
+                outputs = []
+                for i, key in enumerate(self.tensor_keys):
+                    data = hdf.get(key)
+                    tensor = torch.tensor(data[idx], dtype=self.tensor_dtypes[i])
+                    outputs.append(tensor)
 
-                idx = yield
-                while True:
-                    outputs = []
-                    for i, key in enumerate(self.tensor_keys):
-                        data = hrecs[key]
-                        tensor = torch.tensor(data[idx], dtype=self.tensor_dtypes[i])
-                        outputs.append(tensor)
-                    idx = yield tuple(outputs)
+                return tuple(outputs)
 
         dataset = DatasetWrapper(self.hdf_file, self.tensor_dtypes, self.tensor_keys)
 
