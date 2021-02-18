@@ -103,6 +103,13 @@ the dimensions of the encoding. So the following command line can be used to add
 python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf --input_feature_size 16
 ```
 
+### Multi-GPU training
+The consensus caller trainer uses the built-in multi GPU training offered by `NeMo`. To run training over multiple GPUs,
+add the following options before running the trainer
+```
+python -m torch.distributed.launch --nproc_per_node=<NUM_GPUS> rnn_consensus_trainer.py ...
+```
+
 ## Inference pipeline
 
 The inference script takes care of running a pre-trained model on unseen data, post-processesing
