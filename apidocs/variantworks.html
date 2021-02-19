@@ -416,7 +416,7 @@ figure: matplotlib.pyplot.figure object</p>
 
 <dl class="py class">
 <dt id="variantworks.encoders.SummaryEncoder">
-<em class="property">class </em><code class="sig-prename descclassname">variantworks.encoders.</code><code class="sig-name descname">SummaryEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">normalize_counts</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.encoders.</code><code class="sig-name descname">SummaryEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">normalize_counts</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">use_quality</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#variantworks.encoders.Encoder" title="variantworks.encoders.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.encoders.Encoder</span></code></a></p>
 <p>A summary count encoder for pileups.</p>
 <p>For a given pileup of reads (e.g. output from samtools mpileup), the encoder generates
@@ -428,16 +428,21 @@ The output of this encoder can be used to train a sequence aware model such such
 (<a class="reference external" href="https://github.com/nanoporetech/medaka/blob/master/medaka/features.py">https://github.com/nanoporetech/medaka/blob/master/medaka/features.py</a>)</p>
 <dl class="py method">
 <dt id="variantworks.encoders.SummaryEncoder.__call__">
-<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">region</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">region</span></em>, <em class="sig-param"><span class="n">ref_quality</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a torch tensor with summary encoding.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>region</strong> – Region dataclass specifying region within a pileup to generate
-an encoding for.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>region</strong> – Region dataclass specifying region within a pileup to generate
+an encoding for.</p></li>
+<li><p><strong>ref_quality</strong> – A list with base quality values of draft sequence.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(count_matrix, positions) tuple
-count_matrix : A torch tensor encoding the summary count for the pileup
+<dd class="field-even"><p>Tuple of (count_matrix, positions)
+count_matrix : A torch tensor encoding the summary count for the pileup.
+If quality score is enabled, rows with draft base and draft base
+quality are encoded in count matrix as well.
 positions : A torch tensor encoding reference and inserted positions in pileup</p>
 </dd>
 </dl>
@@ -445,7 +450,7 @@ positions : A torch tensor encoding reference and inserted positions in pileup</
 
 <dl class="py method">
 <dt id="variantworks.encoders.SummaryEncoder.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">normalize_counts</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">normalize_counts</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">use_quality</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/encoders.html#SummaryEncoder.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.encoders.SummaryEncoder.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor for the class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -454,6 +459,7 @@ positions : A torch tensor encoding reference and inserted positions in pileup</
 coverage should be dropped.</p></li>
 <li><p><strong>normalize_counts</strong> – Flag to determine if summary counts in encoding should
 be normalized.</p></li>
+<li><p><strong>use_quality</strong> – Flag to indicate if draft base and quality is to be encoded.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -754,19 +760,21 @@ be normalized.</p></li>
 
 <dl class="py class">
 <dt id="variantworks.networks.ConsensusRNN">
-<em class="property">class </em><code class="sig-prename descclassname">variantworks.networks.</code><code class="sig-name descname">ConsensusRNN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequence_length</span></em>, <em class="sig-param"><span class="n">input_feature_size</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/networks.html#ConsensusRNN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.networks.ConsensusRNN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.networks.</code><code class="sig-name descname">ConsensusRNN</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_feature_size</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em>, <em class="sig-param"><span class="n">gru_size</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">gru_layers</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">apply_softmax</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/networks.html#ConsensusRNN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.networks.ConsensusRNN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nemo.backends.pytorch.nm.TrainableNM</span></code></p>
 <p>A Neural Module for training a Consensus RNN.</p>
 <dl class="py method">
 <dt id="variantworks.networks.ConsensusRNN.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequence_length</span></em>, <em class="sig-param"><span class="n">input_feature_size</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/networks.html#ConsensusRNN.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.networks.ConsensusRNN.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_feature_size</span></em>, <em class="sig-param"><span class="n">num_output_logits</span></em>, <em class="sig-param"><span class="n">gru_size</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">gru_layers</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">apply_softmax</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/networks.html#ConsensusRNN.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.networks.ConsensusRNN.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct an Consensus RNN NeMo instance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sequence_length</strong> – Length of sequence to feed into RNN.</p></li>
 <li><p><strong>input_feature_size</strong> – Length of input feature set.</p></li>
 <li><p><strong>num_output_logits</strong> – Number of output classes of classifier.</p></li>
+<li><p><strong>gru_size</strong> – Number of units in RNN</p></li>
+<li><p><strong>gru_layers</strong> – Number of layers in RNN</p></li>
+<li><p><strong>apply_softmax</strong> – Apply softmax to the output of the classifier.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -868,7 +876,7 @@ be normalized.</p></li>
 
 <dl class="py method">
 <dt id="variantworks.io.baseio.BaseWriter.write_output">
-<em class="property">abstract </em><code class="sig-name descname">write_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/baseio.html#BaseWriter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.baseio.BaseWriter.write_output" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">write_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/baseio.html#BaseWriter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.baseio.BaseWriter.write_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write format to disk.</p>
 </dd></dl>
 
@@ -877,12 +885,12 @@ be normalized.</p></li>
 <span class="target" id="module-variantworks.io.vcfio"></span><p>Classes for reading and writing VCFs.</p>
 <dl class="py class">
 <dt id="variantworks.io.vcfio.VCFReader">
-<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.vcfio.</code><code class="sig-name descname">VCFReader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span></em>, <em class="sig-param"><span class="n">bams</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">require_genotype</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">info_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">filter_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">format_keys</span><span class="o">=</span><span class="default_value">['*']</span></em>, <em class="sig-param"><span class="n">regions</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">24</span></em>, <em class="sig-param"><span class="n">chunksize</span><span class="o">=</span><span class="default_value">5000</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">unbounded_val_max_cols</span><span class="o">=</span><span class="default_value">3</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/vcfio.html#VCFReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.vcfio.VCFReader" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.vcfio.</code><code class="sig-name descname">VCFReader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span></em>, <em class="sig-param"><span class="n">index_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bams</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">require_genotype</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">info_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">filter_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">format_keys</span><span class="o">=</span><span class="default_value">['*']</span></em>, <em class="sig-param"><span class="n">regions</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">24</span></em>, <em class="sig-param"><span class="n">chunk_size</span><span class="o">=</span><span class="default_value">5000</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">unbounded_val_max_cols</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">strict_mode</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/vcfio.html#VCFReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.vcfio.VCFReader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#variantworks.io.baseio.BaseReader" title="variantworks.io.baseio.BaseReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.io.baseio.BaseReader</span></code></a></p>
 <p>Reader for VCF files.</p>
 <dl class="py method">
 <dt id="variantworks.io.vcfio.VCFReader.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span></em>, <em class="sig-param"><span class="n">bams</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">require_genotype</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">info_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">filter_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">format_keys</span><span class="o">=</span><span class="default_value">['*']</span></em>, <em class="sig-param"><span class="n">regions</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">24</span></em>, <em class="sig-param"><span class="n">chunksize</span><span class="o">=</span><span class="default_value">5000</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">unbounded_val_max_cols</span><span class="o">=</span><span class="default_value">3</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/vcfio.html#VCFReader.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">vcf</span></em>, <em class="sig-param"><span class="n">index_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bams</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">is_fp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">require_genotype</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">info_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">filter_keys</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">format_keys</span><span class="o">=</span><span class="default_value">['*']</span></em>, <em class="sig-param"><span class="n">regions</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">24</span></em>, <em class="sig-param"><span class="n">chunk_size</span><span class="o">=</span><span class="default_value">5000</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">unbounded_val_max_cols</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">strict_mode</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/vcfio.html#VCFReader.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.vcfio.VCFReader.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse and extract variants from a vcf/bam tuple.</p>
 <p>Note VCFReader splits multi-allelic entries into separate variant
 entries. VCFReader also doesn’t maintain the original ordering of variants
@@ -894,7 +902,8 @@ are not handled in this reader currently.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vcf</strong> – Path to VCF file.</p></li>
-<li><p><strong>bams</strong> – List of BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.</p></li>
+<li><p><strong>index_file</strong> – Tabix indec file for the vcf file.</p></li>
+<li><p><strong>bams</strong> – List of  BAMs corresponding to the VCF. BAM ordering should match sample ordering in VCF.</p></li>
 <li><p><strong>is_fp</strong> – Is the VCF for false positive variants.</p></li>
 <li><p><strong>require_genotype</strong> – If all samples need genotype called.</p></li>
 <li><p><strong>tags</strong> – A dictionary with custom tags for VCF dataframe.                Format = {“tag1” : 1, “tag2” : False}. [{} by default]</p></li>
@@ -903,9 +912,11 @@ are not handled in this reader currently.</p>
 <li><p><strong>format_keys</strong> – List of FORMAT columns to parse. For all columns, pass “*”. [Empty by default].</p></li>
 <li><p><strong>regions</strong> – Region of VCF to parse. Needs tabix index (vcf name + .tbi).                Format = [“chr:start-end”, “chr2:s-e”,…]. [None by default]</p></li>
 <li><p><strong>num_threads</strong> – Number of threads to use for parallel parsing of VCF. [CPU count by default]</p></li>
-<li><p><strong>chunksize</strong> – Number of VCF rows to parse in a single threads. [5000 by default].</p></li>
+<li><p><strong>chunk_size</strong> – Number of VCF rows to parse in a single threads. [5000 by default].</p></li>
 <li><p><strong>sort</strong> – Order DataFrame by chr and start position.</p></li>
 <li><p><strong>unbounded_val_max_cols</strong> – Number of values to assume for unbounded VCF keys. [3 by default, minimum 2]</p></li>
+<li><p><strong>strict_mode</strong> – If in strict mode, VCF parsing fails when header specifications don’t match with vcf records.
+Otherwise, a warning is printed.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -994,10 +1005,75 @@ provided, all non-filter columns are stored as INFO.</p></li>
 
 </dd></dl>
 
+<span class="target" id="module-variantworks.io.fastxio"></span><p>Classes for reading and writing FASTQ files.</p>
+<dl class="py class">
+<dt id="variantworks.io.fastxio.FastxWriter">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.io.fastxio.</code><code class="sig-name descname">FastxWriter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_path</span></em>, <em class="sig-param"><span class="n">mode</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/fastxio.html#FastxWriter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.fastxio.FastxWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#variantworks.io.baseio.BaseWriter" title="variantworks.io.baseio.BaseWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">variantworks.io.baseio.BaseWriter</span></code></a></p>
+<p>Writer for FASTQ/FASTA files.</p>
+<p>Should be used with a context manager.</p>
+<dl class="py method">
+<dt id="variantworks.io.fastxio.FastxWriter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_path</span></em>, <em class="sig-param"><span class="n">mode</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/fastxio.html#FastxWriter.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.fastxio.FastxWriter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor VCFWriter class.</p>
+<p>Writes a FASTQ/FASTA records into a file using Biopython.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_path</strong> – Output path for VCF output file.</p></li>
+<li><p><strong>mode</strong> – Write mode for opening the output file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance of object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="variantworks.io.fastxio.FastxWriter.write_output">
+<code class="sig-name descname">write_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">record_id</span></em>, <em class="sig-param"><span class="n">record_sequence</span></em>, <em class="sig-param"><span class="n">record_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">record_quality</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/io/fastxio.html#FastxWriter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.io.fastxio.FastxWriter.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write dataframe to FASTA or FASTQ in case record_quality is provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>record_id</strong> – sequence record id.</p></li>
+<li><p><strong>record_sequence</strong> – sequence data.</p></li>
+<li><p><strong>record_name</strong> – sequence record name (optional).</p></li>
+<li><p><strong>description</strong> – sequence record description (optional).</p></li>
+<li><p><strong>record_quality</strong> – Corresponding records’ sequence quality.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-variantworks.types">
 <span id="types"></span><h1>Types<a class="headerlink" href="#module-variantworks.types" title="Permalink to this headline">¶</a></h1>
 <p>Shared enums and types across VariantWorks.</p>
+<dl class="py class">
+<dt id="variantworks.types.BEDEntry">
+<em class="property">class </em><code class="sig-prename descclassname">variantworks.types.</code><code class="sig-name descname">BEDEntry</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kv_dict</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/types.html#BEDEntry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.types.BEDEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A dataclass encapsulating a BED entry.</p>
+<dl class="py method">
+<dt id="variantworks.types.BEDEntry.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kv_dict</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/types.html#BEDEntry.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.types.BEDEntry.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for generic BED Entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kv_dict</strong> – A dictionary with key-value pairs per column in BED.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance of class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt id="variantworks.types.FileRegion">
 <em class="property">class </em><code class="sig-prename descclassname">variantworks.types.</code><code class="sig-name descname">FileRegion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_pos</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">end_pos</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">file_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/variantworks/types.html#FileRegion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#variantworks.types.FileRegion" title="Permalink to this definition">¶</a></dt>

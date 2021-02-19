@@ -217,6 +217,29 @@
     <span class="n">start_pos</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">end_pos</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="BEDEntry"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.types.BEDEntry">[docs]</a><span class="k">class</span> <span class="nc">BEDEntry</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A dataclass encapsulating a BED entry.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BEDEntry.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.types.BEDEntry.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kv_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for generic BED Entry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            kv_dict : A dictionary with key-value pairs per column in BED.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instance of class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">kv_dict</span></div>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Accessor method for BED column.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;String serializer for BED entry.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

@@ -178,6 +178,7 @@ to applying novel Deep Learning techniques to the field of genomic variant calli
 <ol class="arabic simple">
 <li><p>Python 3.7+</p></li>
 <li><p>NVIDIA GPU (Pascal+ architecture)</p></li>
+<li><p><a class="reference external" href="https://github.com/nvidia/apex">NVIDIA Apex</a> library (for multi-GPU training in supported pipelines)</p></li>
 </ol>
 </div>
 <div class="section" id="getting-started">
@@ -187,6 +188,7 @@ to applying novel Deep Learning techniques to the field of genomic variant calli
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --recursive https://github.com/clara-parabricks/VariantWorks.git
 <span class="nb">cd</span> VariantWorks
+pip install -r python-style-requirements.txt
 pip install -r requirements.txt
 pip install -e .
 <span class="c1"># Install pre-push hooks to run tests</span>

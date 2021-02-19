@@ -191,7 +191,7 @@ for <a class="reference internal" href="apidocs/variantworks.html#variantworks.e
 <div class="section" id="format-readers">
 <h3>Format Readers<a class="headerlink" href="#format-readers" title="Permalink to this headline">¶</a></h3>
 <p>Reading entries from common genomics file formats (such as BAM, VCF) is a precursor to almost all variant calling pipelines.
-VariantWorks provides parsing (based on pyVCF) for VCFs, and leverages pySAM for working with BAM files.</p>
+VariantWorks provides parsing (based on cyvcf2) for VCFs, and leverages pySAM for working with BAM files.</p>
 <p>The Reader classes follow a similar structure to Encoders when it comes to inheritence. All readers must inherit from
 <a class="reference internal" href="apidocs/variantworks.html#variantworks.io.baseio.BaseReader" title="variantworks.io.baseio.BaseReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseReader</span></code></a> and implement the abstract methods <cite>__len__</cite> and <cite>__getitem__</cite> to make them
 compatible and easy to use with data loaders.</p>

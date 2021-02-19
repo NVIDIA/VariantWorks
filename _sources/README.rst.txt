@@ -27,6 +27,7 @@ Requirements
 
 #. Python 3.7+
 #. NVIDIA GPU (Pascal+ architecture)
+#. `NVIDIA Apex <https://github.com/nvidia/apex>`__ library (for multi-GPU training in supported pipelines)
 
 Getting Started
 ---------------
@@ -37,6 +38,7 @@ Getting Started
 
     git clone --recursive https://github.com/clara-parabricks/VariantWorks.git
     cd VariantWorks
+    pip install -r python-style-requirements.txt
     pip install -r requirements.txt
     pip install -e .
     # Install pre-push hooks to run tests

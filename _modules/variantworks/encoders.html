@@ -180,7 +180,7 @@
 
 <span class="kn">from</span> <span class="nn">variantworks.types</span> <span class="kn">import</span> <span class="n">FileRegion</span><span class="p">,</span> <span class="n">Variant</span><span class="p">,</span> <span class="n">VariantZygosity</span>
 <span class="kn">from</span> <span class="nn">variantworks.utils.visualization</span> <span class="kn">import</span> <span class="n">rgb_to_hex</span>
-<span class="kn">from</span> <span class="nn">variantworks.utils.encoders</span> <span class="kn">import</span> <span class="n">find_insertions</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="p">,</span> <span class="n">calculate_positions</span>
+<span class="kn">from</span> <span class="nn">variantworks.utils.encoders</span> <span class="kn">import</span> <span class="n">find_insertions</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="p">,</span> <span class="n">calculate_positions</span><span class="p">,</span> <span class="n">reencode_base_pileup</span>
 
 
 <span class="c1"># Torch multiprocessing limits interferes with python mp module. Using this helps resolve</span>
@@ -217,7 +217,7 @@
 <span class="sd">    (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SummaryEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="SummaryEncoder.__init__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exclude_no_coverage_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_quality</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Constructor for the class.</span>
 
 <span class="sd">        Args:</span>
@@ -225,12 +225,14 @@
 <span class="sd">                                            coverage should be dropped.</span>
 <span class="sd">            normalize_counts : Flag to determine if summary counts in encoding should</span>
 <span class="sd">                               be normalized.</span>
+<span class="sd">            use_quality : Flag to indicate if draft base and quality is to be encoded.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Instance of class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_no_coverage_positions</span> <span class="o">=</span> <span class="n">exclude_no_coverage_positions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_counts</span> <span class="o">=</span> <span class="n">normalize_counts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_quality</span> <span class="o">=</span> <span class="n">use_quality</span>
 
         <span class="c1"># Supported alphabet when building summary encoder.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
@@ -242,21 +244,31 @@
                         <span class="s2">&quot;G&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;T&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;#&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;*&quot;</span><span class="p">]</span></div>
+                        <span class="s2">&quot;*&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draft_symbols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span>
+                              <span class="s2">&quot;C&quot;</span><span class="p">,</span>
+                              <span class="s2">&quot;G&quot;</span><span class="p">,</span>
+                              <span class="s2">&quot;T&quot;</span><span class="p">,</span>
+                              <span class="s2">&quot;*&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="SummaryEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+<div class="viewcode-block" id="SummaryEncoder.__call__"><a class="viewcode-back" href="../../apidocs/variantworks.html#variantworks.encoders.SummaryEncoder.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">,</span> <span class="n">ref_quality</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate a torch tensor with summary encoding.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            region : Region dataclass specifying region within a pileup to generate</span>
 <span class="sd">                     an encoding for.</span>
+<span class="sd">            ref_quality : A list with base quality values of draft sequence.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            (count_matrix, positions) tuple</span>
-<span class="sd">            count_matrix : A torch tensor encoding the summary count for the pileup</span>
+<span class="sd">            Tuple of (count_matrix, positions)</span>
+<span class="sd">            count_matrix : A torch tensor encoding the summary count for the pileup.</span>
+<span class="sd">            If quality score is enabled, rows with draft base and draft base</span>
+<span class="sd">            quality are encoded in count matrix as well.</span>
 <span class="sd">            positions : A torch tensor encoding reference and inserted positions in pileup</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">FileRegion</span><span class="p">))</span>
+        <span class="k">assert</span><span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_quality</span> <span class="ow">or</span> <span class="n">ref_quality</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span>\
+            <span class="s2">&quot;Encoder initialized to use quality but not quality scores passes.&quot;</span>
         <span class="n">start_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">start_pos</span>
         <span class="n">end_pos</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">end_pos</span>
         <span class="n">pileup_file</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">file_path</span>
@@ -277,11 +289,15 @@
 
         <span class="n">positions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
         <span class="c1"># Using positions, calculate pileup counts</span>
-        <span class="n">pileup_counts</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="n">num_features</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ref_quality</span><span class="p">:</span>
+            <span class="n">num_features</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">draft_symbols</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># Extra 1 for the base quality</span>
+        <span class="n">pileup_counts</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">num_features</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)):</span>
             <span class="n">ref_position</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">insert_position</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">base_pileup</span> <span class="o">=</span> <span class="n">subreads</span><span class="p">[</span><span class="n">ref_position</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;^]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">)</span>
+            <span class="n">base_pileup</span> <span class="o">=</span> <span class="n">reencode_base_pileup</span><span class="p">(</span><span class="n">pileup</span><span class="p">[</span><span class="n">ref_position</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">base_pileup</span><span class="p">)</span>
             <span class="n">insertions</span><span class="p">,</span> <span class="n">next_to_del</span> <span class="o">=</span> <span class="n">find_insertions</span><span class="p">(</span><span class="n">base_pileup</span><span class="p">)</span>
             <span class="n">insertions_to_keep</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -297,6 +313,10 @@
             <span class="k">if</span> <span class="p">(</span><span class="n">insert_position</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>  <span class="c1"># No insertions for this position</span>
                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">)):</span>
                     <span class="n">pileup_counts</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_pileup</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="c1"># Add draft base and base quality to encoding</span>
+                <span class="k">if</span> <span class="n">ref_quality</span><span class="p">:</span>
+                    <span class="n">pileup_counts</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">draft_symbols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pileup</span><span class="p">[</span><span class="n">ref_position</span><span class="p">,</span> <span class="mi">2</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">pileup_counts</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">draft_symbols</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">)]</span> <span class="o">=</span> <span class="n">ref_quality</span><span class="p">[</span><span class="n">ref_position</span><span class="p">]</span> <span class="o">/</span> <span class="mf">93.0</span>
             <span class="k">elif</span> <span class="p">(</span><span class="n">insert_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="c1"># Remove all insertions which are smaller than minor position being considered</span>
                 <span class="c1"># so we only count inserted bases at positions longer than the minor position</span>
@@ -378,6 +398,7 @@
             <span class="n">reference_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">inserted_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">truth_base</span> <span class="o">=</span> <span class="n">truth</span><span class="p">[</span><span class="n">reference_pos</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;^]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="n">truth_base</span> <span class="o">=</span> <span class="n">reencode_base_pileup</span><span class="p">(</span><span class="n">pileup</span><span class="p">[</span><span class="n">reference_pos</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">truth_base</span><span class="p">)</span>
             <span class="c1"># Handle minor position label (no insertion)</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">inserted_pos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="ow">in</span> <span class="n">truth_base</span><span class="p">):</span>
