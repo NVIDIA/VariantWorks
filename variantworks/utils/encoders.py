@@ -19,6 +19,26 @@ import numpy as np
 import torch
 
 
+def reencode_base_pileup(ref_base, pileup_str):
+    """Re-encodes mpileup output of list of special characters to list of nucleotides.
+
+    Args:
+        ref_base : Reference nucleotide
+        pileup_str : mpileup encoding of pileup bases relative to reference
+    Returns:
+        A pileup string of special characters replaced with nucleotides.
+    """
+    pileup = []
+    for c in pileup_str:
+        if c == ".":
+            pileup.append(ref_base)
+        elif c == ",":
+            pileup.append(ref_base.lower())
+        else:
+            pileup.append(c)
+    return "".join(pileup)
+
+
 def find_insertions(base_pileup):
     """Finds all of the insertions in a given base's pileup string.
 

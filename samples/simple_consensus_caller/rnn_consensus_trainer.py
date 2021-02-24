@@ -111,7 +111,7 @@ def train(args):
     label_neural_type = HaploidNeuralType()
 
     # Create train DAG
-    train_dataset = HDFDataLoader(args.train_hdf, batch_size=32,
+    train_dataset = HDFDataLoader(args.train_hdf, batch_size=256,
                                   shuffle=True, num_workers=args.threads,
                                   tensor_keys=["features", "labels"],
                                   tensor_dims=[encoding_dims, label_dims],
@@ -187,9 +187,11 @@ def build_parser():
                         default=os.getenv('LOCAL_RANK', None))
     parser.add_argument("--train-hdf",
                         help="HDF with examples for training.",
+                        nargs="+",
                         required=True)
     parser.add_argument("--eval-hdf",
                         help="HDF with examples for evaluation.",
+                        nargs="+",
                         required=False)
     parser.add_argument("--epochs", type=int,
                         help="Epochs for training.",
