@@ -47,7 +47,7 @@ class HDFDataLoader(DataLayerNM):
             port_dict[key] = NeuralType(self.tensor_dims[i], self.tensor_neural_types[i])
         return port_dict
 
-    def __init__(self, hdf_file, batch_size=32, shuffle=True,
+    def __init__(self, hdf_files, batch_size=32, shuffle=True,
                  num_workers=4,
                  tensor_keys=["encodings", "labels"],
                  tensor_dtypes=[torch.float32, torch.int64],
@@ -57,7 +57,7 @@ class HDFDataLoader(DataLayerNM):
         """Constructor for data loader.
 
         Args:
-            hdf_file : Path to HDF file with pileup encodings
+            hdf_file : List of paths to HDF files with pileup encodings
             batch_size : batch size for data loader [32]
             shuffle : shuffle dataset [True]
             num_workers : numbers of parallel data loader threads [4]
@@ -70,7 +70,7 @@ class HDFDataLoader(DataLayerNM):
             Instance of class.
         """
         super().__init__()
-        self.hdf_file = hdf_file
+        self.hdf_files = hdf_files
         self.tensor_keys = tensor_keys
         self.tensor_dtypes = tensor_dtypes
         self.tensor_dims = tensor_dims
@@ -98,8 +98,8 @@ class HDFDataLoader(DataLayerNM):
                 self.tensor_keys = tensor_keys
                 self.hdf_lengths = []
                 for f in self.hdf_files:
-                    with h5py.File(f, "r") as hdf:
-                        self.hdf_lengths.append(len(hdf.get(self.tensor_keys[0])))
+                    hdf = h5py.File(f, "r")
+                    self.hdf_lengths.append(len(hdf.get(self.tensor_keys[0])))
                 self.total_len = sum(self.hdf_lengths)
                 self._h5_gen = None
 
@@ -108,22 +108,40 @@ class HDFDataLoader(DataLayerNM):
 
             def __getitem__(self, idx):
                 # Find the file to which idx maps.
-                hdf_idx = 0
-                while self.hdf_lengths[hdf_idx] <= idx:
-                    idx -= self.hdf_lengths[hdf_idx]
-                    hdf_idx += 1
+                if self._h5_gen is None:
+                    self._h5_gen = self._data_generator()
+                    next(self._h5_gen)
+                return self._h5_gen.send(idx)
 
-                # Use hdf_idx and updated item idx to find example.
-                hdf = h5py.File(self.hdf_files[hdf_idx], "r")
-                outputs = []
-                for i, key in enumerate(self.tensor_keys):
-                    data = hdf.get(key)
-                    tensor = torch.tensor(data[idx], dtype=self.tensor_dtypes[i])
-                    outputs.append(tensor)
+            def _data_generator(self):
+                h5_objs = {}  # Cache HDF objects.
 
-                return tuple(outputs)
+                idx = yield
+                while True:
+                    hdf_idx = 0
+                    # Find idx of HDF file based on global sample idx.
+                    while self.hdf_lengths[hdf_idx] <= idx:
+                        idx -= self.hdf_lengths[hdf_idx]
+                        hdf_idx += 1
 
-        dataset = DatasetWrapper(self.hdf_file, self.tensor_dtypes, self.tensor_keys)
+                    # Load HDF file if not already loaded.
+                    hdf_filename = self.hdf_files[hdf_idx]
+                    if hdf_filename not in h5_objs:
+                        hdf = h5py.File(hdf_filename, "r")
+                        h5_objs[hdf_filename] = {}
+                        for key in self.tensor_keys:
+                            h5_objs[hdf_filename][key] = hdf[key]
+
+                    # Use hdf_idx and updated item idx to find example.
+                    outputs = []
+                    hdf = h5_objs[hdf_filename]
+                    for i, key in enumerate(self.tensor_keys):
+                        tensor = torch.tensor(hdf[key][idx], dtype=self.tensor_dtypes[i])
+                        outputs.append(tensor)
+
+                    idx = yield tuple(outputs)
+
+        dataset = DatasetWrapper(self.hdf_files, self.tensor_dtypes, self.tensor_keys)
 
         sampler = None
         if self._placement == DeviceType.AllGpu:
