@@ -37,10 +37,19 @@ def infer(args):
     nf = nemo.core.NeuralModuleFactory(
         placement=nemo.core.neural_factory.DeviceType.GPU)
 
-    model = create_model.create_rnn_model(args.input_feature_size,
-                                          args.num_output_logits,
-                                          args.gru_size,
-                                          args.gru_layers)
+    if args.model == 'rnn':
+        model = create_model.create_rnn_model(args.input_feature_size,
+                                              args.num_output_logits,
+                                              args.gru_size,
+                                              args.gru_layers)
+    elif args.model == 'cnn':
+        model = create_model.create_cnn_model(args.input_feature_size,
+                                              args.gru_size,
+                                              args.num_output_logits)
+    elif args.model == 'attention':
+        model = create_model.create_attention_model(args.input_feature_size,
+                                              args.gru_size,
+                                              args.num_output_logits)
 
     # Create train DAG
     infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=32,
@@ -118,6 +127,8 @@ def build_parser():
     parser.add_argument("--num_output_logits", type=int, default=5)
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
+    parser.add_argument("--model", help="Model", type=str, 
+                        choices=('cnn', 'rnn', 'attention'), default='rnn')
 
     return parser
 
