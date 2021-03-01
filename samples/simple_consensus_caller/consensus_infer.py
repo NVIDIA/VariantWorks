@@ -114,7 +114,7 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Read consensus caller based on VariantWorks.")
 
-    parser.add_argument("--infer-hdf", type=str,
+    parser.add_argument("--infer-hdf", nargs="+",
                         help="HDF with read encodings to infer on.",
                         required=True)
     parser.add_argument("--model-dir", type=str,
