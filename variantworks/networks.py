@@ -246,6 +246,7 @@ class ConsensusCNN(TrainableNM):
         encoding = encoding.permute(0, 2, 1)
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)
+        encoding = F.softmax(encoding, dim=2)
         return encoding
 
 
@@ -305,4 +306,5 @@ class ConsensusAttention(TrainableNM):
         encoding, _ = self.attn(encoding, encoding)
         encoding, _ = self.gru(encoding)
         encoding = self.classifier(encoding)
+        encoding = F.softmax(encoding, dim=2)
         return encoding

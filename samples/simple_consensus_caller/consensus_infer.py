@@ -52,7 +52,7 @@ def infer(args):
                                               args.num_output_logits)
 
     # Create train DAG
-    infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=32,
+    infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=256,
                                   shuffle=False, num_workers=1,
                                   tensor_keys=["features", "positions"],
                                   tensor_dims=[('B', 'W', 'C'), ('B', 'C')],
@@ -114,7 +114,7 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Read consensus caller based on VariantWorks.")
 
-    parser.add_argument("--infer-hdf", nargs="+",
+    parser.add_argument("--infer-hdf", type=str,
                         help="HDF with read encodings to infer on.",
                         required=True)
     parser.add_argument("--model-dir", type=str,
