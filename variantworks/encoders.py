@@ -136,11 +136,15 @@ class SummaryEncoder(Encoder):
                                         self._exclude_no_coverage_positions)
 
         positions = torch.IntTensor(positions)
+
         # Using positions, calculate pileup counts
         num_features = len(self.symbols)
-        if ref_quality:
-            num_features += len(self.draft_symbols) + 1  # Extra 1 for the base quality
         pileup_counts = torch.zeros((len(positions), num_features))
+
+        ref_info = None
+        if ref_quality:
+            ref_info = torch.zeros((len(positions), len(self.draft_symbols) + 1))  # Extra 1 for the base quality
+
         for i in range(len(positions)):
             ref_position = positions[i][0]
             insert_position = positions[i][1]
@@ -163,8 +167,8 @@ class SummaryEncoder(Encoder):
                     pileup_counts[i, j] = base_pileup.count(self.symbols[j])
                 # Add draft base and base quality to encoding
                 if ref_quality:
-                    pileup_counts[i, len(self.symbols) + self.draft_symbols.index(pileup[ref_position, 2])] = 1
-                    pileup_counts[i, len(self.draft_symbols) + len(self.symbols)] = ref_quality[ref_position] / 93.0
+                    ref_info[i, self.draft_symbols.index(pileup[ref_position, 2])] = 1
+                    ref_info[i, len(self.draft_symbols)] = ref_quality[ref_position] / 93.0
             elif (insert_position > 0):
                 # Remove all insertions which are smaller than minor position being considered
                 # so we only count inserted bases at positions longer than the minor position
@@ -174,9 +178,12 @@ class SummaryEncoder(Encoder):
                     pileup_counts[i, self.symbols.index(inserted_base)] += 1
 
         if self._normalize_counts:
-            return normalize_counts(pileup_counts, positions), positions
-        else:
-            return pileup_counts, positions
+            pileup_counts = normalize_counts(pileup_counts, positions)
+
+        if ref_quality:
+            pileup_counts = torch.cat((pileup_counts, ref_info), 1)  # Concatenate along rows
+
+        return pileup_counts, positions
 
 
 class HaploidLabelEncoder(Encoder):
