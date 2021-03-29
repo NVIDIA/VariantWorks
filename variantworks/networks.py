@@ -188,9 +188,8 @@ class ConsensusRNN(TrainableNM):
         return encoding
 
 
-
 class ConsensusCNN(TrainableNM):
-    """A Neural Module for training a Consensus Attention Model."""
+    """A Neural Module for training a Consensus CNN-RNN Model."""
 
     @property
     @add_port_docs()
@@ -215,10 +214,11 @@ class ConsensusCNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, input_feature_size, gru_size, num_output_logits):
+    def __init__(self, input_feature_size, kernel_size, gru_size, num_output_logits):
         """Construct an Consensus CNN NeMo instance.
         Args:
             input_feature_size : Length of input feature set.
+            kernel_size : Kernel size for conv layers
             gru_size : Number of units in RNN
             num_output_logits : Number of output classes of classifier.
         Returns:
@@ -226,7 +226,8 @@ class ConsensusCNN(TrainableNM):
         """
         super().__init__()
         self.num_output_logits = num_output_logits
-        self.conv1 = nn.Conv1d(input_feature_size, 128, kernel_size=1, padding=0)
+        self.conv1 = nn.Conv1d(input_feature_size, 128, kernel_size=kernel_size, padding=int((kernel_size-1)/2))
+        self.conv2 = nn.Conv1d(128, 128, kernel_size=kernel_size, padding=int((kernel_size-1)/2))
         self.gru = nn.GRU(128, gru_size, 1, batch_first=True, bidirectional=True)
         self.classifier = nn.Linear(2*gru_size, self.num_output_logits)
 
@@ -243,6 +244,7 @@ class ConsensusCNN(TrainableNM):
         """
         encoding = encoding.permute(0, 2, 1)
         encoding = self.conv1(encoding)
+        encoding = self.conv2(encoding)
         encoding = encoding.permute(0, 2, 1)
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)

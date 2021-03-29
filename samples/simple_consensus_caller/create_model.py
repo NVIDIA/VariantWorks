@@ -18,38 +18,27 @@
 from variantworks.networks import ConsensusRNN, ConsensusCNN, ConsensusAttention
 
 
-def create_rnn_model(input_feature_size,
-                     num_output_logits,
-                     gru_size,
-                     gru_layers):
+def create_model(model,
+                 input_feature_size,
+                 num_output_logits,
+                 gru_size,
+                 gru_layers=None,
+                 kernel_size=None):
     """Return neural network to train."""
-    # Neural Network
-    rnn = ConsensusRNN(input_feature_size=input_feature_size,
+    if model == 'rnn':
+        model = ConsensusRNN(input_feature_size=input_feature_size,
                        num_output_logits=num_output_logits,
                        gru_size=gru_size,
                        gru_layers=gru_layers,
                        apply_softmax=True)
-
-    return rnn
-
-
-def create_cnn_model(input_feature_size,
-                     gru_size,
-                     num_output_logits):
-    """Return neural network to train."""
-    # Neural Network
-    cnn = ConsensusCNN(input_feature_size=input_feature_size,
+    elif model == 'cnn':
+        model = ConsensusCNN(input_feature_size=input_feature_size,
+                       gru_size=gru_size,
+                       kernel_size=kernel_size,
+                       num_output_logits=num_output_logits)
+    elif model == 'attention':
+        model = ConsensusAttention(input_feature_size=input_feature_size,
                        gru_size=gru_size,
                        num_output_logits=num_output_logits)
+    return model
 
-    return cnn
-
-
-def create_attention_model(input_feature_size, gru_size, num_output_logits):
-    """Return neural network to train."""
-    # Neural Network
-    ann = ConsensusAttention(input_feature_size=input_feature_size,
-                       gru_size=gru_size,
-                       num_output_logits=num_output_logits)
-
-    return ann

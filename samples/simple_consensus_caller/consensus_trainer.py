@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A sample program highlighting usage of VariantWorks SDK to write a simple SNP variant caller using a CNN."""
+"""A sample program highlighting usage of VariantWorks SDK to train a simple consensus caller using several model architectures."""
 
 import argparse
 
@@ -28,7 +28,7 @@ from nemo.backends.pytorch.torchvision.helpers import eval_epochs_done_callback
 from variantworks.dataloader import HDFDataLoader
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 
-import create_model
+from create_model import create_model
 
 
 class CategoricalAccuracy(object):
@@ -100,19 +100,12 @@ def train(args):
         placement=nemo.core.neural_factory.DeviceType.GPU,
         local_rank=args.local_rank)
 
-    if args.model == 'rnn':
-        model = create_model.create_rnn_model(args.input_feature_size,
-                                          args.num_output_logits,
-                                          args.gru_size,
-                                          args.gru_layers)
-    elif args.model == 'cnn':
-        model = create_model.create_cnn_model(args.input_feature_size,
-                                          args.gru_size,
-                                          args.num_output_logits)
-    elif args.model == 'attention':
-        model = create_model.create_attention_model(args.input_feature_size,
-                                          args.gru_size,
-                                          args.num_output_logits)
+    model = create_model(args.model,
+                 args.input_feature_size,
+                 args.num_output_logits,
+                 args.gru_size,
+                 args.gru_layers,
+                 args.kernel_size)
 
     encoding_dims = ('B', 'W', 'C')
     label_dims = ('B', 'W')
@@ -216,9 +209,10 @@ def build_parser():
     parser.add_argument("--num_output_logits", type=int, default=5)
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
+    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
     parser.add_argument("--model", help="Model", type=str, 
                         choices=('cnn', 'rnn', 'attention'), default='rnn')
-    parser.add_argument("--lr", help="Learning rate", type=float, default=0.001)
+    parser.add_argument("--lr", help="Learning rate", type=float, default=0.0001)
 
     return parser
 
