@@ -211,7 +211,7 @@ def build_parser():
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
     parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
     parser.add_argument("--model", help="Model", type=str, 
-                        choices=('cnn', 'rnn', 'attention'), default='rnn')
+                        choices=('cnn', 'rnn'), default='cnn')
     parser.add_argument("--lr", help="Learning rate", type=float, default=0.0001)
 
     return parser
