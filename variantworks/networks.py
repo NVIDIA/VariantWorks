@@ -223,7 +223,7 @@ class ConsensusCNN(TrainableNM):
             gru_size : Number of units in RNN
             num_output_logits : Number of output classes of classifier.
 
-       Returns:
+        Returns:
             Instance of class.
         """
         super().__init__()
