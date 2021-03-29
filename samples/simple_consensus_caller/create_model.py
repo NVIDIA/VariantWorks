@@ -37,4 +37,3 @@ def create_model(model,
                              kernel_size=kernel_size,
                              num_output_logits=num_output_logits)
     return model
-
