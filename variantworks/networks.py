@@ -222,7 +222,8 @@ class ConsensusCNN(TrainableNM):
             kernel_size : Kernel size for conv layers
             gru_size : Number of units in RNN
             num_output_logits : Number of output classes of classifier.
-        Returns:
+
+       Returns:
             Instance of class.
         """
         super().__init__()
@@ -241,6 +242,7 @@ class ConsensusCNN(TrainableNM):
 
         Args:
             encoding : Input sequence to run network on.
+
         Returns:
             Output of forward pass.
         """
