@@ -136,6 +136,7 @@ class SummaryEncoder(Encoder):
                                         self._exclude_no_coverage_positions)
 
         positions = torch.IntTensor(positions)
+
         # Using positions, calculate pileup counts
         num_features = len(self.symbols)
         pileup_counts = torch.zeros((len(positions), num_features))
