@@ -24,8 +24,6 @@ from nemo.utils.decorators import add_port_docs
 from nemo.core.neural_types import NeuralType, ChannelType, LogitsType
 from nemo.core.neural_factory import DeviceType
 
-from variantworks.layers import Attention
-
 
 class AlexNet(TrainableNM):
     """A Neural Module for AlexNet."""

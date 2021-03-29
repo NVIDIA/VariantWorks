@@ -295,7 +295,7 @@ def generate_hdf5(args):
         to_remove_data_dir = True
 
     # Setup encoder for samples and labels.
-    sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True, 
+    sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True,
                                     normalize_counts=args.normalize,
                                     use_quality=args.use_quality)
     label_encoder = HaploidLabelEncoder(exclude_no_coverage_positions=True)

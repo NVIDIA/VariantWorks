@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A sample program highlighting usage of VariantWorks SDK to train a simple consensus caller using several model architectures."""
+"""A sample program highlighting usage of VariantWorks SDK to train a simple consensus caller."""
 
 import argparse
 
@@ -101,11 +101,11 @@ def train(args):
         local_rank=args.local_rank)
 
     model = create_model(args.model,
-                 args.input_feature_size,
-                 args.num_output_logits,
-                 args.gru_size,
-                 args.gru_layers,
-                 args.kernel_size)
+                         args.input_feature_size,
+                         args.num_output_logits,
+                         args.gru_size,
+                         args.gru_layers,
+                         args.kernel_size)
 
     encoding_dims = ('B', 'W', 'C')
     label_dims = ('B', 'W')
@@ -210,7 +210,7 @@ def build_parser():
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
     parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
-    parser.add_argument("--model", help="Model", type=str, 
+    parser.add_argument("--model", help="Model", type=str,
                         choices=('cnn', 'rnn'), default='cnn')
     parser.add_argument("--lr", help="Learning rate", type=float, default=0.0001)
 
