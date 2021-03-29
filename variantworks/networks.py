@@ -193,6 +193,7 @@ class ConsensusCNN(TrainableNM):
     @add_port_docs()
     def input_ports(self):
         """Return definitions of module input ports.
+        
         Returns:
             Module input ports.
         """
@@ -204,6 +205,7 @@ class ConsensusCNN(TrainableNM):
     @add_port_docs()
     def output_ports(self):
         """Return definitions of module output ports.
+        
         Returns:
             Module output ports.
         """
@@ -214,6 +216,7 @@ class ConsensusCNN(TrainableNM):
 
     def __init__(self, input_feature_size, kernel_size, gru_size, num_output_logits):
         """Construct an Consensus CNN NeMo instance.
+        
         Args:
             input_feature_size : Length of input feature set.
             kernel_size : Kernel size for conv layers
@@ -235,6 +238,7 @@ class ConsensusCNN(TrainableNM):
 
     def forward(self, encoding):
         """Abstract function to run the network.
+        
         Args:
             encoding : Input sequence to run network on.
         Returns:
