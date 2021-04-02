@@ -113,7 +113,7 @@ def train(args):
 def build_parser():
     """Build parser object with options for sample."""
     parser = argparse.ArgumentParser(
-        description="Simple SNP caller based on VariantWorks.")
+        description="Simple model training for SNP caller based on VariantWorks.")
 
     parser.add_argument("--train-hdf",
                         help="HDF with examples for training.",

@@ -192,6 +192,11 @@ class VCFReader(BaseReader):
         self._parallel_parse_vcf()
 
     @property
+    def file_path(self):
+        """Get vcf file path for this VCF reader."""
+        return self._vcf
+
+    @property
     def samples(self):
         """Get list of samples names in VCF file."""
         return self._sample_names

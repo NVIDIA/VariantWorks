@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A sample program highlighting usage of VariantWorks SDK to write a simple SNP variant caller using a CNN."""
+"""A sample program highlighting usage of VariantWorks SDK to write a simple consensus training tool."""
 
 import argparse
 

@@ -44,3 +44,39 @@ Getting Started
     # Install pre-push hooks to run tests
     ln -nfs $(readlink -f hooks/pre-push) .git/hooks/pre-push
 
+Sample Data
+---------------
+We provide sample data to explore the sample scripts for the *simple_snp_trainer*:
+The data was derived from https://github.com/clara-parabricks/DL4VC/blob/master/docs/Data.md after generating
+variant candidates and then intersect them with known truth set for variants in that region.
+
+* Bam files
+    #. Chr 1
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr1.bam
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr1.bam.bai
+    #. Chr 10
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr10.bam
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr10.bam.bai
+    #. Chr 17
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr17.bam
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878-50x.sort.chr17.bam.bai
+
+* VCF files:
+    #. Chr 1
+        *  https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr1.vcf (True Positive)
+        *  https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr1.vcf (False Positive)
+    #. Chr1 (subset, first 7000 variants)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr1_7000samples.vcf (True Positive)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr1_7000samples.vcf (False Positive)
+    #. Chr 10
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr10.vcf (True Positive)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr10.vcf (False Positive)
+    #. Chr10 (subset, first 7000 variants)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr10_7000samples.vcf (True Positive)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr10_7000samples.vcf (False Positive)
+    #. Chr 17
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr17.vcf (True Positive)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr17.vcf (False Positive)
+    #. Chr17 (subset, first 7000 variants)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_TP_chr17_7000samples.vcf (True Positive)
+        * https://variantworks.s3.us-east-2.amazonaws.com/HG001-NA12878_FP_chr17_7000samples.vcf (False Positive)
