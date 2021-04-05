@@ -28,7 +28,7 @@ from variantworks.io import fastxio
 from variantworks.neural_types import SummaryPileupNeuralType, HaploidNeuralType
 from variantworks.utils.stitcher import stitch, decode_consensus
 
-import create_model
+from create_model import create_model
 
 
 def infer(args):
@@ -37,13 +37,15 @@ def infer(args):
     nf = nemo.core.NeuralModuleFactory(
         placement=nemo.core.neural_factory.DeviceType.GPU)
 
-    model = create_model.create_rnn_model(args.input_feature_size,
-                                          args.num_output_logits,
-                                          args.gru_size,
-                                          args.gru_layers)
+    model = create_model(model=args.model,
+                         input_feature_size=args.input_feature_size,
+                         num_output_logits=args.num_output_logits,
+                         gru_size=args.gru_size,
+                         gru_layers=args.gru_layers,
+                         kernel_size=args.kernel_size)
 
     # Create train DAG
-    infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=32,
+    infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=256,
                                   shuffle=False, num_workers=1,
                                   tensor_keys=["features", "positions"],
                                   tensor_dims=[('B', 'W', 'C'), ('B', 'C')],
@@ -118,6 +120,9 @@ def build_parser():
     parser.add_argument("--num_output_logits", type=int, default=5)
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
+    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
+    parser.add_argument("--model", help="Model", type=str,
+                        choices=('cnn', 'rnn'), default='cnn')
 
     return parser
 

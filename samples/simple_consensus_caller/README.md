@@ -88,26 +88,27 @@ and labels to the network during training and evaluation, and a reference RNN ne
 
 The following is a sample command line for the trainer.
 ```
-python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf
+python consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf
 ```
 
 Details of the script usage can be found in its help message.
 ```
-python rnn_consensus_trainer.py -h
+python consensus_trainer.py -h
 ```
 
-The training script provides options to configure the model architecture as well. For example, if a model needs to be trained
-on encodings that include base quality scores and reference nucleotide information, then the input size of the RNN needs to match
-the dimensions of the encoding. So the following command line can be used to address that (assuming the input size is 16 channels) -
+The training script provides options to configure the model architecture as well. The `--model` flag can be used to select 
+RNN or CNN architectures. If a model needs to be trained on encodings that include base quality scores and reference 
+nucleotide information, then the input size of the RNN needs to match the dimensions of the encoding. So the following 
+command line can be used to address that (assuming the input size is 16 channels) -
 ```
-python rnn_consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf --input_feature_size 16
+python consensus_trainer.py --train-hdf train.hdf --epochs 50 --model-dir `pwd`/sample_models --eval-hdf eval.hdf --input_feature_size 16
 ```
 
 ### Multi-GPU training
 The consensus caller trainer uses the built-in multi GPU training offered by `NeMo`. To run training over multiple GPUs,
 add the following options before running the trainer
 ```
-python -m torch.distributed.launch --nproc_per_node=<NUM_GPUS> rnn_consensus_trainer.py ...
+python -m torch.distributed.launch --nproc_per_node=<NUM_GPUS> consensus_trainer.py ...
 ```
 
 ## Inference pipeline
@@ -125,5 +126,5 @@ sequence encodings are present, the script may concatenate them into a single in
 Here's a sample command line for the inference script using a pre-trained model.
 ```
 python pileup_hdf5_generator.py -r `pwd`/data/samples/3 -o infer.hdf
-python rnn_consensus_infer.py --infer-hdf infer.hdf --model-dir `pwd`/sample_models -o sample.fasta
+python consensus_infer.py --infer-hdf infer.hdf --model-dir `pwd`/sample_models -o sample.fasta
 ```

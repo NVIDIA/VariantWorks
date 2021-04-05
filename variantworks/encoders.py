@@ -140,7 +140,6 @@ class SummaryEncoder(Encoder):
         # Using positions, calculate pileup counts
         num_features = len(self.symbols)
         pileup_counts = torch.zeros((len(positions), num_features))
-
         ref_info = None
         if ref_quality:
             ref_info = torch.zeros((len(positions), len(self.draft_symbols) + 1))  # Extra 1 for the base quality
@@ -169,6 +168,7 @@ class SummaryEncoder(Encoder):
                 if ref_quality:
                     ref_info[i, self.draft_symbols.index(pileup[ref_position, 2])] = 1
                     ref_info[i, len(self.draft_symbols)] = ref_quality[ref_position] / 93.0
+
             elif (insert_position > 0):
                 # Remove all insertions which are smaller than minor position being considered
                 # so we only count inserted bases at positions longer than the minor position

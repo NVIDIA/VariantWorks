@@ -295,7 +295,9 @@ def generate_hdf5(args):
         to_remove_data_dir = True
 
     # Setup encoder for samples and labels.
-    sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True, use_quality=args.use_quality)
+    sample_encoder = SummaryEncoder(exclude_no_coverage_positions=True,
+                                    normalize_counts=args.normalize,
+                                    use_quality=args.use_quality)
     label_encoder = HaploidLabelEncoder(exclude_no_coverage_positions=True)
     encode_func = partial(encode, sample_encoder, label_encoder,
                           args.chunk_len, args.chunk_ovlp, args.draft_name,
@@ -365,6 +367,8 @@ def build_parser():
                         help='Name of file with draft.', default="draft.fa")
     parser.add_argument('--use-quality', action="store_true",
                         help='Add draft quality to encoding.')
+    parser.add_argument('--normalize', action="store_true",
+                        help='Normalize encoding.')
 
     args = parser.parse_args()
 

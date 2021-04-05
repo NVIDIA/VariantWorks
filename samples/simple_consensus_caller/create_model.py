@@ -15,19 +15,25 @@
 #
 """Common model creation module."""
 
-from variantworks.networks import ConsensusRNN
+from variantworks.networks import ConsensusRNN, ConsensusCNN
 
 
-def create_rnn_model(input_feature_size,
-                     num_output_logits,
-                     gru_size,
-                     gru_layers):
+def create_model(model,
+                 input_feature_size,
+                 num_output_logits,
+                 gru_size,
+                 gru_layers=None,
+                 kernel_size=None):
     """Return neural network to train."""
-    # Neural Network
-    rnn = ConsensusRNN(input_feature_size=input_feature_size,
-                       num_output_logits=num_output_logits,
-                       gru_size=gru_size,
-                       gru_layers=gru_layers,
-                       apply_softmax=True)
-
-    return rnn
+    if model == 'rnn':
+        model = ConsensusRNN(input_feature_size=input_feature_size,
+                             num_output_logits=num_output_logits,
+                             gru_size=gru_size,
+                             gru_layers=gru_layers,
+                             apply_softmax=True)
+    elif model == 'cnn':
+        model = ConsensusCNN(input_feature_size=input_feature_size,
+                             gru_size=gru_size,
+                             kernel_size=kernel_size,
+                             num_output_logits=num_output_logits)
+    return model
