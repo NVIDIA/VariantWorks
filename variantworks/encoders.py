@@ -28,7 +28,7 @@ import torch
 
 from variantworks.types import FileRegion, Variant, VariantZygosity
 from variantworks.utils.visualization import rgb_to_hex
-from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions
+from variantworks.utils.encoders import find_insertions, normalize_counts, calculate_positions, reencode_base_pileup
 
 
 # Torch multiprocessing limits interferes with python mp module. Using this helps resolve
@@ -65,7 +65,7 @@ class SummaryEncoder(Encoder):
     (https://github.com/nanoporetech/medaka/blob/master/medaka/features.py)
     """
 
-    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True):
+    def __init__(self, exclude_no_coverage_positions=True, normalize_counts=True, use_quality=False):
         """Constructor for the class.
 
         Args:
@@ -73,12 +73,14 @@ class SummaryEncoder(Encoder):
                                             coverage should be dropped.
             normalize_counts : Flag to determine if summary counts in encoding should
                                be normalized.
+            use_quality : Flag to indicate if draft base and quality is to be encoded.
 
         Returns:
             Instance of class.
         """
         self._exclude_no_coverage_positions = exclude_no_coverage_positions
         self._normalize_counts = normalize_counts
+        self._use_quality = use_quality
 
         # Supported alphabet when building summary encoder.
         self.symbols = ["a",
@@ -91,20 +93,30 @@ class SummaryEncoder(Encoder):
                         "T",
                         "#",
                         "*"]
+        self.draft_symbols = ["A",
+                              "C",
+                              "G",
+                              "T",
+                              "*"]
 
-    def __call__(self, region):
+    def __call__(self, region, ref_quality=None):
         """Generate a torch tensor with summary encoding.
 
         Args:
             region : Region dataclass specifying region within a pileup to generate
                      an encoding for.
+            ref_quality : A list with base quality values of draft sequence.
 
         Returns:
-            (count_matrix, positions) tuple
-            count_matrix : A torch tensor encoding the summary count for the pileup
+            Tuple of (count_matrix, positions)
+            count_matrix : A torch tensor encoding the summary count for the pileup.
+            If quality score is enabled, rows with draft base and draft base
+            quality are encoded in count matrix as well.
             positions : A torch tensor encoding reference and inserted positions in pileup
         """
         assert(isinstance(region, FileRegion))
+        assert(not self._use_quality or ref_quality is not None),\
+            "Encoder initialized to use quality but not quality scores passes."
         start_pos = region.start_pos
         end_pos = region.end_pos
         pileup_file = region.file_path
@@ -124,12 +136,19 @@ class SummaryEncoder(Encoder):
                                         self._exclude_no_coverage_positions)
 
         positions = torch.IntTensor(positions)
+
         # Using positions, calculate pileup counts
-        pileup_counts = torch.zeros((len(positions), 10))
+        num_features = len(self.symbols)
+        pileup_counts = torch.zeros((len(positions), num_features))
+        ref_info = None
+        if ref_quality:
+            ref_info = torch.zeros((len(positions), len(self.draft_symbols) + 1))  # Extra 1 for the base quality
+
         for i in range(len(positions)):
             ref_position = positions[i][0]
             insert_position = positions[i][1]
             base_pileup = subreads[ref_position].strip("^]").strip("$")
+            base_pileup = reencode_base_pileup(pileup[ref_position, 2], base_pileup)
             insertions, next_to_del = find_insertions(base_pileup)
             insertions_to_keep = []
 
@@ -145,6 +164,11 @@ class SummaryEncoder(Encoder):
             if (insert_position == 0):  # No insertions for this position
                 for j in range(len(self.symbols)):
                     pileup_counts[i, j] = base_pileup.count(self.symbols[j])
+                # Add draft base and base quality to encoding
+                if ref_quality:
+                    ref_info[i, self.draft_symbols.index(pileup[ref_position, 2])] = 1
+                    ref_info[i, len(self.draft_symbols)] = ref_quality[ref_position] / 93.0
+
             elif (insert_position > 0):
                 # Remove all insertions which are smaller than minor position being considered
                 # so we only count inserted bases at positions longer than the minor position
@@ -154,9 +178,12 @@ class SummaryEncoder(Encoder):
                     pileup_counts[i, self.symbols.index(inserted_base)] += 1
 
         if self._normalize_counts:
-            return normalize_counts(pileup_counts, positions), positions
-        else:
-            return pileup_counts, positions
+            pileup_counts = normalize_counts(pileup_counts, positions)
+
+        if ref_quality:
+            pileup_counts = torch.cat((pileup_counts, ref_info), 1)  # Concatenate along rows
+
+        return pileup_counts, positions
 
 
 class HaploidLabelEncoder(Encoder):
@@ -226,6 +253,7 @@ class HaploidLabelEncoder(Encoder):
             reference_pos = positions[i][0]
             inserted_pos = positions[i][1]
             truth_base = truth[reference_pos].strip("^]").strip("$").upper()
+            truth_base = reencode_base_pileup(pileup[reference_pos, 2], truth_base)
             # Handle minor position label (no insertion)
             if (inserted_pos == 0):
                 if ("+" in truth_base):
