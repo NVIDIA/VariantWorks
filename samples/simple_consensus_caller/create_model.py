@@ -23,17 +23,19 @@ def create_model(model,
                  num_output_logits,
                  gru_size,
                  gru_layers=None,
-                 kernel_size=None):
+                 kernel_size=None,
+                 is_training=True):
     """Return neural network to train."""
     if model == 'rnn':
         model = ConsensusRNN(input_feature_size=input_feature_size,
                              num_output_logits=num_output_logits,
                              gru_size=gru_size,
                              gru_layers=gru_layers,
-                             apply_softmax=True)
+                             apply_softmax=not is_training)
     elif model == 'cnn':
         model = ConsensusCNN(input_feature_size=input_feature_size,
                              gru_size=gru_size,
                              kernel_size=kernel_size,
-                             num_output_logits=num_output_logits)
+                             num_output_logits=num_output_logits,
+                             apply_softmax=not is_training)
     return model

@@ -214,7 +214,7 @@ class ConsensusCNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, input_feature_size, kernel_size, gru_size, num_output_logits):
+    def __init__(self, input_feature_size, kernel_size, gru_size, num_output_logits, apply_softmax=False):
         """Construct an Consensus CNN NeMo instance.
 
         Args:
@@ -232,6 +232,7 @@ class ConsensusCNN(TrainableNM):
         self.conv2 = nn.Conv1d(128, 128, kernel_size=kernel_size, padding=int((kernel_size-1)/2))
         self.gru = nn.GRU(128, gru_size, 1, batch_first=True, bidirectional=True)
         self.classifier = nn.Linear(2*gru_size, self.num_output_logits)
+        self.apply_softmax = apply_softmax
 
         self._device = torch.device(
             "cuda" if self.placement == DeviceType.GPU else "cpu")
@@ -252,5 +253,6 @@ class ConsensusCNN(TrainableNM):
         encoding = encoding.permute(0, 2, 1)
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)
-        encoding = F.softmax(encoding, dim=2)
+        if self.apply_softmax:
+            encoding = F.softmax(encoding, dim=2)
         return encoding
