@@ -222,6 +222,7 @@ class ConsensusCNN(TrainableNM):
             kernel_size : Kernel size for conv layers
             gru_size : Number of units in RNN
             num_output_logits : Number of output classes of classifier.
+            apply_softmax : Apply softmax to the output of the classifier.
 
         Returns:
             Instance of class.

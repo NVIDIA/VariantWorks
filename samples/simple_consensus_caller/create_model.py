@@ -25,7 +25,19 @@ def create_model(model,
                  gru_layers=None,
                  kernel_size=None,
                  is_training=True):
-    """Return neural network to train."""
+    """Return neural network to train.
+
+    Args:
+        model : Model architecture can be 'rnn' or 'cnn'
+        input_feature_size : Length of input feature set
+        num_output_logits : Number of output classes of classifier
+        gru_size : Number of units in RNN
+        gru_layers : Number of layers in RNN
+        kernel_size : Kernel size for conv layers (only for 'cnn')
+        is_training : True if the model is be used training, False for inferring
+    Returns:
+        Instance of ConsensusRNN or ConsensusCNN.
+    """
     if model == 'rnn':
         model = ConsensusRNN(input_feature_size=input_feature_size,
                              num_output_logits=num_output_logits,
