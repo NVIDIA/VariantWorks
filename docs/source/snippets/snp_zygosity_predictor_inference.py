@@ -60,7 +60,7 @@ encoding = test_dataset()
 vz = model(encoding=encoding)
 
 # Invoke the "infer" action.
-results = nf.infer([vz], checkpoint_dir="./", verbose=True)
+results = nf.infer([vz], checkpoint_dir="./snp_snippet_model_dir", verbose=True)
 
 # Instantiate a decoder that converts the predicted output of the network to
 # a zygosity enum.
