@@ -19,7 +19,7 @@
 
 if "${IS_GPU_AVAILABLE}"; then
   logger "prepare env on GPU machine"
-  conda install -y -c bioconda minimap2 samtools
+  conda install -y -c bioconda minimap2
   logger "Run all tests"
   python -m pytest -s tests/
   logger "Run Documentation Snippets"
