@@ -19,7 +19,8 @@
 
 if "${IS_GPU_AVAILABLE}"; then
   logger "prepare env on GPU machine"
-  conda install -y -c bioconda minimap2
+  conda install -y -c bioconda minimap2  # For Simple Consensus hdf5 generator
+  conda install -y -c conda-forge bc     # For test_simple_consensus_caller.sh
   logger "Run all tests"
   python -m pytest -s tests/
   logger "Run Documentation Snippets"
