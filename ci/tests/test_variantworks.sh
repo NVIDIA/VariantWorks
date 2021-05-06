@@ -29,7 +29,7 @@ if "${IS_GPU_AVAILABLE}"; then
     python "${f}"
   done
   logger "Run samples/simple_consensus_caller"
-  source ci/utilities/test_simple_consensus_caller.sh
+  source ci/tests/test_simple_consensus_caller.sh
 else
   logger "Run CPU tests"
   python -m pytest -s -m "not gpu" tests/

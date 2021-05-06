@@ -16,15 +16,7 @@
 # limitations under the License.
 #
 
-function check_convergence() {
-  # Extract last evaluation loss
-  LOSS_THRESHOLD=0.0001
-  LAST_EVAL=$(tac "$1" | grep "Evaluation Loss"  | head -1)
-  if [[ $(awk -v a="${LAST_EVAL##*:}" -v b="${LOSS_THRESHOLD}" 'BEGIN{print(a<b)}') != 1 ]]; then
-    echo "ERROR: Evaluation loss ${1}" 1>&2
-    exit 1
-  fi
-}
+source ./ci/utilities/check_loss_convergence.sh
 
 TEST_OUTPUT="./samples/simple_consensus_caller/test_output_$(date "+%Y-%m-%d_%H-%M-%S")"
 mkdir "$TEST_OUTPUT"
@@ -47,7 +39,7 @@ python ./samples/simple_consensus_caller/consensus_trainer.py \
 --model-dir "${TEST_OUTPUT}/model_1" \
 --epochs 200 --lr 0.01 \
 --model 'rnn' 2>&1 | tee "${TEST_OUTPUT}/output_model_1.txt"
-check_convergence "${TEST_OUTPUT}/output_model_1.txt"
+check_loss_convergence "${TEST_OUTPUT}/output_model_1.txt" 0.0001
 echo "consensus_trainer finished ${TEST_OUTPUT}/output_model_1.txt"
 
 python ./samples/simple_consensus_caller/consensus_trainer.py \
@@ -56,7 +48,7 @@ python ./samples/simple_consensus_caller/consensus_trainer.py \
 --model-dir "${TEST_OUTPUT}/model_2" \
 --epochs 300 --lr 0.01 \
 --model 'cnn' 2>&1 | tee "${TEST_OUTPUT}/output_model_2.txt"
-check_convergence "${TEST_OUTPUT}/output_model_2.txt"
+check_loss_convergence "${TEST_OUTPUT}/output_model_2.txt" 0.0001
 echo "consensus_trainer finished ${TEST_OUTPUT}/output_model_2.txt"
 
 python ./samples/simple_consensus_caller/consensus_infer.py \
