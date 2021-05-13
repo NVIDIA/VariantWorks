@@ -105,7 +105,10 @@ def train(args):
                          num_output_logits=args.num_output_logits,
                          gru_size=args.gru_size,
                          gru_layers=args.gru_layers,
+                         conv_layers=args.conv_layers,
+                         relu=args.relu,
                          kernel_size=args.kernel_size,
+                         channels=args.channels,
                          is_training=True)
 
     encoding_dims = ('B', 'W', 'C')
@@ -210,7 +213,10 @@ def build_parser():
     parser.add_argument("--num_output_logits", type=int, default=5)
     parser.add_argument("--gru_size", help="Number of units in RNN", type=int, default=128)
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
-    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
+    parser.add_argument("--conv_layers", help="Number of convolutional layers in CNN", type=int, default=1)
+    parser.add_argument("--relu", help="ReLU activation in CNN", action='store_true')
+    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=5)
+    parser.add_argument("--channels", help="Channels for CNN", type=int, default=128)
     parser.add_argument("--model", help="Model", type=str,
                         choices=('cnn', 'rnn'), default='cnn')
     parser.add_argument("--lr", help="Learning rate", type=float, default=0.0001)
