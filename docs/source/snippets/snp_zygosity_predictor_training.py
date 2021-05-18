@@ -79,7 +79,7 @@ logger_callback = nemo.core.SimpleLossLoggerCallback(
 
 # Checkpointing models through NeMo callback
 checkpoint_callback = nemo.core.CheckpointCallback(
-    folder='./',
+    folder='./snp_snippet_model_dir',
     load_from_folder=None,
     # Checkpointing frequency in steps
     step_freq=-1,

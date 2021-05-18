@@ -42,7 +42,8 @@ def infer(args):
                          num_output_logits=args.num_output_logits,
                          gru_size=args.gru_size,
                          gru_layers=args.gru_layers,
-                         kernel_size=args.kernel_size)
+                         kernel_size=args.kernel_size,
+                         is_training=False)
 
     # Create train DAG
     infer_dataset = HDFDataLoader(args.infer_hdf, batch_size=256,

@@ -49,7 +49,7 @@ logger "Install varaintworks in editable mode"
 python -m pip install -e .
 
 logger "Test VariantWorks"
-source ci/utilities/test_variantworks.sh
+source ci/tests/test_variantworks.sh
 
 logger "Remove variantworks (editable mode)"
 pip uninstall -y variantworks

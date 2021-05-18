@@ -100,12 +100,13 @@ def train(args):
         placement=nemo.core.neural_factory.DeviceType.GPU,
         local_rank=args.local_rank)
 
-    model = create_model(args.model,
-                         args.input_feature_size,
-                         args.num_output_logits,
-                         args.gru_size,
-                         args.gru_layers,
-                         args.kernel_size)
+    model = create_model(model=args.model,
+                         input_feature_size=args.input_feature_size,
+                         num_output_logits=args.num_output_logits,
+                         gru_size=args.gru_size,
+                         gru_layers=args.gru_layers,
+                         kernel_size=args.kernel_size,
+                         is_training=True)
 
     encoding_dims = ('B', 'W', 'C')
     label_dims = ('B', 'W')

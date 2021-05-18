@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright 2020 NVIDIA CORPORATION.
+# Copyright 2020-2021 NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,19 +16,12 @@
 # limitations under the License.
 #
 
-
-
-if "${IS_GPU_AVAILABLE}"; then
-  logger "Run all tests"
-  python -m pytest -s tests/
-
-  logger "Run Documentation Snippets"
-  # Reverse alphabetical order, so the training snippet will be executed before inference
-  for f in $(find docs/source/snippets/*.py | sort -r); do
-    logger "Executing \"${f}\""
-    python "${f}"
-  done
-else
-  logger "Run CPU tests"
-  python -m pytest -s -m "not gpu" tests/
-fi
+# Utility function which extracts the last logged loss value from an output file and compares it to a threshold value
+function check_loss_convergence() {
+  LOSS_THRESHOLD=${2}
+  LAST_EVAL=$(tac "${1}" | grep "Evaluation Loss"  | head -1)
+  if [[ $(awk -v a="${LAST_EVAL##*:}" -v b="${LOSS_THRESHOLD}" 'BEGIN{print(a<b)}') != 1 ]]; then
+    echo "ERROR: Evaluation loss ${1}" 1>&2
+    exit 1
+  fi
+}
