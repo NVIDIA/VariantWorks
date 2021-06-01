@@ -215,7 +215,7 @@ def build_parser():
     parser.add_argument("--gru_layers", help="Number of layers in RNN", type=int, default=2)
     parser.add_argument("--conv_layers", help="Number of convolutional layers in CNN", type=int, default=1)
     parser.add_argument("--relu", help="ReLU activation in CNN", action='store_true')
-    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=5)
+    parser.add_argument("--kernel_size", help="Kernel size for CNN", type=int, default=1)
     parser.add_argument("--channels", help="Channels for CNN", type=int, default=128)
     parser.add_argument("--model", help="Model", type=str,
                         choices=('cnn', 'rnn'), default='cnn')
