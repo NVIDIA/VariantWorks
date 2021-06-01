@@ -214,7 +214,7 @@ class ConsensusCNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, input_feature_size, kernel_size, channels, gru_size, conv_layers, 
+    def __init__(self, input_feature_size, kernel_size, channels, gru_size, conv_layers,
                  num_output_logits, relu=False, apply_softmax=False):
         """Construct an Consensus CNN NeMo instance.
 
@@ -234,12 +234,12 @@ class ConsensusCNN(TrainableNM):
         super().__init__()
         self.num_output_logits = num_output_logits
         self.cnn_layers = nn.ModuleList()
-        self.cnn_layers.append(nn.Conv1d(input_feature_size, channels, kernel_size=kernel_size, 
+        self.cnn_layers.append(nn.Conv1d(input_feature_size, channels, kernel_size=kernel_size,
                                          padding=int((kernel_size-1)/2)))
         if relu:
             self.cnn_layers.append(nn.ReLU())
         for _ in range(conv_layers-1):
-            self.cnn_layers.append(nn.Conv1d(channels, channels, kernel_size=kernel_size, 
+            self.cnn_layers.append(nn.Conv1d(channels, channels, kernel_size=kernel_size,
                                              padding=int((kernel_size-1)/2)))
             if relu:
                 self.cnn_layers.append(nn.ReLU())
