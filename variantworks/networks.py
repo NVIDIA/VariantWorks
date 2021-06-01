@@ -214,14 +214,18 @@ class ConsensusCNN(TrainableNM):
             'output_logit': NeuralType(('B', 'W', 'D'), LogitsType()),
         }
 
-    def __init__(self, input_feature_size, kernel_size, gru_size, num_output_logits, apply_softmax=False):
+    def __init__(self, input_feature_size, kernel_size, channels, gru_size, conv_layers,
+                 num_output_logits, relu=False, apply_softmax=False):
         """Construct an Consensus CNN NeMo instance.
 
         Args:
             input_feature_size : Length of input feature set.
             kernel_size : Kernel size for conv layers
+            channels: number of channels for conv layers
             gru_size : Number of units in RNN
+            conv_layers: Number of convolutional layers
             num_output_logits : Number of output classes of classifier.
+            relu: Include ReLU activations
             apply_softmax : Apply softmax to the output of the classifier.
 
         Returns:
@@ -229,9 +233,17 @@ class ConsensusCNN(TrainableNM):
         """
         super().__init__()
         self.num_output_logits = num_output_logits
-        self.conv1 = nn.Conv1d(input_feature_size, 128, kernel_size=kernel_size, padding=int((kernel_size-1)/2))
-        self.conv2 = nn.Conv1d(128, 128, kernel_size=kernel_size, padding=int((kernel_size-1)/2))
-        self.gru = nn.GRU(128, gru_size, 1, batch_first=True, bidirectional=True)
+        self.cnn_layers = nn.ModuleList()
+        self.cnn_layers.append(nn.Conv1d(input_feature_size, channels, kernel_size=kernel_size,
+                                         padding=int((kernel_size-1)/2)))
+        if relu:
+            self.cnn_layers.append(nn.ReLU())
+        for _ in range(conv_layers-1):
+            self.cnn_layers.append(nn.Conv1d(channels, channels, kernel_size=kernel_size,
+                                             padding=int((kernel_size-1)/2)))
+            if relu:
+                self.cnn_layers.append(nn.ReLU())
+        self.gru = nn.GRU(channels, gru_size, 1, batch_first=True, bidirectional=True)
         self.classifier = nn.Linear(2*gru_size, self.num_output_logits)
         self.apply_softmax = apply_softmax
 
@@ -249,8 +261,8 @@ class ConsensusCNN(TrainableNM):
             Output of forward pass.
         """
         encoding = encoding.permute(0, 2, 1)
-        encoding = self.conv1(encoding)
-        encoding = self.conv2(encoding)
+        for layer in self.cnn_layers:
+            encoding = layer(encoding)
         encoding = encoding.permute(0, 2, 1)
         encoding, h_n = self.gru(encoding)
         encoding = self.classifier(encoding)

@@ -23,7 +23,10 @@ def create_model(model,
                  num_output_logits,
                  gru_size,
                  gru_layers=None,
+                 conv_layers=None,
+                 relu=False,
                  kernel_size=None,
+                 channels=None,
                  is_training=True):
     """Return neural network to train.
 
@@ -33,7 +36,10 @@ def create_model(model,
         num_output_logits : Number of output classes of classifier
         gru_size : Number of units in RNN
         gru_layers : Number of layers in RNN
+        conv_layers : Number of conv layers in CNN
+        relu : Use ReLU activation with conv layers
         kernel_size : Kernel size for conv layers (only for 'cnn')
+        channels: Number of channels for conv layers
         is_training : True if the model is be used training, False for inferring
     Returns:
         Instance of ConsensusRNN or ConsensusCNN.
@@ -48,6 +54,9 @@ def create_model(model,
         model = ConsensusCNN(input_feature_size=input_feature_size,
                              gru_size=gru_size,
                              kernel_size=kernel_size,
+                             channels=channels,
+                             conv_layers=conv_layers,
+                             relu=relu,
                              num_output_logits=num_output_logits,
                              apply_softmax=not is_training)
     return model
