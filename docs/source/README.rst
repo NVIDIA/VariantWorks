@@ -36,7 +36,7 @@ Getting Started
 
 .. code-block:: bash
 
-    git clone --recursive https://github.com/clara-parabricks/VariantWorks.git
+    git clone --recursive https://github.com/NVIDIA/VariantWorks.git
     cd VariantWorks
     pip install -r python-style-requirements.txt
     pip install -r requirements.txt
